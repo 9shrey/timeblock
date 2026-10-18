@@ -1,17 +1,27 @@
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Shell } from "./app/Shell";
 import { useStore } from "./state/store";
 
-/** Temporary M2 smoke screen; replaced by the app shell in M3. */
+/** Resolved light/dark theme: the setting, or the desktop theme for "system". */
+export function useResolvedTheme(): "light" | "dark" {
+  const pref = useStore((s) => s.settings.theme);
+  const system = useStore((s) => s.systemTheme);
+  return pref === "system" ? system : pref;
+}
+
 export default function App() {
-  const data = useStore((s) => s.data);
-  const now = useStore((s) => s.now);
-  const blocks = Object.values(data.blocks);
+  const theme = useResolvedTheme();
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-2">
-      <h1 className="text-2xl font-semibold">Timeblock</h1>
-      <p data-testid="counts" className="text-sm text-muted-foreground">
-        {now.day} · goals {Object.keys(data.goals).length} · plan {blocks.filter((b) => b.layer === "plan").length} ·
-        actual {blocks.filter((b) => b.layer === "actual").length}
-      </p>
-    </main>
+    <TooltipProvider delayDuration={400}>
+      <Shell />
+      <Toaster theme={theme} position="bottom-center" />
+    </TooltipProvider>
   );
 }
