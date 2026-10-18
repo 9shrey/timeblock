@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { weekStartOf } from "@/domain/time/localDate";
 import { DayView } from "@/features/day/DayView";
+import { BudgetPanel } from "@/features/goals/BudgetPanel";
+import { GoalsView } from "@/features/goals/GoalsView";
 import { ensureWeeksAround, useStore } from "@/state/store";
 import { NavRail } from "./NavRail";
 import { TopBar } from "./TopBar";
@@ -14,6 +16,7 @@ export function Shell() {
   const view = useStore((s) => s.view);
   const cursor = useStore((s) => s.cursor);
   const weekStartDay = useStore((s) => s.settings.weekStartDay);
+  const budgetOpen = useStore((s) => s.budgetOpen);
   useShortcuts();
 
   // Keep the viewed week and its neighbours loaded.
@@ -39,11 +42,12 @@ export function Shell() {
         <main className="min-h-0 flex-1">
           {view === "day" && <DayView />}
           {view === "week" && <Placeholder name="Week view" />}
-          {view === "goals" && <Placeholder name="Goals" />}
+          {view === "goals" && <GoalsView />}
           {view === "review" && <Placeholder name="Weekly review" />}
           {view === "settings" && <Placeholder name="Settings" />}
         </main>
       </div>
+      {budgetOpen && <BudgetPanel />}
     </div>
   );
 }
