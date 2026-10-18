@@ -4,16 +4,13 @@ import { DayView } from "@/features/day/DayView";
 import { BudgetPanel } from "@/features/goals/BudgetPanel";
 import { GoalsView } from "@/features/goals/GoalsView";
 import { ReviewView } from "@/features/review/ReviewView";
+import { SettingsView } from "@/features/settings/SettingsView";
 import { WeekView } from "@/features/week/WeekView";
 import { ensureWeeksAround, useStore } from "@/state/store";
 import { closeEditor, useUi } from "@/state/ui";
 import { NavRail } from "./NavRail";
 import { TopBar } from "./TopBar";
 import { useShortcuts } from "./shortcuts";
-
-function Placeholder({ name }: { name: string }) {
-  return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{name} — coming soon</div>;
-}
 
 export function Shell() {
   const view = useStore((s) => s.view);
@@ -56,7 +53,7 @@ export function Shell() {
           {view === "week" && <WeekView />}
           {view === "goals" && <GoalsView />}
           {view === "review" && <ReviewView />}
-          {view === "settings" && <Placeholder name="Settings" />}
+          {view === "settings" && <SettingsView />}
         </main>
       </div>
       {budgetOpen && <BudgetPanel />}

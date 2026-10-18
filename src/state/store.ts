@@ -5,8 +5,8 @@
 import { create } from "zustand";
 import { applyChanges, emptyState, invertChanges, stateFrom } from "@/domain/changes";
 import { parseSettings } from "@/domain/settings";
-import { addDays, weekStartOf } from "@/domain/time/localDate";
-import type { ChangeSet, DataState, LocalDate, Now, Repository, Settings, WeekData } from "@/domain/types";
+import { addDays, weekShiftDays, weekStartOf } from "@/domain/time/localDate";
+import type { ChangeSet, DataState, LocalDate, Now, Repository, Settings, WeekData, WeekStartDay } from "@/domain/types";
 import { createWriteQueue, type WriteQueue } from "@/data/writeQueue";
 import { emptyHistory, popRedo, popUndo, record, type History } from "./history";
 
@@ -99,6 +99,29 @@ export async function reloadFromDb(): Promise<void> {
   await queue.flush();
   const data = await loadAll(repo, get().loadedWeeks);
   set({ data, settings: parseSettings(Object.values(data.settings)), history: emptyHistory(), selection: null });
+}
+
+/**
+ * Re-reads everything after a bulk change (import, week-start change): forgets loaded weeks,
+ * reloads base data and the weeks around the cursor, clears undo history.
+ */
+export async function reloadAll(): Promise<void> {
+  const { repo, queue } = requireDeps();
+  await queue.flush();
+  const data = await loadAll(repo, []);
+  const settings = parseSettings(Object.values(data.settings));
+  set({ data, settings, loadedWeeks: [], history: emptyHistory(), selection: null });
+  await ensureWeeksAround(weekStartOf(get().cursor, settings.weekStartDay));
+}
+
+/** Switches the week start day, remapping every stored week key in one transaction. */
+export async function changeWeekStartDay(day: WeekStartDay): Promise<void> {
+  const { repo, queue } = requireDeps();
+  const from = get().settings.weekStartDay;
+  if (from === day) return;
+  await queue.flush();
+  await repo.changeWeekStart(weekShiftDays(from, day), day);
+  await reloadAll();
 }
 
 /** Wires the store to a repository and loads base data plus the weeks around `now`. */

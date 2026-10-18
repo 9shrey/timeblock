@@ -122,3 +122,19 @@ describe("store", () => {
     expect(blocks().far?.title).toBe("edited");
   });
 });
+
+describe("bulk changes", () => {
+  it("changeWeekStartDay remaps keys, reloads and clears history", async () => {
+    const { changeWeekStartDay } = await import("./store");
+    commit([
+      put("goals", { id: "g", name: "G", color: "#000000", kind: "min", sortOrder: 0, archivedOn: null, createdAt: 1, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: 60, updatedAt: 1 }),
+    ]);
+    await changeWeekStartDay(0);
+    const s = useStore.getState();
+    expect(s.settings.weekStartDay).toBe(0);
+    expect(Object.keys(s.data.weekTargets)).toEqual(["g|2026-10-18"]);
+    expect(s.history.undo).toHaveLength(0);
+    expect(s.loadedWeeks).toContain("2026-10-18");
+  });
+});
