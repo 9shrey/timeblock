@@ -3,8 +3,9 @@ import { Check, Circle, X } from "lucide-react";
 import { formatDuration, formatMinute } from "@/domain/time/localDate";
 import type { Block, Goal, PlanState } from "@/domain/types";
 import { cn } from "@/lib/utils";
+import { select } from "@/state/commands";
 import { useDraft } from "@/state/draft";
-import { minutesToPx } from "./geometry";
+import { EDGE_PX, minutesToPx } from "./geometry";
 
 export const NO_GOAL_COLOR = "#94a3b8";
 
@@ -90,6 +91,7 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
       data-col={col}
       aria-label={label}
       aria-pressed={selected}
+      onFocus={() => select({ kind: "block", id: block.id })}
       className={cn(
         "absolute flex overflow-hidden rounded-md px-1.5 text-left text-xs leading-tight outline-none select-none",
         "focus-visible:ring-2 focus-visible:ring-ring",
@@ -115,7 +117,7 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
         {time}
         {!short && len >= 45 && ` · ${formatDuration(len)}`}
       </span>
-      {editable && (
+      {editable && minutesToPx(len, pxPerHour) >= 3 * EDGE_PX && (
         <>
           <span data-edge="start" className="absolute inset-x-0 -top-0.5 h-1.5 cursor-ns-resize" />
           <span data-edge="end" className="absolute inset-x-0 -bottom-0.5 h-1.5 cursor-ns-resize" />

@@ -118,7 +118,7 @@ describe("dragMachine", () => {
     expect(effects).toEqual([]);
   });
 
-  it("resize starts without threshold and clamps", () => {
+  it("resize clamps, and an edge press without movement is a click", () => {
     const edge = down({ type: "edge", ref: { kind: "block", id: "b1" }, edge: "end", col: 0 }, 660);
     expect(run([edge, move(1500), { type: "up", ctrl: false }]).effects).toEqual([
       { type: "resize", id: "b1", start: 540, end: 1440 },
@@ -144,7 +144,7 @@ describe("dragMachine", () => {
   it("drags starting in read-only or locked columns are blocked", () => {
     const r1 = run([down({ type: "empty", col: 3 }, 600), move(700), { type: "up", ctrl: false }]);
     expect(r1.effects).toEqual([{ type: "blocked", col: 3 }]);
-    const r2 = run([down({ type: "edge", ref: { kind: "block", id: "b1" }, edge: "end", col: 4 }, 660)]);
+    const r2 = run([down({ type: "edge", ref: { kind: "block", id: "b1" }, edge: "end", col: 4 }, 660), move(700)]);
     expect(r2.effects).toEqual([{ type: "blocked", col: 4 }]);
     // Clicks still work there (selection).
     expect(run([down({ type: "empty", col: 3 }, 600), { type: "up", ctrl: false }]).effects[0]).toMatchObject({

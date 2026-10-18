@@ -1,7 +1,7 @@
 /**
  * Pure pointer state machine for the timeline:
  *
- *   idle ─down(empty)→ pending:create │ down(block|ghost)→ pending:move │ down(edge)→ active:resize
+ *   idle ─down(empty)→ pending:create │ down(block|ghost)→ pending:move │ down(edge)→ pending:resize
  *   pending ─move ≥ 4px→ active │ up→ click
  *   active ─move→ draft (snap: Shift = 5 min, else settings; clamp; target column; Ctrl = copy)
  *          ─cancel→ idle (no write) │ up→ effect (create | move | resize | materialize)
@@ -101,7 +101,8 @@ function recompute(
   const iv = ctx.intervalOf(target.ref);
   if (!iv) return draft;
   if (target.type === "edge") {
-    return { ...draft, ...resizeInterval(iv, target.edge, e.minute, step, step) };
+    // Short pieces (e.g. 5 min from a confirm) may be shorter than a snap step.
+    return { ...draft, ...resizeInterval(iv, target.edge, e.minute, step, Math.min(step, iv.end - iv.start)) };
   }
   const len = iv.end - iv.start;
   const start = Math.min(1440 - len, Math.max(0, snap(e.minute - s.grabOffset, step)));
@@ -132,9 +133,8 @@ export function reduce(state: DragState, e: DragEvent, ctx: DragCtx): Step {
   switch (e.type) {
     case "down": {
       if (state.kind !== "idle") return { state };
-      if (e.target.type === "edge") return startActive(e.target, e.minute, 0, ctx);
       const iv = e.target.type === "item" ? ctx.intervalOf(e.target.ref) : null;
-      const grabOffset = iv ? e.minute - iv.start : 0;
+      const grabOffset = iv && e.target.type === "item" ? e.minute - iv.start : 0;
       return { state: { kind: "pending", target: e.target, x: e.x, y: e.y, minute: e.minute, grabOffset } };
     }
     case "move": {
@@ -148,7 +148,11 @@ export function reduce(state: DragState, e: DragEvent, ctx: DragCtx): Step {
       return { state };
     }
     case "up": {
-      if (state.kind === "pending") return { state: IDLE, effect: { type: "click", target: state.target } };
+      if (state.kind === "pending") {
+        const t = state.target;
+        // A press on a resize edge without movement is a click on the item.
+        return { state: IDLE, effect: { type: "click", target: t.type === "edge" ? { type: "item", ref: t.ref, col: t.col } : t } };
+      }
       if (state.kind === "active") return { state: IDLE, effect: commitEffect(state, e.ctrl, ctx) };
       return { state: IDLE };
     }

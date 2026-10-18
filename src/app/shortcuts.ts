@@ -69,11 +69,13 @@ export function handleKey(e: KeyboardEvent): boolean {
   }
 
   const ref = selectedRef();
-  if (ref) {
+  // Enter on some other focused button (Today, nav rail, ✓/✗) keeps its own meaning.
+  const onOtherButton = !!(e.target as HTMLElement | null)?.closest?.("button:not([data-item]), a, [data-nodrag]");
+  if (ref && !(onOtherButton && (key === "Enter" || key === " "))) {
     const step = s.settings.snapMinutes;
     switch (key) {
       case "Enter":
-        openEditor(ref);
+        openEditor(ref, false, true);
         return true;
       case "Delete":
       case "Backspace":
@@ -108,7 +110,7 @@ export function handleKey(e: KeyboardEvent): boolean {
     }
   }
 
-  if (key === "A" && e.shiftKey) {
+  if (key === "A" && e.shiftKey && s.view === "day") {
     confirmRestOfDay(s.cursor);
     return true;
   }

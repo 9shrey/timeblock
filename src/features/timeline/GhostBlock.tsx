@@ -3,10 +3,10 @@ import { Check, X } from "lucide-react";
 import { formatMinute } from "@/domain/time/localDate";
 import type { Ghost, Goal } from "@/domain/types";
 import { cn } from "@/lib/utils";
-import { confirm, skip } from "@/state/commands";
+import { confirm, select, skip } from "@/state/commands";
 import { useDraft } from "@/state/draft";
 import { displayTitle, NO_GOAL_COLOR, slotStyle, type Slot } from "./BlockView";
-import { minutesToPx } from "./geometry";
+import { EDGE_PX, minutesToPx } from "./geometry";
 
 interface Props {
   ghost: Ghost;
@@ -37,6 +37,7 @@ export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHou
       data-col={col}
       aria-label={`Planned, not confirmed: ${time}, ${title}`}
       aria-pressed={selected}
+      onFocus={(e) => e.target === e.currentTarget && select({ kind: "ghost", planBlockId: ghost.planBlockId })}
       className={cn(
         "group absolute flex overflow-hidden rounded-md border-[1.5px] border-dashed px-1.5 text-left text-xs leading-tight text-foreground outline-none select-none",
         "opacity-55 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
@@ -59,7 +60,7 @@ export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHou
           <span
             data-nodrag
             className={cn(
-              "absolute top-0.5 right-0.5 hidden gap-0.5 group-hover:flex",
+              "absolute top-0.5 right-0.5 hidden gap-0.5 group-focus-within:flex group-hover:flex",
               selected && "flex",
             )}
           >
@@ -82,8 +83,12 @@ export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHou
               <X className="size-3.5" />
             </button>
           </span>
-          <span data-edge="start" className="absolute inset-x-0 -top-0.5 h-1.5 cursor-ns-resize" />
-          <span data-edge="end" className="absolute inset-x-0 -bottom-0.5 h-1.5 cursor-ns-resize" />
+          {minutesToPx(ghost.endMinute - ghost.startMinute, pxPerHour) >= 3 * EDGE_PX && (
+            <>
+              <span data-edge="start" className="absolute inset-x-0 -top-0.5 h-1.5 cursor-ns-resize" />
+              <span data-edge="end" className="absolute inset-x-0 -bottom-0.5 h-1.5 cursor-ns-resize" />
+            </>
+          )}
         </>
       )}
     </div>

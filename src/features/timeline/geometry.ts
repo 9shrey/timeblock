@@ -20,6 +20,8 @@ export interface ColumnSpec {
   locked: boolean;
   /** Actual lanes show ghosts of the same day's plan. */
   showGhosts: boolean;
+  /** Relative width (flex-grow); defaults to 1. */
+  span?: number;
 }
 
 export const isEditable = (c: ColumnSpec | undefined): boolean => !!c && !c.readOnly && !c.locked;

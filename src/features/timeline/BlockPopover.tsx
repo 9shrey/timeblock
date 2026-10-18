@@ -33,11 +33,16 @@ function GoalDot({ color }: { color: string }) {
 }
 
 /** Time field that accepts "915", "9:15", "9.15"; commits on blur/Enter. Remount (key) to reset. */
-function TimeField({ label, value, onCommit }: { label: string; value: number; onCommit: (m: number) => boolean }) {
+function TimeField({ label, value, disabled, onCommit }: { label: string; value: number; disabled: boolean; onCommit: (m: number) => boolean }) {
   const [text, setText] = useState(formatMinute(value));
   const [invalid, setInvalid] = useState(false);
   const commit = () => {
     const m = parseTimeInput(text);
+    if (m === value) {
+      setInvalid(false);
+      setText(formatMinute(m));
+      return;
+    }
     if (m === null || !onCommit(m)) {
       setInvalid(true);
       return;
@@ -49,6 +54,7 @@ function TimeField({ label, value, onCommit }: { label: string; value: number; o
     <Input
       aria-label={label}
       aria-invalid={invalid}
+      disabled={disabled}
       className="h-8 w-[4.5rem] text-center tabular-nums"
       value={text}
       onChange={(e) => setText(e.target.value)}
@@ -78,8 +84,8 @@ function Editor({ editing }: { editing: Editing }) {
   const goals = useMemo<Goal[]>(() => (item ? activeGoals(data, weekStartOf(item.day, weekStartDay)) : []), [data, item, weekStartDay]);
 
   useEffect(() => {
-    if (editing.isNew) titleRef.current?.focus();
-  }, [editing.isNew]);
+    if (editing.isNew || editing.focus) titleRef.current?.focus();
+  }, [editing.isNew, editing.focus]);
 
   if (!item) return null;
   const layer = block?.layer ?? "actual";
@@ -165,6 +171,7 @@ function Editor({ editing }: { editing: Editing }) {
         <TimeField
           key={`s${item.startMinute}`}
           label="Start time"
+          disabled={disabled}
           value={item.startMinute}
           onCommit={(m) => !disabled && m < item.endMinute && m <= 1439 && apply({ startMinute: m })}
         />
@@ -172,6 +179,7 @@ function Editor({ editing }: { editing: Editing }) {
         <TimeField
           key={`e${item.endMinute}`}
           label="End time"
+          disabled={disabled}
           value={item.endMinute}
           onCommit={(m) => !disabled && m > item.startMinute && apply({ endMinute: m })}
         />
@@ -258,7 +266,10 @@ export function BlockPopover() {
           const ed = useUi.getState().editing;
           const b = ed?.ref.kind === "block" ? s.data.blocks[ed.ref.id] : undefined;
           const top = s.history.undo[s.history.undo.length - 1];
-          if (ed?.isNew && b && !b.title && !b.goalId && !b.notes && top?.label === "Create block") storeUndo();
+          if (ed?.isNew && b && !b.title && !b.goalId && !b.notes && top?.label === "Create block") {
+            storeUndo();
+            useStore.setState({ selection: null });
+          }
         }}
         onInteractOutside={(e) => {
           // Clicking another block re-targets instead of closing; the timeline handles it.

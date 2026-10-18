@@ -9,6 +9,8 @@ export interface Editing {
   isNew: boolean;
   /** Coalesce key for all edits of this popover session. */
   session: string;
+  /** Opened from the keyboard: move focus into the popover. */
+  focus: boolean;
 }
 
 interface UiState {
@@ -23,8 +25,8 @@ export const useUi = create<UiState>(() => ({ editing: null, unlockedPlanDays: [
 
 let sessionCounter = 0;
 
-export function openEditor(ref: ItemRef, isNew = false): void {
-  useUi.setState({ editing: { ref, isNew, session: `edit-${++sessionCounter}` } });
+export function openEditor(ref: ItemRef, isNew = false, focus = false): void {
+  useUi.setState({ editing: { ref, isNew, focus, session: `edit-${++sessionCounter}` } });
 }
 
 export function closeEditor(): void {

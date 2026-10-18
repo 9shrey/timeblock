@@ -50,6 +50,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
       data-col-key={spec.key}
       className={cn("relative min-w-0 flex-1 border-l", spec.locked && "bg-muted/40")}
       style={{
+        flexGrow: spec.span ?? 1,
         backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${pxPerHour}px)`,
       }}
     >

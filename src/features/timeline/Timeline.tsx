@@ -23,8 +23,10 @@ import { targetFromElement, useDrag } from "./useDrag";
 interface Props {
   columns: readonly ColumnSpec[];
   pxPerHour: number;
-  /** Header cell rendered above each column. */
-  renderHeader: (col: ColumnSpec, index: number) => React.ReactNode;
+  /** Header cell rendered above each column (ignored when `header` is given). */
+  renderHeader?: (col: ColumnSpec, index: number) => React.ReactNode;
+  /** A custom header row (after the gutter spacer), e.g. one cell per day. */
+  header?: React.ReactNode;
   /** Minute to scroll to whenever `scrollKey` changes. */
   initialMinute: number;
   scrollKey: string;
@@ -33,7 +35,7 @@ interface Props {
 const sameRef = (a: ItemRef, b: ItemRef) =>
   a.kind === b.kind && (a.kind === "block" ? a.id === (b as { id: string }).id : a.planBlockId === (b as { planBlockId: string }).planBlockId);
 
-export function Timeline({ columns, pxPerHour, renderHeader, initialMinute, scrollKey }: Props) {
+export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinute, scrollKey }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const lanesRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef(columns);
@@ -96,8 +98,9 @@ export function Timeline({ columns, pxPerHour, renderHeader, initialMinute, scro
 
   const { handlers } = useDrag({ lanesRef, scrollerRef, pxPerHour, getCtx, onEffect });
 
+  // Pointer capture retargets click/dblclick to the lanes container: hit-test the point instead.
   const onDoubleClick = (e: React.MouseEvent) => {
-    const { target, ref } = targetFromElement(e.target as Element);
+    const { target, ref } = targetFromElement(document.elementFromPoint(e.clientX, e.clientY));
     if (!target) return;
     if (ref) {
       select(ref);
@@ -113,6 +116,7 @@ export function Timeline({ columns, pxPerHour, renderHeader, initialMinute, scro
   const onContextMenu = (e: React.MouseEvent) => {
     const { target, ref } = targetFromElement(e.target as Element);
     if (!target || !lanesRef.current) {
+      e.preventDefault(); // Radix won't open an (empty) menu
       useUi.setState({ menu: null });
       return;
     }
@@ -123,15 +127,16 @@ export function Timeline({ columns, pxPerHour, renderHeader, initialMinute, scro
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 border-b">
+      <div className="flex shrink-0 overflow-y-hidden border-b [scrollbar-gutter:stable]">
         <div className="w-12 shrink-0" />
-        {columns.map((c, i) => (
-          <div key={c.key} className="min-w-0 flex-1 border-l">
-            {renderHeader(c, i)}
-          </div>
-        ))}
+        {header ??
+          columns.map((c, i) => (
+            <div key={c.key} className="min-w-0 flex-1 border-l" style={{ flexGrow: c.span ?? 1 }}>
+              {renderHeader?.(c, i)}
+            </div>
+          ))}
       </div>
-      <div ref={scrollerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div ref={scrollerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
         <div className="relative flex" style={{ height: minutesToPx(1440, pxPerHour) }}>
           <TimeGutter pxPerHour={pxPerHour} nowMinute={showNow ? nowMinute : null} />
           <ContextMenu>

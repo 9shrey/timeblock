@@ -91,6 +91,7 @@ export function createDefaultAt(day: LocalDate, layer: Layer, minute: number): s
 export function updateBlockFields(id: string, patch: BlockPatch, coalesceKey?: string): boolean {
   const b = blockById(id);
   if (!b) return false;
+  if ((Object.keys(patch) as (keyof BlockPatch)[]).every((k) => b[k] === patch[k])) return true; // nothing changes
   if (!canEditLane(b.day, b.layer)) {
     toast(laneError(b.layer));
     return false;
