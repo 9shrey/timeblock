@@ -1,15 +1,10 @@
 name: Deploy website
 
-# This site now owns the automatic deploy to the repo's GitHub Pages slot
-# (9shrey.github.io/timeblock), replacing the app demo that pages.yml used to publish
-# there automatically (pages.yml is still around, manual-dispatch only, if you want the
-# demo back temporarily). No custom domain: nothing was purchased, and the free
-# *.github.io-via-new-org route needs a human to create that org, so this deploys to
-# the existing project Pages URL.
+# Manual dispatch only: static-site.yml now owns the automatic deploy to this repo's
+# GitHub Pages slot (9shrey.github.io/timeblock). Run this by hand if you want the
+# Astro marketing site back at that URL temporarily — it will stay until the next
+# static-site.yml run overwrites it again.
 on:
-  push:
-    branches: [main]
-    paths: ["website/**", ".github/workflows/site.yml"]
   workflow_dispatch:
 
 permissions:
