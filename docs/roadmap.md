@@ -18,7 +18,12 @@ M12 insights. M9 and M10 are done.
 | M10.7: running block / timer | ✅ Done |
 | M10.8: split at midnight | ✅ Done |
 | M11 | ⏳ Not started |
-| M12 | ⏳ Not started |
+| M12.1: trends view, `loadBlocksRange` | ✅ Done |
+| M12.2: plan accuracy stats | ✅ Done |
+| M12.3: delta badges on actual blocks | ✅ Done |
+| M12.4: Review additions (biggest gaps, reschedule skipped) | ✅ Done |
+| M12.5: CSV export | ✅ Done |
+| M12.6: year heatmap | ✅ Done |
 
 ## Conventions
 
@@ -83,6 +88,37 @@ what each one touched.
 6. **Drag to reorder outcomes and goals.** `sort_order` already exists in the schema; today goals can only move with the up/down buttons in `moveGoal`.
 7. **Running block / timer.** "Start now" creates an actual block from now to now+snap. The clock tick in `src/main.tsx` extends it until you stop it. Show the running block in the window title.
 8. **Blocks that cross midnight.** These were deliberately cut. Recommendation: keep them cut, and instead offer "split at midnight" when a drag goes past 24:00, creating two linked blocks. That way the wall-clock model stays as it is.
+
+## Handoff (M12)
+
+M12 (see Status above) was implemented on its own branch (`m12-insights`), branched from
+`main` before M11 landed there — M11 is still "Not started" on `main` as of this commit, so
+this work does not depend on it and should merge cleanly whenever M11 lands separately.
+
+What shipped: `repo.loadBlocksRange`, the Trends view (`i` key, 4/12/26-week toggle, per-goal
+bars + streak, year heatmap), plan accuracy stats (Review page and Trends), delta badges on
+actual blocks, "Biggest gaps" and "Reschedule skipped → next week" on Review, and CSV export
+next to the JSON export in Settings. `npm run lint`, `npm test` and `npm run test:tz` are
+clean; no Rust files changed (`loadBlocksRange` reuses the existing `blocks_day_layer` index
+and the existing `db_select` bridge, so `cargo fmt/clippy/test` are unaffected). `npm run e2e`
+was not run in this environment (no `tauri-driver`/WebKitWebDriver available) — this is the
+same documented environment gap as M9/M10, not new to M12.
+
+Product decisions made where the spec left them open:
+- Trend window default: 12 weeks (`trendWindowWeeks` setting, 4/12/26, persisted).
+- Heatmap color scale: 5 buckets by actual hours per day (0, <1h, <3h, <6h, ≥6h), opacity
+  steps on `--primary`; filterable by goal or "All goals" (`heatmapGoalId` setting,
+  persisted).
+- Delta badge goal text shows the actual block's (new) goal name, e.g. `goal: Admin`, not
+  the plan's original goal.
+- CSV export covers a fixed trailing 12-week window (through the current week); no date
+  range picker yet.
+- "Reschedule skipped → next week" lets you pick which day of next week to reschedule onto
+  (defaulting to its first day), rather than always the same weekday.
+
+With M12 landed, every milestone in this roadmap's main sequence is planned except M11
+(desktop integration), which is being worked separately. See "Later / optional" above for
+what's intentionally left beyond this roadmap.
 
 ---
 
