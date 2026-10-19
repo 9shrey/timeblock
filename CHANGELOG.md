@@ -31,6 +31,9 @@ All notable changes to this project are documented here. The format follows
   blocks in the timeline. Click it again to clear.
 - **Drag to reorder** goals and outcomes, by their grip handle (using the existing
   `sortOrder` column on each).
+- **Running block / timer**: "Start now" in Day view's Actual header creates a block from
+  now to now+snap; the clock tick extends it until "Stop timer", never past midnight. The
+  running block's title shows in the window title.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

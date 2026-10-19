@@ -31,6 +31,8 @@ interface UiState {
   shortcutsOpen: boolean;
   /** Goal clicked in BudgetPanel: every other goal's blocks are dimmed. Click again to clear. */
   highlightedGoalId: string | null;
+  /** The actual block the clock tick extends to "now", until `stopTimer` is called. */
+  runningBlockId: string | null;
 }
 
 export const useUi = create<UiState>(() => ({
@@ -42,6 +44,7 @@ export const useUi = create<UiState>(() => ({
   commandPaletteOpen: false,
   shortcutsOpen: false,
   highlightedGoalId: null,
+  runningBlockId: null,
 }));
 
 let sessionCounter = 0;

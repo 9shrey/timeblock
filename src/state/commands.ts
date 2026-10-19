@@ -23,7 +23,7 @@ import { validateBlock } from "@/domain/blocks/validate";
 import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
 import { weekDays } from "@/domain/time/localDate";
-import type { Block, ChangeSet, Layer, LocalDate } from "@/domain/types";
+import type { Block, ChangeSet, Layer, LocalDate, Now } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { activeGoals, allBlocks, goalList } from "./selectors";
 import { commit, redo as storeRedo, undo as storeUndo, useStore } from "./store";
@@ -241,6 +241,59 @@ export function copyWeekPlan(fromWeek: LocalDate, toWeek: LocalDate): void {
   }
   if (changes.length === 0) toast("Last week has no plan to copy.");
   else commitChecked(changes, "Copy last week's plan");
+}
+
+// --- running timer -----------------------------------------------------------
+
+/** True while a timer is running (and the block it extends still exists today). */
+export function isTimerRunning(): boolean {
+  const id = useUi.getState().runningBlockId;
+  const b = id ? blockById(id) : undefined;
+  return !!b && b.day === state().now.day;
+}
+
+/**
+ * Starts an actual block from now to now+snap (optionally from a ghost's title/goal, to
+ * "start this planned block now") and marks it as the running timer: the clock tick in
+ * main.tsx extends its end to the current minute until `stopTimer` is called, or the day
+ * rolls over (blocks never cross midnight).
+ */
+export function startTimer(from?: { title: string; goalId: string | null }): string | null {
+  const { day, minute } = state().now;
+  if (!canEditLane(day, "actual")) {
+    toast(laneError("actual"));
+    return null;
+  }
+  const end = Math.min(1440, minute + state().settings.snapMinutes);
+  if (end <= minute) {
+    toast("Can't start a timer this late in the day.");
+    return null;
+  }
+  const { block, changes } = createBlock(
+    { day, layer: "actual", startMinute: minute, endMinute: end, title: from?.title, goalId: from?.goalId },
+    env,
+  );
+  if (!commitChecked(changes, "Start timer")) return null;
+  useUi.setState({ runningBlockId: block.id });
+  select({ kind: "block", id: block.id });
+  return block.id;
+}
+
+/** Stops extending the running timer; the block keeps its current end time. */
+export function stopTimer(): void {
+  useUi.setState({ runningBlockId: null });
+}
+
+/** Called from the clock tick: extends the running block's end to `now`, or stops it at midnight. */
+export function extendRunningTimer(now: Now): void {
+  const id = useUi.getState().runningBlockId;
+  if (!id) return;
+  const block = blockById(id);
+  if (!block || block.day !== now.day) {
+    stopTimer();
+    return;
+  }
+  if (now.minute > block.endMinute) commit(updateBlock(block, { endMinute: Math.min(1440, now.minute) }, env), { noHistory: true });
 }
 
 // --- item-level helpers used by keyboard and menus -------------------------

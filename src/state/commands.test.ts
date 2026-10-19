@@ -25,11 +25,15 @@ import {
   confirmRestOfDay,
   copyWeekPlan,
   createBlockAt,
+  extendRunningTimer,
+  isTimerRunning,
   materialize,
   moveBlockTo,
   quickAddBlock,
   removeBlock,
   select,
+  startTimer,
+  stopTimer,
   updateBlockFields,
 } from "./commands";
 import { applyImport, exportJson, pickImportFile } from "./dataCommands";
@@ -58,7 +62,7 @@ beforeEach(async () => {
   repo = new SqliteRepository(await createSqlJsDriver());
   await repo.init();
   await repo.replaceAll(demoSeed(now));
-  useUi.setState({ editing: null, unlockedPlanDays: [], menu: null });
+  useUi.setState({ editing: null, unlockedPlanDays: [], menu: null, runningBlockId: null });
   await initStore({ repo }, now);
 });
 
@@ -501,5 +505,48 @@ describe("quickAddBlock", () => {
 
   it("refuses a locked lane", () => {
     expect(quickAddBlock("2026-10-20", "plan", "9-10 Thing")).toMatch(/locked/);
+  });
+});
+
+describe("running timer", () => {
+  it("starts a short actual block at now, marks it running, and extends it on tick", () => {
+    expect(isTimerRunning()).toBe(false);
+    const id = startTimer()!;
+    expect(id).not.toBeNull();
+    expect(useStore.getState().data.blocks[id]).toMatchObject({ day: "2026-10-21", layer: "actual", startMinute: 840, endMinute: 855 });
+    expect(isTimerRunning()).toBe(true);
+
+    extendRunningTimer({ day: "2026-10-21", minute: 900 });
+    expect(useStore.getState().data.blocks[id]!.endMinute).toBe(900);
+
+    // A no-op tick (same minute) doesn't touch it again.
+    const before = useStore.getState().data.blocks[id];
+    extendRunningTimer({ day: "2026-10-21", minute: 900 });
+    expect(useStore.getState().data.blocks[id]).toBe(before);
+  });
+
+  it("stops (without truncating) when the day rolls over", () => {
+    const id = startTimer()!;
+    extendRunningTimer({ day: "2026-10-22", minute: 10 });
+    expect(isTimerRunning()).toBe(false);
+    expect(useStore.getState().data.blocks[id]!.day).toBe("2026-10-21");
+    expect(useStore.getState().data.blocks[id]!.endMinute).toBe(855); // untouched
+  });
+
+  it("stopTimer clears the running marker without changing the block", () => {
+    const id = startTimer()!;
+    extendRunningTimer({ day: "2026-10-21", minute: 900 });
+    stopTimer();
+    expect(isTimerRunning()).toBe(false);
+    extendRunningTimer({ day: "2026-10-21", minute: 950 }); // no longer tracked
+    expect(useStore.getState().data.blocks[id]!.endMinute).toBe(900);
+  });
+
+  it("extending a timer is not an undo step", () => {
+    const id = startTimer()!;
+    const n = history().length;
+    extendRunningTimer({ day: "2026-10-21", minute: 900 });
+    expect(history()).toHaveLength(n);
+    expect(useStore.getState().data.blocks[id]!.endMinute).toBe(900);
   });
 });

@@ -1,11 +1,11 @@
 import { useMemo } from "react";
-import { CheckCheck, Lock, LockOpen } from "lucide-react";
+import { CheckCheck, CirclePlay, CircleStop, Lock, LockOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isActualReadOnly } from "@/domain/blocks/reconcile";
 import { addDays, weekdayLong, weekStartOf } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
-import { confirmRestOfDay, copyPlanFrom, copyWeekPlan } from "@/state/commands";
+import { confirmRestOfDay, copyPlanFrom, copyWeekPlan, startTimer, stopTimer } from "@/state/commands";
 import { useDayBlocks } from "@/state/selectors";
 import { useStore } from "@/state/store";
 import { openTemplateDialog, unlockPlanDay, useUi } from "@/state/ui";
@@ -61,11 +61,29 @@ function PlanHeader({ col }: { col: ColumnSpec }) {
 }
 
 function ActualHeader({ col }: { col: ColumnSpec }) {
+  const now = useStore((s) => s.now);
+  const runningId = useUi((s) => s.runningBlockId);
+  const runningBlock = useStore((s) => (runningId ? s.data.blocks[runningId] : null));
+  const isToday = col.day === now.day;
+  const runningHere = isToday && !!runningBlock && runningBlock.day === col.day;
   return (
     <div className="flex h-9 items-center gap-1 px-2 text-xs">
       <span className="font-semibold tracking-wide text-muted-foreground uppercase">Actual</span>
       {col.readOnly && <span className="text-muted-foreground">· future</span>}
       <div className="flex-1" />
+      {isToday && (
+        <Button variant={runningHere ? "secondary" : "outline"} size="xs" onClick={() => (runningHere ? stopTimer() : startTimer())}>
+          {runningHere ? (
+            <>
+              <CircleStop /> Stop timer
+            </>
+          ) : (
+            <>
+              <CirclePlay /> Start now
+            </>
+          )}
+        </Button>
+      )}
       {!col.readOnly && (
         <Tooltip>
           <TooltipTrigger asChild>
