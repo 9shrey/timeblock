@@ -86,3 +86,18 @@ export function deleteGoalChanges(
   changes.push(del("goals", goal.id));
   return changes;
 }
+
+/**
+ * Writes `sortOrder` for every goal in `orderedIds` (0, 1, 2, …), skipping any already at
+ * that index. Used for drag-to-reorder; `goals` need not already be sorted.
+ */
+export function reorderGoalsChanges(goals: readonly Goal[], orderedIds: readonly string[], env: Env): ChangeSet {
+  const now = env.nowMs();
+  const byId = new Map(goals.map((g) => [g.id, g]));
+  const changes: ChangeSet = [];
+  orderedIds.forEach((id, i) => {
+    const g = byId.get(id);
+    if (g && g.sortOrder !== i) changes.push(put("goals", { ...g, sortOrder: i, updatedAt: now }));
+  });
+  return changes;
+}

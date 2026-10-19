@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { applyChanges, stateFrom } from "../changes";
 import { testEnv } from "../env";
 import type { ChecklistItem } from "../types";
-import { addItem, carryableCount, carryOver, deleteItem, progress, updateItem } from "./checklist";
+import { addItem, carryableCount, carryOver, deleteItem, progress, reorderItemsChanges, updateItem } from "./checklist";
 
 const W1 = "2026-10-12";
 const W2 = "2026-10-19";
@@ -107,5 +107,21 @@ describe("carryOver", () => {
         expect(carryOver(Object.values(s1.checklistItems), W1, W2, env)).toEqual([]);
       }),
     );
+  });
+});
+
+describe("reorderItemsChanges", () => {
+  it("writes sortOrder for the new order, skipping items already at that index", () => {
+    const items = [item("a", "g", W1, false, 0), item("b", "g", W1, false, 1), item("c", "g", W1, false, 2)];
+    const changes = reorderItemsChanges(items, ["c", "a", "b"], testEnv(5));
+    expect(changes).toHaveLength(3);
+    expect(changes).toContainEqual({ op: "put", table: "checklistItems", row: { ...items[0], sortOrder: 1, updatedAt: 5 } });
+    expect(changes).toContainEqual({ op: "put", table: "checklistItems", row: { ...items[1], sortOrder: 2, updatedAt: 5 } });
+    expect(changes).toContainEqual({ op: "put", table: "checklistItems", row: { ...items[2], sortOrder: 0, updatedAt: 5 } });
+  });
+
+  it("is a no-op when the order is unchanged", () => {
+    const items = [item("a", "g", W1, false, 0), item("b", "g", W1, false, 1)];
+    expect(reorderItemsChanges(items, ["a", "b"], testEnv())).toEqual([]);
   });
 });

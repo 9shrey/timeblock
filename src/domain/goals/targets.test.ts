@@ -4,7 +4,7 @@ import { applyChanges, invertChanges, stateFrom } from "../changes";
 import { testEnv } from "../env";
 import { addDays } from "../time/localDate";
 import type { Block, ChecklistItem, Goal, WeekTarget } from "../types";
-import { createGoal, deleteGoalChanges, effectiveTarget, setTargetChanges, updateGoal } from "./targets";
+import { createGoal, deleteGoalChanges, effectiveTarget, reorderGoalsChanges, setTargetChanges, updateGoal } from "./targets";
 
 const W0 = "2026-10-05";
 const W1 = addDays(W0, 7);
@@ -152,5 +152,22 @@ describe("deleteGoalChanges", () => {
     expect(after.blocks.b1).toMatchObject({ goalId: null, updatedAt: 9 });
     expect(after.blocks.b2).toEqual(rows.blocks[1]);
     expect(applyChanges(after, invertChanges(before, changes))).toEqual(before);
+  });
+});
+
+describe("reorderGoalsChanges", () => {
+  it("writes sortOrder for the new order, skipping goals already at that index", () => {
+    const goals = [goal("a", 0), goal("b", 1), goal("c", 2)];
+    const changes = reorderGoalsChanges(goals, ["c", "a", "b"], testEnv(5));
+    // "a" moves from 0 to 1, "b" from 1 to 2, "c" from 2 to 0 - none stay put.
+    expect(changes).toHaveLength(3);
+    expect(changes).toContainEqual({ op: "put", table: "goals", row: { ...goal("a"), sortOrder: 1, updatedAt: 5 } });
+    expect(changes).toContainEqual({ op: "put", table: "goals", row: { ...goal("b"), sortOrder: 2, updatedAt: 5 } });
+    expect(changes).toContainEqual({ op: "put", table: "goals", row: { ...goal("c"), sortOrder: 0, updatedAt: 5 } });
+  });
+
+  it("is a no-op when the order is unchanged", () => {
+    const goals = [goal("a", 0), goal("b", 1)];
+    expect(reorderGoalsChanges(goals, ["a", "b"], testEnv())).toEqual([]);
   });
 });

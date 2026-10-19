@@ -29,6 +29,8 @@ All notable changes to this project are documented here. The format follows
   day, switch the selected block's goal, or export. `?` opens a keyboard shortcuts sheet.
 - **Highlight a goal**: clicking a goal in the week budget panel dims every other goal's
   blocks in the timeline. Click it again to clear.
+- **Drag to reorder** goals and outcomes, by their grip handle (using the existing
+  `sortOrder` column on each).
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

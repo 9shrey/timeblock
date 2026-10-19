@@ -1,7 +1,7 @@
 /** Goal, weekly target, checklist and week-note actions. Each is one undo step. */
 import { toast } from "sonner";
-import { addItem, carryOver, deleteItem, updateItem } from "@/domain/goals/checklist";
-import { createGoal as createGoalChanges, deleteGoalChanges, setTargetChanges, updateGoal } from "@/domain/goals/targets";
+import { addItem, carryOver, deleteItem, reorderItemsChanges, updateItem } from "@/domain/goals/checklist";
+import { createGoal as createGoalChanges, deleteGoalChanges, reorderGoalsChanges, setTargetChanges, updateGoal } from "@/domain/goals/targets";
 import { put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
 import type { ChecklistItem, Goal, GoalKind, LocalDate } from "@/domain/types";
@@ -54,6 +54,12 @@ export async function deleteGoal(goal: Goal): Promise<boolean> {
   return true;
 }
 
+/** Drag-to-reorder: `orderedIds` is every active goal's id, in its new order. */
+export function reorderGoals(orderedIds: string[]): void {
+  const changes = reorderGoalsChanges(goalList(data().goals), orderedIds, env);
+  if (changes.length > 0) commit(changes, { label: "Reorder goals" });
+}
+
 export function moveGoal(goal: Goal, direction: -1 | 1): void {
   const list = goalList(data().goals);
   const i = list.findIndex((g) => g.id === goal.id);
@@ -98,6 +104,12 @@ export function editChecklistItem(item: ChecklistItem, text: string): void {
 
 export function removeChecklistItem(item: ChecklistItem): void {
   commit(deleteItem(item), { label: "Delete outcome" });
+}
+
+/** Drag-to-reorder: `orderedIds` is one goal/week's items, in their new order. */
+export function reorderChecklistItems(orderedIds: string[]): void {
+  const changes = reorderItemsChanges(checklistList(data().checklistItems), orderedIds, env);
+  if (changes.length > 0) commit(changes, { label: "Reorder outcomes" });
 }
 
 /** Copies unfinished outcomes of `fromWeek` into `toWeek` (idempotent). */
