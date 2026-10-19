@@ -1,20 +1,27 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 const base = import.meta.env.BASE_URL;
+
+const sections = [
+  { href: "#concepts", label: "Concepts" },
+  { href: "#goals", label: "Goals & weekly targets" },
+  { href: "#data", label: "Your data & backups" },
+  { href: "#shortcuts", label: "Keyboard shortcuts" },
+  { href: "#troubleshooting", label: "Troubleshooting" },
+];
 ---
 <Layout
   title="Docs"
   description="How Timeblock works: Plan vs. Actual, goals and weekly targets, your data and backups, keyboard shortcuts."
 >
   <h1>Docs</h1>
-  <p class="toc">
-    <a href="#concepts">Concepts</a>
-    <a href="#goals">Goals &amp; weekly targets</a>
-    <a href="#data">Your data &amp; backups</a>
-    <a href="#shortcuts">Keyboard shortcuts</a>
-    <a href="#troubleshooting">Troubleshooting</a>
-  </p>
 
+  <div class="docs-layout">
+    <nav class="docs-toc" aria-label="Docs sections">
+      {sections.map((s) => <a href={s.href}>{s.label}</a>)}
+    </nav>
+
+    <div class="docs-content">
   <h2 id="concepts">Concepts: Plan, Actual, and ghosts</h2>
   <p>
     Every day has two lanes, side by side:
@@ -128,4 +135,47 @@ GDK_BACKEND=x11 timeblock</code></pre>
     More: <a href="https://github.com/9shrey/timeblock">source on GitHub</a> ·
     <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">changelog</a>
   </p>
+    </div>
+  </div>
 </Layout>
+
+<style>
+  :global(main:has(.docs-layout)) {
+    max-width: 1100px;
+  }
+  .docs-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+  .docs-toc {
+    position: sticky;
+    top: 1.5rem;
+  }
+  .docs-toc a {
+    display: block;
+    padding: 0.3rem 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .docs-toc a:hover {
+    color: var(--ink);
+  }
+  .docs-content {
+    min-width: 0;
+  }
+  @media (max-width: 760px) {
+    .docs-layout {
+      display: block;
+    }
+    .docs-toc {
+      position: static;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 1rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+</style>
