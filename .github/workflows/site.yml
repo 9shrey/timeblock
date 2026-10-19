@@ -1,13 +1,15 @@
 name: Deploy website
 
-# Manual dispatch only for now: this targets the same GitHub Pages deployment slot as
-# pages.yml (which publishes the app build from gh-pages-source), and the two haven't
-# been reconciled yet — see the website plan's open question on whether this site takes
-# over the Pages root with the app moved under /app, gets its own custom domain, or
-# something else. Wiring an automatic trigger here before that's decided would race
-# pages.yml's deploy non-deterministically. Switch to `push: branches: [main]` (or
-# whatever branch) once that's settled.
+# This site now owns the automatic deploy to the repo's GitHub Pages slot
+# (9shrey.github.io/timeblock), replacing the app demo that pages.yml used to publish
+# there automatically (pages.yml is still around, manual-dispatch only, if you want the
+# demo back temporarily). No custom domain: nothing was purchased, and the free
+# *.github.io-via-new-org route needs a human to create that org, so this deploys to
+# the existing project Pages URL.
 on:
+  push:
+    branches: [main]
+    paths: ["website/**", ".github/workflows/site.yml"]
   workflow_dispatch:
 
 permissions:
