@@ -42,6 +42,46 @@ pub async fn open_text_file<R: Runtime>(app: AppHandle<R>) -> Result<Option<Open
     if let Ok(docs) = app.path().document_dir() {
         dialog = dialog.set_directory(docs);
     }
+    read_picked_file(dialog)
+}
+
+/// Shows a save dialog filtered to `.ics` and writes `contents`. None if cancelled.
+#[tauri::command]
+pub async fn save_ics_file<R: Runtime>(
+    app: AppHandle<R>,
+    default_name: String,
+    contents: String,
+) -> Result<Option<String>, String> {
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_file_name(&default_name)
+        .add_filter("iCalendar", &["ics"]);
+    if let Ok(docs) = app.path().document_dir() {
+        dialog = dialog.set_directory(docs);
+    }
+    let Some(path) = dialog.blocking_save_file() else {
+        return Ok(None);
+    };
+    let path = path.into_path().map_err(|e| e.to_string())?;
+    std::fs::write(&path, contents)
+        .map_err(|e| format!("Could not write {}: {e}", path.display()))?;
+    Ok(Some(path.to_string_lossy().into_owned()))
+}
+
+/// Shows an open dialog filtered to `.ics` and reads the chosen file as UTF-8. None if cancelled.
+#[tauri::command]
+pub async fn open_ics_file<R: Runtime>(app: AppHandle<R>) -> Result<Option<OpenedFile>, String> {
+    let mut dialog = app.dialog().file().add_filter("iCalendar", &["ics"]);
+    if let Ok(docs) = app.path().document_dir() {
+        dialog = dialog.set_directory(docs);
+    }
+    read_picked_file(dialog)
+}
+
+fn read_picked_file<R: Runtime>(
+    dialog: tauri_plugin_dialog::FileDialogBuilder<R>,
+) -> Result<Option<OpenedFile>, String> {
     let Some(path) = dialog.blocking_pick_file() else {
         return Ok(None);
     };

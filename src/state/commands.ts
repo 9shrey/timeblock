@@ -101,6 +101,21 @@ export function quickAddBlock(day: LocalDate, layer: Layer, input: string): stri
   return null;
 }
 
+/** "Copy to plan" on an imported .ics overlay event: an ordinary, undoable plan block. */
+export function copyIcsEventToPlan(event: { day: LocalDate; startMinute: number; endMinute: number; summary: string }): string | null {
+  if (!canEditLane(event.day, "plan")) {
+    toast(laneError("plan"));
+    return null;
+  }
+  const { block, changes } = createBlock(
+    { day: event.day, layer: "plan", startMinute: event.startMinute, endMinute: event.endMinute, title: event.summary },
+    env,
+  );
+  if (!commitChecked(changes, "Copy imported event to plan")) return null;
+  select({ kind: "block", id: block.id });
+  return block.id;
+}
+
 /** Double-click on empty space: a default-length block at the snapped slot. */
 export function createDefaultAt(day: LocalDate, layer: Layer, minute: number): string | null {
   const { snapMinutes, defaultBlockMinutes } = state().settings;

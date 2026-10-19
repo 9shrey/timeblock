@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastFn = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastFn }));
@@ -8,6 +8,8 @@ const platform = vi.hoisted(() => ({
   backupNow: vi.fn(async () => "/backups/pre-import.sqlite3"),
   openTextFile: vi.fn(),
   saveTextFile: vi.fn(async (name: string, _contents: string) => `/exports/${name}`),
+  openIcsFile: vi.fn(),
+  saveIcsFile: vi.fn(async (name: string, _contents: string) => `/exports/${name}`),
   appVersion: async () => "test",
 }));
 vi.mock("@/platform", () => ({ getPlatform: async () => platform }));
@@ -23,6 +25,7 @@ import {
   canEditLane,
   confirm,
   confirmRestOfDay,
+  copyIcsEventToPlan,
   copyWeekPlan,
   createBlockAt,
   extendRunningTimer,
@@ -37,7 +40,8 @@ import {
   stopTimer,
   updateBlockFields,
 } from "./commands";
-import { applyImport, exportJson, pickImportFile } from "./dataCommands";
+import { applyImport, exportIcs, exportJson, importIcsFile, pickImportFile } from "./dataCommands";
+import { clearImportedIcs, useIcs } from "./ics";
 import {
   addChecklistItem,
   carryOverItems,
@@ -364,6 +368,51 @@ describe("import", () => {
     expect(blocks()).toHaveLength(0);
     expect(history()).toHaveLength(0);
     expect((await repo.exportAll()).goals).toHaveLength(1);
+  });
+});
+
+describe("ics", () => {
+  afterEach(() => clearImportedIcs());
+
+  const ICS = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Test//EN",
+    "BEGIN:VEVENT",
+    "UID:ev1",
+    "SUMMARY:Dentist",
+    "DTSTART:20261021T100000",
+    "DTEND:20261021T103000",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  it("parses an imported file into the overlay", async () => {
+    platform.openIcsFile.mockResolvedValueOnce({ path: "calendar.ics", contents: ICS });
+    await importIcsFile();
+    expect(useIcs.getState().imported?.events).toEqual([
+      { uid: "ev1", summary: "Dentist", day: "2026-10-21", startMinute: 600, endMinute: 630, clipped: false },
+    ]);
+  });
+
+  it("copies an overlay event into an ordinary, undoable plan block", () => {
+    const id = copyIcsEventToPlan({ day: "2026-10-21", startMinute: 600, endMinute: 630, summary: "Dentist" });
+    expect(id).not.toBeNull();
+    const block = useStore.getState().data.blocks[id!];
+    expect(block).toMatchObject({ day: "2026-10-21", layer: "plan", startMinute: 600, endMinute: 630, title: "Dentist" });
+    expect(history()).toHaveLength(1); // undoable, unlike routine-materialized blocks
+  });
+
+  it("exports blocks in range to .ics", async () => {
+    await exportIcs("2026-10-21", "2026-10-21");
+    expect(platform.saveIcsFile).toHaveBeenCalled();
+    const contents = platform.saveIcsFile.mock.calls[0]![1] as string;
+    expect(contents).toContain("BEGIN:VEVENT");
+  });
+
+  it("reports when there is nothing to export", async () => {
+    await exportIcs("2099-01-01", "2099-01-02");
+    expect(platform.saveIcsFile).not.toHaveBeenCalled();
   });
 });
 
