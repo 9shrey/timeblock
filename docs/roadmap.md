@@ -1,7 +1,7 @@
 # Roadmap after 0.1.0
 
 Four milestones: M9 hardening, M10 planning features, M11 desktop integration and
-M12 insights. M9, M10 and M11 (except auto-update/signing, see Handoff) are done.
+M12 insights. All four are done, except M11's auto-update/signing (see Handoff).
 
 ## Status
 
@@ -23,7 +23,12 @@ M12 insights. M9, M10 and M11 (except auto-update/signing, see Handoff) are done
 | M11.4: ICS import/export | ✅ Done: read-only overlay import (no RRULE expansion), plan+actual export for a date range |
 | M11.5: auto-update | ⛔ Not implemented — needs signing keys/accounts from the owner |
 | M11.6: signing/notarization | ⛔ Not implemented — needs accounts from the owner |
-| M12 | ⏳ Not started |
+| M12.1: Trends view | ✅ Done: `i` key, `repo.loadRange`, per-goal bars + target line + met streak |
+| M12.2: plan accuracy stats | ✅ Done: confirmed/skipped/unplanned %, avg start drift; shown on Review |
+| M12.3: delta badges | ✅ Done: start drift and/or goal-changed label on confirmed actual blocks |
+| M12.4: Review additions | ✅ Done: Biggest gaps list, reschedule skipped blocks to a chosen day |
+| M12.5: CSV export | ✅ Done: blocks for a date range, or a week's goal stats |
+| M12.6: heatmap | ✅ Done: year view in Trends, filterable to one goal |
 
 ## Conventions
 
@@ -40,18 +45,27 @@ M12 insights. M9, M10 and M11 (except auto-update/signing, see Handoff) are done
   - in `src-tauri`: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
   - `npm run e2e:build && npm run e2e` (Linux, needs tauri-driver and WebKitWebDriver)
 
-## Handoff (M11 → M12)
+## Handoff (M12 → done, except M11.5/M11.6)
 
-M10 and M11 are complete except M11.5 (auto-update) and M11.6 (signing/notarization),
-which need keys/accounts from the owner — don't implement them without asking. `npx tsc
---noEmit`, `npm run lint`, `npm test` and `npm run test:tz` are all clean as of this
-commit, as are `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and
-`cargo test` in `src-tauri`. `npm run e2e:build` (a full `tauri build --debug
---no-bundle`) succeeds; the actual `npm run e2e` run is still unconfirmed in this
-environment (no `tauri-driver`/`WebKitWebDriver` installed here) — CI's `e2e` job covers
-it. M10 landed on `claude/affectionate-edison-mxlaal`; M11 on
-`claude/m11-desktop-integration` (branched from M10, merged back up to date with it), one
-commit per M11.x item — see those branches' logs for detail.
+M10, M11 and M12 are complete except M11.5 (auto-update) and M11.6
+(signing/notarization), which need keys/accounts from the owner — don't implement them
+without asking. `npx tsc --noEmit`, `npm run lint`, `npm test` and `npm run test:tz` are
+all clean as of this commit. `src-tauri` only changed in M11 (`cargo fmt --check`,
+`cargo clippy --all-targets -- -D warnings` and `cargo test` all clean there too).
+`npm run e2e:build` (a full `tauri build --debug --no-bundle`) succeeds; the actual `npm
+run e2e` run is still unconfirmed in this environment (no `tauri-driver`/`WebKitWebDriver`
+installed here) — CI's `e2e` job covers it, and every UI change in M11/M12 was also
+manually exercised against a dev server with a headless browser (`?seed=demo&now=…`),
+watching for console/page errors — this caught and fixed a real bug (see below).
+
+**Gap to pick up:** M11 and M12 added several UI features (tray actions, ICS overlay,
+Review's gaps/reschedule/accuracy, the whole Trends view) with unit/domain tests but no
+new `e2e/specs/*.e2e.ts` cases, since this environment can't run the real e2e suite to
+verify them. Worth adding before relying on CI alone to catch a regression in them.
+
+M10 landed on `claude/affectionate-edison-mxlaal`; M11 on `claude/m11-desktop-integration`
+(branched from M10, merged back up to date with it); M12 on `claude/m12-insights`
+(branched from M11). One commit per M1x.y item — see those branches' logs for detail.
 
 ### Notes for the next session
 
@@ -67,6 +81,12 @@ commit per M11.x item — see those branches' logs for detail.
   machine's local wall clock (correct); a floating or `TZID` timestamp is taken at face
   value, assuming it already matches the viewer's zone. Recurring events (`RRULE`) are
   not expanded — each `VEVENT` becomes at most one overlay event.
+- A zustand selector must return a stable reference for unchanged input (memoize, as
+  `selectors.ts`'s `blocksByDay` and `state/ics.ts`'s `eventsByDay` do) — one that
+  returns `array.filter(...)` inline broke `useSyncExternalStore` and crashed the whole
+  app ("Maximum update depth exceeded") in `claude/m11-desktop-integration` before a fix
+  landed. Smoke-test any new store hook by actually rendering it, not just by
+  typechecking and unit-testing the pure logic around it.
 
 ---
 
