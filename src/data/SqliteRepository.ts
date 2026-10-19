@@ -3,6 +3,7 @@ import { settingRow } from "@/domain/settings";
 import { weekDays } from "@/domain/time/localDate";
 import type {
   BaseData,
+  Block,
   ChangeSet,
   ExportData,
   GoalUsage,
@@ -64,6 +65,15 @@ export class SqliteRepository implements Repository {
       checklistItems: fromRows("checklistItems", items),
       weekNote: fromRows("weekNotes", notes)[0] ?? null,
     };
+  }
+
+  /** Blocks in `[fromDay, toExclusive)`, for Trends/CSV export: one indexed range query, no week chunking. */
+  async loadBlocksRange(fromDay: LocalDate, toExclusive: LocalDate): Promise<Block[]> {
+    const rows = await this.driver.select("SELECT * FROM blocks WHERE day >= ? AND day < ? ORDER BY day, start_minute, end_minute", [
+      fromDay,
+      toExclusive,
+    ]);
+    return fromRows("blocks", rows);
   }
 
   async applyChanges(changes: ChangeSet): Promise<void> {

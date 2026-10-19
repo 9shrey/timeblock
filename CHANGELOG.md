@@ -7,6 +7,22 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Trends view** (`i` key): per goal, planned vs actual bars against the target for the
+  last 4/12/26 weeks, plus a streak of weeks the target was met. A new `repo.loadBlocksRange`
+  reads any date range in one indexed query, reusing `computeStats` week by week.
+- **Plan accuracy stats**: confirmed-as-planned %, skipped %, unplanned % and average start
+  drift for linked actuals, shown on the Review page and in Trends
+  (`src/domain/stats/accuracy.ts`).
+- **Delta badges on actual blocks**: a linked actual that differs from its plan shows
+  `+15m late`, `−30m`, or `goal: <name>` if the goal was swapped.
+- **Biggest gaps** on the Review page: the week's largest unplanned-actual or
+  unconfirmed-ghost stretches.
+- **Reschedule skipped → next week** on the Review page: copies the week's skipped plan
+  blocks onto a day you choose, as one undoable change.
+- **CSV export**, next to the JSON export in Settings: blocks for the last 12 weeks, plus
+  that range's weekly per-goal stats, as two deterministic CSV files.
+- **Year heatmap** in Trends: one cell per day, coloured by actual hours, for all goals or
+  one you choose (persisted in Settings).
 - **Restore a backup** from Settings, or from the error screen when Timeblock can't start.
   The current data is backed up first. Settings also shows when the last backup was made.
 - **Copy last week's plan**, from the Week view header and the empty-day prompt in Day

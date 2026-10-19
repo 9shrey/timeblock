@@ -43,13 +43,13 @@ describe("Day view (native)", () => {
     // Grab the ghost near its left edge (ghosts leave the right of the lane free).
     await dragMinutes(ACTUAL, 10 * 60, 10 * 60 + 15, { x: 0.15 });
     const labels = await itemLabels();
-    expect(labels).toContain("Actual, 09:15–11:15, Thesis: writing, goal Thesis");
+    expect(labels).toContain("Actual, 09:15–11:15, Thesis: writing, goal Thesis, +15m late");
     expect(labels).toContain("Plan, 09:00–11:00, Thesis: writing, goal Thesis, adjusted");
     await key("", "z"); // Ctrl+Z
     await browser.action("key").up("").perform();
     const after = await itemLabels();
     expect(after).toContain("Planned, not confirmed: 09:00–11:00, Thesis: writing");
-    expect(after).not.toContain("Actual, 09:15–11:15, Thesis: writing, goal Thesis");
+    expect(after).not.toContain("Actual, 09:15–11:15, Thesis: writing, goal Thesis, +15m late");
   });
 
   it("confirm rest of day splits a ghost around an unplanned block", async () => {
@@ -62,7 +62,7 @@ describe("Day view (native)", () => {
     await browser.pause(300);
     const labels = await itemLabels();
     expect(labels).toContain("Actual, 09:00–10:00, Thesis: writing, goal Thesis");
-    expect(labels).toContain("Actual, 10:30–11:00, Thesis: writing, goal Thesis");
+    expect(labels).toContain("Actual, 10:30–11:00, Thesis: writing, goal Thesis, +1h 30m late");
     expect(labels).toContain("Plan, 12:00–13:00, Lunch, no goal, done");
     // The 14:00 block hasn't happened yet and stays a ghost.
     expect(labels).toContain("Planned, not confirmed: 14:00–16:00, Thesis: experiments");

@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { blockDelta } from "@/domain/blocks/delta";
 import { layoutLanes } from "@/domain/blocks/layout";
 import { ghostsOf, planStates } from "@/domain/blocks/reconcile";
 import type { Block, Ghost } from "@/domain/types";
@@ -33,6 +34,13 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
     () => (spec.layer === "plan" ? planStates(dayBlocks, { day: spec.day, minute: laneMinute }) : null),
     [dayBlocks, laneMinute, spec.day, spec.layer],
   );
+
+  // For the Actual lane: the plan block behind each linked actual, to compute its delta badge.
+  const plansById = useMemo(() => {
+    const map = new Map<string, Block>();
+    if (spec.layer === "actual") for (const b of dayBlocks) if (b.layer === "plan") map.set(b.id, b);
+    return map;
+  }, [dayBlocks, spec.layer]);
 
   const { items, slots } = useMemo(() => {
     const items: Item[] = dayBlocks
@@ -90,6 +98,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
           );
         }
         const b = it.block;
+        const plan = b.planBlockId ? plansById.get(b.planBlockId) : undefined;
         return (
           <BlockView
             key={it.id}
@@ -99,6 +108,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
             pxPerHour={pxPerHour}
             col={index}
             planState={states?.get(b.id) ?? null}
+            delta={plan ? blockDelta(b, plan) : null}
             selected={selected === `block:${b.id}`}
             editable={editable}
             dimmed={dim(b.goalId)}

@@ -123,6 +123,7 @@ export interface SettingRow {
 
 export type ThemePref = "system" | "light" | "dark";
 export type SnapMinutes = 5 | 10 | 15 | 30;
+export type TrendWindowWeeks = 4 | 12 | 26;
 
 export interface Settings {
   weekStartDay: WeekStartDay;
@@ -130,6 +131,10 @@ export interface Settings {
   snapMinutes: SnapMinutes;
   defaultBlockMinutes: number;
   theme: ThemePref;
+  /** Default window for the Trends view ("i"). */
+  trendWindowWeeks: TrendWindowWeeks;
+  /** Goal the year heatmap colors by; null = every goal's actual time combined. */
+  heatmapGoalId: string | null;
   /** "Next block in 5 min: …" shortly before a plan block starts. */
   notifyNextBlock: boolean;
   /** An evening nudge when today has unconfirmed blocks. */
@@ -254,6 +259,8 @@ export interface Repository {
   init(): Promise<void>;
   loadBase(): Promise<BaseData>;
   loadWeek(weekStart: LocalDate): Promise<WeekData>;
+  /** Every block with `day` in `[fromDay, toExclusive)` (half-open), across any number of weeks. One indexed query. */
+  loadBlocksRange(fromDay: LocalDate, toExclusive: LocalDate): Promise<Block[]>;
   applyChanges(changes: ChangeSet): Promise<void>;
   /** Shifts every stored week key by `shiftDays` (in [-3, 3]) and saves the new start day. */
   changeWeekStart(shiftDays: number, weekStartDay: WeekStartDay): Promise<void>;

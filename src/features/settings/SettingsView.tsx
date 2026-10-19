@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { CalendarArrowDown, CalendarArrowUp, Download, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import {
+  CalendarArrowDown,
+  CalendarArrowUp,
+  Download,
+  FileSpreadsheet,
+  FolderOpen,
+  HardDriveDownload,
+  History,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,7 +30,7 @@ import type { ImportResult } from "@/domain/export/schema";
 import { formatMinute, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
-import { applyImport, backupNow, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
+import { applyImport, backupNow, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
 import { exportIcs, importIcsFile } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
@@ -418,6 +430,9 @@ export function SettingsView() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void exportJson()}>
               <Download /> Export JSON
+            </Button>
+            <Button variant="outline" onClick={() => void exportCsv()}>
+              <FileSpreadsheet /> Export CSV (last 12 weeks)
             </Button>
             <Button
               variant="outline"

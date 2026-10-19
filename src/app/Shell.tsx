@@ -6,6 +6,7 @@ import { BudgetPanel } from "@/features/goals/BudgetPanel";
 import { GoalsView } from "@/features/goals/GoalsView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { SettingsView } from "@/features/settings/SettingsView";
+import { TrendsView } from "@/features/trends/TrendsView";
 import { QuickAddDialog } from "@/features/timeline/QuickAddDialog";
 import { TemplateDialog } from "@/features/timeline/TemplateDialog";
 import { WeekView } from "@/features/week/WeekView";
@@ -70,6 +71,7 @@ export function Shell() {
           {view === "week" && <WeekView />}
           {view === "goals" && <GoalsView />}
           {view === "review" && <ReviewView />}
+          {view === "trends" && <TrendsView />}
           {view === "settings" && <SettingsView />}
         </main>
       </div>

@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Check, Circle, X } from "lucide-react";
+import { formatBlockDelta, type BlockDelta } from "@/domain/blocks/delta";
 import { formatDuration, formatMinute } from "@/domain/time/localDate";
 import type { Block, Goal, PlanState } from "@/domain/types";
 import { cn } from "@/lib/utils";
@@ -72,24 +73,28 @@ interface Props {
   pxPerHour: number;
   col: number;
   planState: PlanState | null;
+  /** Set for a linked actual block that differs from its plan (`+15m late`, `goal: Admin`, …). */
+  delta?: BlockDelta | null;
   selected: boolean;
   editable: boolean;
   dimmed?: boolean;
 }
 
-export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, selected, editable, dimmed }: Props) {
+export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, delta, selected, editable, dimmed }: Props) {
   const dragging = useDraft((s) => s.draft?.ref?.kind === "block" && s.draft.ref.id === block.id && !s.draft.copy);
   const len = block.endMinute - block.startMinute;
   const short = minutesToPx(len, pxPerHour) < 34;
   const isPlan = block.layer === "plan";
   const title = displayTitle(block.title, goal);
   const time = `${formatMinute(block.startMinute)}–${formatMinute(block.endMinute)}`;
+  const deltaText = delta ? formatBlockDelta(delta, goal) : null;
   const label = [
     isPlan ? "Plan" : "Actual",
     time,
     title,
     goal ? `goal ${goal.name}` : "no goal",
     planState ? STATE_LABEL[planState] : !isPlan && !block.planBlockId ? "unplanned" : null,
+    deltaText,
   ]
     .filter(Boolean)
     .join(", ");
@@ -130,6 +135,7 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
           {time}
           {!short && len >= 45 && ` · ${formatDuration(len)}`}
         </span>
+        {!short && deltaText && <span className="truncate text-[10px] font-medium opacity-90">{deltaText}</span>}
       </span>
       {editable && minutesToPx(len, pxPerHour) >= 3 * EDGE_PX && <ResizeHandles />}
     </button>

@@ -13,6 +13,7 @@ import {
   isActualReadOnly,
   materializeGhost,
   moveBlock,
+  rescheduleSkipped as rescheduleSkippedChanges,
   restorePlan,
   skipPlan,
   splitAtMidnight,
@@ -283,6 +284,26 @@ export function copyWeekPlan(fromWeek: LocalDate, toWeek: LocalDate): void {
   }
   if (changes.length === 0) toast("Last week has no plan to copy.");
   else commitChecked(changes, "Copy last week's plan");
+}
+
+/**
+ * "Reschedule skipped → next week" on the Review page: copies every skipped plan block
+ * across `fromWeek` onto `toDay` (a day the user chose), as one undo step. A copied block
+ * whose goal is archived as of `toDay` has its goal cleared, as `copyWeekPlan` does.
+ */
+export function rescheduleSkippedTo(fromWeek: LocalDate, toDay: LocalDate): void {
+  if (!canEditLane(toDay, "plan")) {
+    toast(laneError("plan"));
+    return;
+  }
+  const activeGoalIds = new Set(activeGoals(state().data, toDay).map((g) => g.id));
+  const changes = rescheduleSkippedChanges(weekDays(fromWeek), toDay, blocks(), env).map((c) =>
+    c.op === "put" && c.table === "blocks" && c.row.goalId !== null && !activeGoalIds.has(c.row.goalId)
+      ? put("blocks", { ...c.row, goalId: null })
+      : c,
+  );
+  if (changes.length === 0) toast("No skipped plan blocks to reschedule.");
+  else commitChecked(changes, "Reschedule skipped");
 }
 
 // --- running timer -----------------------------------------------------------
