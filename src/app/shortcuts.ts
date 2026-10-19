@@ -14,7 +14,7 @@ import {
 } from "@/state/commands";
 import { goalList } from "@/state/selectors";
 import { useStore, type View } from "@/state/store";
-import { closeEditor, openEditor, openQuickAdd, useUi } from "@/state/ui";
+import { closeEditor, openEditor, openQuickAdd, setCommandPaletteOpen, setShortcutsOpen, useUi } from "@/state/ui";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { goToday, stepCursor } from "./TopBar";
 
@@ -57,6 +57,10 @@ export function handleKey(e: KeyboardEvent): boolean {
       useStore.setState({ budgetOpen: !s.budgetOpen });
       return true;
     }
+    if (key.toLowerCase() === "k") {
+      setCommandPaletteOpen(true);
+      return true;
+    }
     return false;
   }
   if (e.altKey) return false;
@@ -65,6 +69,11 @@ export function handleKey(e: KeyboardEvent): boolean {
     if (useUi.getState().editing) closeEditor();
     else if (s.selection) select(null);
     else return false;
+    return true;
+  }
+
+  if (key === "?") {
+    setShortcutsOpen(true);
     return true;
   }
 

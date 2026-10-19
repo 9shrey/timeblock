@@ -25,6 +25,8 @@ All notable changes to this project are documented here. The format follows
 - **Quick add**: press `n` in Day view for a one-line input like `9-10:30 Thesis #thesis`
   (start-end, title, optional `#tag` to set the goal by name). Creates a plan block without
   touching the mouse.
+- **Command palette** (`Ctrl+K`): go to a date, apply a template, confirm the rest of the
+  day, switch the selected block's goal, or export. `?` opens a keyboard shortcuts sheet.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

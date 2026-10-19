@@ -27,6 +27,8 @@ interface UiState {
   templateDialog: TemplateDialogState | null;
   /** One-line quick-add input (`n` key), for a day and lane. */
   quickAdd: { day: LocalDate; layer: Layer } | null;
+  commandPaletteOpen: boolean;
+  shortcutsOpen: boolean;
 }
 
 export const useUi = create<UiState>(() => ({
@@ -35,6 +37,8 @@ export const useUi = create<UiState>(() => ({
   menu: null,
   templateDialog: null,
   quickAdd: null,
+  commandPaletteOpen: false,
+  shortcutsOpen: false,
 }));
 
 let sessionCounter = 0;
@@ -65,4 +69,12 @@ export function openQuickAdd(day: LocalDate, layer: Layer): void {
 
 export function closeQuickAdd(): void {
   useUi.setState({ quickAdd: null });
+}
+
+export function setCommandPaletteOpen(open: boolean): void {
+  useUi.setState({ commandPaletteOpen: open });
+}
+
+export function setShortcutsOpen(open: boolean): void {
+  useUi.setState({ shortcutsOpen: open });
 }

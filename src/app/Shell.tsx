@@ -12,7 +12,9 @@ import { WeekView } from "@/features/week/WeekView";
 import { materializeRoutines } from "@/state/routineCommands";
 import { ensureWeeksAround, useStore } from "@/state/store";
 import { closeEditor, useUi } from "@/state/ui";
+import { CommandPalette } from "./CommandPalette";
 import { NavRail } from "./NavRail";
+import { ShortcutsSheet } from "./ShortcutsSheet";
 import { TopBar } from "./TopBar";
 import { useShortcuts } from "./shortcuts";
 
@@ -74,6 +76,8 @@ export function Shell() {
       {budgetOpen && <BudgetPanel />}
       <TemplateDialog />
       <QuickAddDialog />
+      <CommandPalette />
+      <ShortcutsSheet />
     </div>
   );
 }
