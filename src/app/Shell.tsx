@@ -8,6 +8,7 @@ import { ReviewView } from "@/features/review/ReviewView";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { TemplateDialog } from "@/features/timeline/TemplateDialog";
 import { WeekView } from "@/features/week/WeekView";
+import { materializeRoutines } from "@/state/routineCommands";
 import { ensureWeeksAround, useStore } from "@/state/store";
 import { closeEditor, useUi } from "@/state/ui";
 import { NavRail } from "./NavRail";
@@ -19,6 +20,7 @@ export function Shell() {
   const cursor = useStore((s) => s.cursor);
   const weekStartDay = useStore((s) => s.settings.weekStartDay);
   const budgetOpen = useStore((s) => s.budgetOpen);
+  const nowDay = useStore((s) => s.now.day);
   useShortcuts();
 
   // A popover or selection never outlives the day/view it belongs to.
@@ -39,6 +41,11 @@ export function Shell() {
       }),
     );
   }, [cursor, weekStartDay]);
+
+  // Materialize routine occurrences on load, on navigation and when the day rolls over.
+  useEffect(() => {
+    materializeRoutines(weekStartOf(cursor, weekStartDay));
+  }, [cursor, weekStartDay, nowDay]);
 
   // Suppress the webview's native context menu except in editable fields.
   useEffect(() => {

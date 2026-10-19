@@ -117,3 +117,4 @@ export const useLaneSelection = (day: LocalDate, layer: Block["layer"], showGhos
 export const useGoals = () => useStore((s) => goalList(s.data.goals));
 export const useGoalMap = () => useStore((s) => s.data.goals);
 export const useTemplates = () => useStore((s) => templateList(s.data.templates));
+export const useRoutines = () => useStore((s) => routineList(s.data.routines));

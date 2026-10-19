@@ -18,6 +18,10 @@ All notable changes to this project are documented here. The format follows
   menu, then apply it to another day or week. Templates never link back to the blocks
   they created, so applying one is an ordinary, undoable edit. Manage saved templates
   (rename, delete) from Settings.
+- **Routines**: recurring plan blocks, managed from Settings. Occurrences are materialized
+  automatically up to two weeks out as you use the app; past days are never touched.
+  Editing a routine updates its future occurrences that you haven't customized yourself;
+  deleting one keeps the blocks it already created.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

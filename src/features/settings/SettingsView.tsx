@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, FolderOpen, HardDriveDownload, History, Trash2, Upload } from "lucide-react";
+import { Download, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,13 +15,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ImportResult } from "@/domain/export/schema";
 import { formatMinute } from "@/domain/time/localDate";
-import type { SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
+import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
 import { applyImport, backupNow, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
-import { useTemplates } from "@/state/selectors";
+import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
 import { BackupList } from "./BackupList";
+import { RoutineDialog } from "./RoutineDialog";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -117,6 +118,61 @@ function TemplatesSection() {
           <TemplateRow key={t.id} template={t} />
         ))}
       </div>
+    </section>
+  );
+}
+
+const WEEKDAY_LETTERS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function weekdaysSummary(mask: number): string {
+  if (mask === 0b0111110) return "Weekdays";
+  if (mask === 0b1000001) return "Weekends";
+  if (mask === 0b1111111) return "Every day";
+  return WEEKDAY_LETTERS.filter((_, i) => (mask & (1 << i)) !== 0).join(" ");
+}
+
+function RoutineRow({ routine, onEdit }: { routine: Routine; onEdit: () => void }) {
+  const goals = useGoalMap();
+  const goal = routine.goalId ? goals[routine.goalId] : null;
+  return (
+    <div className="flex items-center gap-3 border-b py-2 last:border-0">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 text-sm">
+          {goal && <span className="size-2 shrink-0 rounded-full" style={{ background: goal.color }} />}
+          <span className="truncate">{routine.title}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {formatMinute(routine.startMinute)}–{formatMinute(routine.endMinute)} · {weekdaysSummary(routine.weekdays)}
+          {routine.endsOn ? ` · until ${routine.endsOn}` : ""}
+        </p>
+      </div>
+      <Button variant="ghost" size="icon-xs" aria-label={`Edit "${routine.title}"`} onClick={onEdit}>
+        <Pencil />
+      </Button>
+    </div>
+  );
+}
+
+function RoutinesSection() {
+  const routines = useRoutines();
+  const today = useStore((s) => s.now.day);
+  const [editing, setEditing] = useState<Routine | null | undefined>(undefined);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Routines</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Recurring plan blocks. Editing one only updates occurrences you haven't customized.
+      </p>
+      <div className="rounded-lg border px-4">
+        {routines.length === 0 && <p className="py-3 text-sm text-muted-foreground">No routines yet.</p>}
+        {routines.map((r) => (
+          <RoutineRow key={r.id} routine={r} onEdit={() => setEditing(r)} />
+        ))}
+      </div>
+      <Button variant="outline" className="mt-2" onClick={() => setEditing(null)}>
+        <Plus /> New routine
+      </Button>
+      <RoutineDialog open={editing !== undefined} onOpenChange={(o) => !o && setEditing(undefined)} routine={editing ?? null} today={today} />
     </section>
   );
 }
@@ -236,6 +292,7 @@ export function SettingsView() {
         </section>
 
         <TemplatesSection />
+        <RoutinesSection />
 
         <section>
           <h2 className="mb-1 text-lg font-semibold">Data</h2>

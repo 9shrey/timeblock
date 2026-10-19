@@ -44,6 +44,7 @@ import {
   toggleChecklistItem,
 } from "./goalCommands";
 import { goalList } from "./selectors";
+import { createRoutine, deleteRoutine, editRoutine, materializeRoutines } from "./routineCommands";
 import { commit, flushWrites, initStore, sealHistory, useStore } from "./store";
 import { applyTemplateToDay, applyTemplateToWeek, deleteTemplate, renameTemplate, saveDayAsTemplate, saveWeekAsTemplate } from "./templateCommands";
 import { unlockPlanDay, useUi } from "./ui";
@@ -419,5 +420,64 @@ describe("templates", () => {
     expect(useStore.getState().data.templates[t.id]!.name).toBe("Renamed");
     deleteTemplate(t);
     expect(useStore.getState().data.templates[t.id]).toBeUndefined();
+  });
+});
+
+describe("routines", () => {
+  const WEEKDAYS = 0b0111110; // Mon-Fri
+  const baseInput = { title: "Gym", goalId: null, notes: "", startMinute: 420, endMinute: 480, weekdays: WEEKDAYS, startsOn: "2026-10-19", endsOn: null };
+
+  it("rejects invalid input", () => {
+    expect(createRoutine({ ...baseInput, title: "" })).toBeNull();
+    expect(toastFn.error).toHaveBeenCalledWith(expect.stringContaining("1–200 characters"));
+    expect(createRoutine({ ...baseInput, endMinute: 400 })).toBeNull();
+    expect(createRoutine({ ...baseInput, weekdays: 0 })).toBeNull();
+  });
+
+  it("rejects an archived or unknown goal", () => {
+    const social = useStore.getState().data.goals["seed-goal-social"]!;
+    commit([put("goals", { ...social, archivedOn: "2026-10-19" })]);
+    expect(createRoutine({ ...baseInput, goalId: social.id })).toBeNull();
+    expect(createRoutine({ ...baseInput, goalId: "nope" })).toBeNull();
+  });
+
+  it("materializes occurrences from now up to the horizon, and is idempotent", () => {
+    const r = createRoutine(baseInput)!;
+    materializeRoutines("2026-10-19");
+    const occurrences = () => blocks().filter((b) => b.routineId === r.id);
+    const firstRun = occurrences();
+    expect(firstRun.length).toBeGreaterThan(0);
+    expect(firstRun.every((b) => b.day >= "2026-10-21")).toBe(true); // never before now.day
+
+    const idsAfterFirst = new Set(occurrences().map((b) => b.id));
+    materializeRoutines("2026-10-19");
+    expect(new Set(occurrences().map((b) => b.id))).toEqual(idsAfterFirst); // no duplicates
+  });
+
+  it("editing updates future unedited occurrences, leaves customized ones, and is one undo step", () => {
+    const r = createRoutine(baseInput)!;
+    materializeRoutines("2026-10-19");
+    const occ = blocks().filter((b) => b.routineId === r.id).sort((a, b) => (a.day < b.day ? -1 : 1));
+    const unedited = occ[0]!;
+    updateBlockFields(occ[1]!.id, { title: "Gym (custom)" }); // customize the second occurrence
+
+    const n = history().length;
+    expect(editRoutine(r, { title: "Morning gym" })).toBe(true);
+    expect(history()).toHaveLength(n + 1);
+    expect(useStore.getState().data.blocks[unedited.id]!.title).toBe("Morning gym");
+    expect(useStore.getState().data.blocks[occ[1]!.id]!.title).toBe("Gym (custom)");
+  });
+
+  it("deleting a routine keeps its occurrences but clears their routineId", () => {
+    const r = createRoutine(baseInput)!;
+    materializeRoutines("2026-10-19");
+    const occ = blocks().filter((b) => b.routineId === r.id);
+    expect(occ.length).toBeGreaterThan(0);
+    deleteRoutine(r);
+    for (const b of occ) {
+      expect(useStore.getState().data.blocks[b.id]).toBeDefined();
+      expect(useStore.getState().data.blocks[b.id]!.routineId).toBeNull();
+    }
+    expect(useStore.getState().data.routines[r.id]).toBeUndefined();
   });
 });
