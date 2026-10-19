@@ -7,6 +7,8 @@ export const DEFAULT_SETTINGS: Settings = {
   snapMinutes: 15,
   defaultBlockMinutes: 60,
   theme: "system",
+  trendWindowWeeks: 12,
+  heatmapGoalId: null,
 };
 
 /** Per-key schemas. Invalid or missing values fall back to the default. */
@@ -16,6 +18,8 @@ const schemas: { [K in keyof Settings]: z.ZodType<Settings[K]> } = {
   snapMinutes: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)]),
   defaultBlockMinutes: z.number().int().min(5).max(480),
   theme: z.enum(["system", "light", "dark"]),
+  trendWindowWeeks: z.union([z.literal(4), z.literal(12), z.literal(26)]),
+  heatmapGoalId: z.string().nullable(),
 };
 
 export const SETTING_KEYS = Object.keys(schemas) as (keyof Settings)[];

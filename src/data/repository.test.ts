@@ -215,6 +215,18 @@ describe("SqliteRepository", () => {
     await expect(repo.changeWeekStart(4, 1)).rejects.toThrow();
   });
 
+  it("loadBlocksRange returns blocks across weeks in [fromDay, toExclusive)", async () => {
+    await repo.applyChanges([
+      put("blocks", block("before", { day: "2026-10-11" })),
+      put("blocks", block("mon", { day: "2026-10-19" })),
+      put("blocks", block("sun", { day: "2026-10-25" })),
+      put("blocks", block("after", { day: "2026-11-01" })),
+    ]);
+    const range = await repo.loadBlocksRange("2026-10-19", "2026-11-01");
+    expect(range.map((b) => b.id)).toEqual(["mon", "sun"]);
+    expect(await repo.loadBlocksRange("2026-10-19", "2026-10-19")).toEqual([]);
+  });
+
   it("goalUsage counts references", async () => {
     await repo.applyChanges([
       put("goals", goal("g1")),
