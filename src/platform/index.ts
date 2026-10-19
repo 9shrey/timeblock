@@ -1,6 +1,6 @@
 /**
  * Host integration. The Tauri implementation talks to Rust commands; the web one
- * (dev-only, `npm run dev` in a plain browser) uses sql.js + localStorage.
+ * (plain browser, e.g. the GitHub Pages build) uses sql.js + localStorage.
  */
 import { isTauri } from "@tauri-apps/api/core";
 import type { SqlDriver } from "@/data/drivers/SqlDriver";
@@ -57,8 +57,7 @@ let platform: Promise<Platform> | null = null;
 export function getPlatform(): Promise<Platform> {
   platform ??= (async () => {
     if (isTauri()) return (await import("./tauri")).tauriPlatform;
-    if (import.meta.env.DEV) return (await import("./web")).webPlatform;
-    throw new Error("Timeblock must run inside the desktop app.");
+    return (await import("./web")).webPlatform;
   })();
   return platform;
 }

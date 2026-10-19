@@ -1,6 +1,6 @@
 /**
- * Dev-only browser platform: sql.js database persisted to localStorage, file
- * download/upload instead of native dialogs. Never shipped in the desktop build.
+ * Browser platform (e.g. GitHub Pages): sql.js database persisted to localStorage,
+ * file download/upload instead of native dialogs. Never used in the desktop build.
  */
 import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
 import { createSqlJsDriver } from "@/data/drivers/sqljsDriver";

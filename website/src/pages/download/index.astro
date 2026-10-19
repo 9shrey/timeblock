@@ -1,0 +1,139 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+const base = import.meta.env.BASE_URL;
+const REPO = "9shrey/timeblock";
+
+interface Asset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+interface Release {
+  tag_name: string;
+  name: string | null;
+  html_url: string;
+  published_at: string;
+  assets: Asset[];
+}
+
+let release: Release | null = null;
+let fetchFailed = false;
+try {
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (res.ok) release = await res.json();
+  else if (res.status !== 404) fetchFailed = true;
+} catch {
+  fetchFailed = true;
+}
+
+function pick(assets: Asset[], ...exts: string[]): Asset[] {
+  return assets.filter((a) => exts.some((ext) => a.name.endsWith(ext)));
+}
+
+const macAssets = release ? pick(release.assets, ".dmg") : [];
+const windowsAssets = release ? pick(release.assets, ".msi", "-setup.exe") : [];
+const linuxAssets = release ? pick(release.assets, ".AppImage", ".deb", ".rpm") : [];
+
+function fmtSize(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+---
+<Layout
+  title="Download"
+  description="Download Timeblock for macOS, Windows or Linux."
+>
+  <h1>Download</h1>
+
+  {release ? (
+    <>
+      <p>
+        Latest release: <strong>{release.name ?? release.tag_name}</strong>, published{" "}
+        {new Date(release.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}.
+        {" "}<a href={release.html_url}>Release notes on GitHub →</a>
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>macOS</h3>
+          {macAssets.length > 0 ? (
+            <ul>
+              {macAssets.map((a) => (
+                <li><a href={a.browser_download_url}>{a.name}</a> <span style="color:var(--muted)">({fmtSize(a.size)})</span></li>
+              ))}
+            </ul>
+          ) : (
+            <p style="color:var(--muted)">No macOS build in this release.</p>
+          )}
+          <p>
+            Open the <code>.dmg</code> and drag Timeblock to Applications. The first launch is
+            blocked because the app isn't notarized: open <em>System Settings → Privacy &amp;
+            Security</em> and click <strong>Open Anyway</strong>.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Windows</h3>
+          {windowsAssets.length > 0 ? (
+            <ul>
+              {windowsAssets.map((a) => (
+                <li><a href={a.browser_download_url}>{a.name}</a> <span style="color:var(--muted)">({fmtSize(a.size)})</span></li>
+              ))}
+            </ul>
+          ) : (
+            <p style="color:var(--muted)">No Windows build in this release.</p>
+          )}
+          <p>
+            Run the <code>.msi</code> or <code>-setup.exe</code>. If SmartScreen warns about an
+            unrecognized app, click <strong>More info → Run anyway</strong>.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Linux</h3>
+          {linuxAssets.length > 0 ? (
+            <ul>
+              {linuxAssets.map((a) => (
+                <li><a href={a.browser_download_url}>{a.name}</a> <span style="color:var(--muted)">({fmtSize(a.size)})</span></li>
+              ))}
+            </ul>
+          ) : (
+            <p style="color:var(--muted)">No Linux build in this release.</p>
+          )}
+          <p>
+            <code>.rpm</code> (Fedora), <code>.deb</code> (Debian/Ubuntu) or <code>.AppImage</code>.
+            The AppImage needs glibc 2.39+ (Fedora 40+, Ubuntu 24.04+); use the <code>.rpm</code>/<code>.deb</code>
+            on older systems.
+          </p>
+        </div>
+      </div>
+
+      <p class="note">Builds are unsigned. Only one copy of Timeblock runs at a time — launching it again brings the open window to the front.</p>
+    </>
+  ) : fetchFailed ? (
+    <p class="note">
+      Couldn't reach GitHub to look up the latest release just now. See the{" "}
+      <a href={`https://github.com/${REPO}/releases`}>Releases page</a> directly.
+    </p>
+  ) : (
+    <>
+      <p>
+        There's no published release yet. Timeblock is under active development — track
+        progress on the <a href={`https://github.com/${REPO}/releases`}>Releases page</a>,
+        or build it from source in the meantime:
+      </p>
+      <pre><code>git clone https://github.com/{REPO}.git
+cd timeblock
+npm install
+npm run tauri build</code></pre>
+      <p>
+        Prerequisites: Node 22+, Rust (stable), and the{" "}
+        <a href="https://tauri.app/start/prerequisites/">Tauri system dependencies</a>.
+        See the <a href={`https://github.com/${REPO}#development`}>README</a> for
+        per-OS setup.
+      </p>
+    </>
+  )}
+</Layout>
