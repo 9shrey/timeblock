@@ -42,12 +42,9 @@ M10 is complete (see Status above); `npx tsc --noEmit`, `npm run lint`, `npm tes
 commit on `claude/affectionate-edison-mxlaal`; see that branch's log for the detail of
 what each one touched.
 
-Not yet verified in this environment (no Rust system libraries — `libgtk-3-dev`,
-`libwebkit2gtk-4.1-dev` etc. — and no apt mirror carrying them, no `tauri-driver` /
-WebKitWebDriver): `cargo fmt/clippy/test` in `src-tauri`, and `npm run e2e`. No Rust
-files changed in M10, so this is a pre-existing environment gap, not a new risk — but
-whoever picks up M11 (which touches `src-tauri` directly: window state, notifications,
-tray icon) needs an environment that can actually build and test the Tauri side.
+`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` in
+`src-tauri` are also clean (no Rust files changed in M10). `npm run e2e` (needs
+`tauri-driver` and WebKitWebDriver) is still unconfirmed in this environment.
 
 ### Notes for the next session
 
