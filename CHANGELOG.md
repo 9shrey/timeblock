@@ -51,6 +51,8 @@ All notable changes to this project are documented here. The format follows
   `.ics` file.
 - **Plan accuracy** on the Review page: confirmed-as-planned %, skipped %, unplanned %,
   and the average start drift of confirmed blocks.
+- **CSV export** (Settings → Calendar): the plan and actual blocks for a date range, or
+  the current week's per-goal stats, next to the JSON and ICS export.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

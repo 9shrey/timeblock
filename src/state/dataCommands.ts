@@ -2,12 +2,15 @@
 import { toast } from "sonner";
 import { put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
+import { blocksToCsv, goalStatsToCsv } from "@/domain/export/csv";
 import { exportFileName, serializeExport, toExportFile } from "@/domain/export/format";
 import { parseImportFile, type ImportResult } from "@/domain/export/schema";
 import { settingRow } from "@/domain/settings";
-import type { ExportData, Settings } from "@/domain/types";
-import { getPlatform, JSON_FILTER } from "@/platform";
-import { commit, flushWrites, getRepo, reloadAll, useStore } from "./store";
+import { addDays, weekDays, weekStartOf } from "@/domain/time/localDate";
+import type { ExportData, LocalDate, Settings } from "@/domain/types";
+import { CSV_FILTER, getPlatform, JSON_FILTER } from "@/platform";
+import { allBlocks, statsFor } from "./selectors";
+import { commit, ensureWeek, flushWrites, getRepo, reloadAll, useStore } from "./store";
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -65,4 +68,37 @@ export async function backupNow(): Promise<void> {
 /** Saves a preference. Not part of undo history. */
 export function setSetting<K extends Exclude<keyof Settings, "weekStartDay">>(key: K, value: Settings[K]): void {
   commit([put("settings", settingRow(key, value))], { noHistory: true });
+}
+
+/** Exports the plan and actual blocks from `from` to `to` (inclusive) as a CSV file. */
+export async function exportBlocksCsv(from: LocalDate, to: LocalDate): Promise<void> {
+  try {
+    const platform = await getPlatform();
+    const weekStartDay = useStore.getState().settings.weekStartDay;
+    const weekStarts = new Set<LocalDate>();
+    for (let d = from; d <= to; d = addDays(d, 1)) weekStarts.add(weekStartOf(d, weekStartDay));
+    await Promise.all([...weekStarts].map(ensureWeek));
+
+    const { data } = useStore.getState();
+    const csv = blocksToCsv(allBlocks(data.blocks), data.goals, from, to);
+    const path = await platform.saveTextFile(`timeblock-blocks-${from}-to-${to}.csv`, csv, CSV_FILTER);
+    if (path) toast.success("Exported", { description: path });
+  } catch (e) {
+    toast.error("Export failed", { description: errorText(e) });
+  }
+}
+
+/** Exports the week's per-goal stats (as shown on the Review page) as a CSV file. */
+export async function exportGoalStatsCsv(weekStart: LocalDate): Promise<void> {
+  try {
+    const platform = await getPlatform();
+    await ensureWeek(weekStart);
+    const { data, now } = useStore.getState();
+    const stats = statsFor(data, weekDays(weekStart), weekStart, now);
+    const csv = goalStatsToCsv(stats.goals, stats.unassigned);
+    const path = await platform.saveTextFile(`timeblock-goal-stats-${weekStart}.csv`, csv, CSV_FILTER);
+    if (path) toast.success("Exported", { description: path });
+  } catch (e) {
+    toast.error("Export failed", { description: errorText(e) });
+  }
 }

@@ -19,6 +19,7 @@ export interface FileFilter {
 
 export const JSON_FILTER: FileFilter = { name: "JSON", extensions: ["json"] };
 export const ICS_FILTER: FileFilter = { name: "Calendar", extensions: ["ics"] };
+export const CSV_FILTER: FileFilter = { name: "CSV", extensions: ["csv"] };
 
 export interface BackupInfo {
   name: string;

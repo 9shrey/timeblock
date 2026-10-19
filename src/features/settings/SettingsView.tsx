@@ -16,9 +16,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ImportResult } from "@/domain/export/schema";
 import { formatMinute, weekDays, weekStartOf } from "@/domain/time/localDate";
-import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
+import type { LocalDate, Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
-import { applyImport, backupNow, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
+import { applyImport, backupNow, exportBlocksCsv, exportGoalStatsCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
 import { exportIcs, importIcsFile } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
@@ -242,7 +242,19 @@ function DesktopSection() {
   );
 }
 
-function IcsExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function DateRangeExportDialog({
+  open,
+  onClose,
+  title,
+  description,
+  onExport,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description: string;
+  onExport: (from: LocalDate, to: LocalDate) => Promise<void>;
+}) {
   const cursor = useStore((s) => s.cursor);
   const weekStartDay = useStore((s) => s.settings.weekStartDay);
   const week = weekDays(weekStartOf(cursor, weekStartDay));
@@ -258,17 +270,17 @@ function IcsExportDialog({ open, onClose }: { open: boolean; onClose: () => void
     >
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Export calendar</DialogTitle>
-          <DialogDescription>Writes your plan and actual blocks for this range as a .ics file.</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1">
-            <Label htmlFor="ics-from">From</Label>
-            <Input id="ics-from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+            <Label htmlFor="export-from">From</Label>
+            <Input id="export-from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="grid gap-1">
-            <Label htmlFor="ics-to">To</Label>
-            <Input id="ics-to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
+            <Label htmlFor="export-to">To</Label>
+            <Input id="export-to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
           </div>
         </div>
         <DialogFooter>
@@ -276,7 +288,7 @@ function IcsExportDialog({ open, onClose }: { open: boolean; onClose: () => void
             disabled={busy}
             onClick={async () => {
               setBusy(true);
-              await exportIcs(from, to);
+              await onExport(from, to);
               setBusy(false);
               onClose();
             }}
@@ -358,6 +370,8 @@ export function SettingsView() {
   const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [icsExportOpen, setIcsExportOpen] = useState(false);
+  const [blocksCsvExportOpen, setBlocksCsvExportOpen] = useState(false);
+  const cursor = useStore((s) => s.cursor);
 
   useEffect(() => {
     void getPlatform().then(async (p) =>
@@ -448,7 +462,8 @@ export function SettingsView() {
           <h2 className="mb-1 text-lg font-semibold">Calendar</h2>
           <p className="mb-3 text-sm text-muted-foreground">
             Import a calendar's events as a read-only overlay in Day view, with a button to copy any of them into your plan. Recurring
-            events aren't expanded — each shows up once. Export writes your plan and actual blocks for a date range as a calendar file.
+            events aren't expanded — each shows up once. Export writes your plan and actual blocks for a date range as a calendar or CSV
+            file.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void importIcsFile()}>
@@ -456,6 +471,12 @@ export function SettingsView() {
             </Button>
             <Button variant="outline" onClick={() => setIcsExportOpen(true)}>
               <CalendarArrowUp /> Export .ics…
+            </Button>
+            <Button variant="outline" onClick={() => setBlocksCsvExportOpen(true)}>
+              <Download /> Export blocks (CSV)…
+            </Button>
+            <Button variant="outline" onClick={() => void exportGoalStatsCsv(weekStartOf(cursor, settings.weekStartDay))}>
+              <Download /> Export this week's goal stats (CSV)
             </Button>
           </div>
         </section>
@@ -465,7 +486,20 @@ export function SettingsView() {
         </p>
       </div>
       <ImportDialog pending={pending} onClose={() => setPending(null)} />
-      <IcsExportDialog open={icsExportOpen} onClose={() => setIcsExportOpen(false)} />
+      <DateRangeExportDialog
+        open={icsExportOpen}
+        onClose={() => setIcsExportOpen(false)}
+        title="Export calendar"
+        description="Writes your plan and actual blocks for this range as a .ics file."
+        onExport={exportIcs}
+      />
+      <DateRangeExportDialog
+        open={blocksCsvExportOpen}
+        onClose={() => setBlocksCsvExportOpen(false)}
+        title="Export blocks"
+        description="Writes your plan and actual blocks for this range as a CSV file."
+        onExport={exportBlocksCsv}
+      />
       <Dialog open={restoreOpen} onOpenChange={setRestoreOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>

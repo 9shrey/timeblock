@@ -31,7 +31,7 @@ function save(image: Uint8Array): void {
 const media = () => window.matchMedia("(prefers-color-scheme: dark)");
 const current = (): SystemTheme => (media().matches ? "dark" : "light");
 
-const MIME_TYPES: Record<string, string> = { json: "application/json", ics: "text/calendar" };
+const MIME_TYPES: Record<string, string> = { json: "application/json", ics: "text/calendar", csv: "text/csv" };
 
 export const webPlatform: Platform = {
   kind: "web",
