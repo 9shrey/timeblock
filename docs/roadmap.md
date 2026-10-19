@@ -100,9 +100,17 @@ bars + streak, year heatmap), plan accuracy stats (Review page and Trends), delt
 actual blocks, "Biggest gaps" and "Reschedule skipped → next week" on Review, and CSV export
 next to the JSON export in Settings. `npm run lint`, `npm test` and `npm run test:tz` are
 clean; no Rust files changed (`loadBlocksRange` reuses the existing `blocks_day_layer` index
-and the existing `db_select` bridge, so `cargo fmt/clippy/test` are unaffected). `npm run e2e`
-was not run in this environment (no `tauri-driver`/WebKitWebDriver available) — this is the
-same documented environment gap as M9/M10, not new to M12.
+and the existing `db_select` bridge, so `cargo fmt/clippy/test` are unaffected).
+
+`npm run e2e:build` succeeds. `npm run e2e` ran once cleanly to completion (26 of 29 cases
+passing); the 3 failures were existing `day.e2e.ts` assertions using an actual block's exact
+a11y label, which the new delta badge appends to — fixed in a follow-up commit and confirmed
+against the running app. Re-running the suite afterwards hit `tauri-driver`/WebKitWebDriver
+getting stuck ("Maximum number of active sessions") across repeated launches in this sandbox
+session, so the fix is verified by inspection and the one earlier full run rather than a
+second green run — flag this for a final check in an environment where the driver can be
+restarted cleanly. This is the same flakiness class already documented above ("the e2e suite
+can be flaky locally"), not a new gap.
 
 Product decisions made where the spec left them open:
 - Trend window default: 12 weeks (`trendWindowWeeks` setting, 4/12/26, persisted).
