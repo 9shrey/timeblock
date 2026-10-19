@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Download Timeblock</title>
+  <meta name="description" content="Download Timeblock for Linux, macOS and Windows.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="./"><img src="assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
+      <nav class="nav" aria-label="Main">
+        <a href="docs/">Documentation</a>
+        <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="download.html" aria-current="page">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head">
+      <div class="container">
+        <h1>Download Timeblock</h1>
+        <p>Free and open source for Linux, macOS and Windows. Choose the file for your system below.</p>
+        <p class="release-meta" id="release-meta">
+          Latest release on <a href="https://github.com/9shrey/timeblock/releases/latest">GitHub Releases</a>.
+        </p>
+      </div>
+    </section>
+
+    <section class="container">
+      <div class="platforms reveal-stagger">
+        <article class="platform" data-os="linux">
+          <div class="platform-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+            <h2>Linux</h2>
+            <span class="badge" hidden>Your system</span>
+          </div>
+          <p class="req">64-bit (x86_64)</p>
+          <ul class="assets" data-assets="linux">
+            <li><a class="asset" href="https://github.com/9shrey/timeblock/releases/latest"><span class="label"><span class="fmt">.rpm</span><span class="desc">Fedora, RHEL, openSUSE</span></span></a></li>
+            <li><a class="asset" href="https://github.com/9shrey/timeblock/releases/latest"><span class="label"><span class="fmt">.deb</span><span class="desc">Debian, Ubuntu</span></span></a></li>
+            <li><a class="asset" href="https://github.com/9shrey/timeblock/releases/latest"><span class="label"><span class="fmt">.AppImage</span><span class="desc">Any distribution</span></span></a></li>
+          </ul>
+          <div class="note">
+            <p>The AppImage needs glibc 2.39 or newer (Fedora 40+, Ubuntu 24.04+). On older systems use the .rpm or .deb.</p>
+          </div>
+        </article>
+
+        <article class="platform" data-os="mac">
+          <div class="platform-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="4" rx="2"/><path d="M2 20h20"/></svg>
+            <h2>macOS</h2>
+            <span class="badge" hidden>Your system</span>
+          </div>
+          <p class="req">Universal (Apple silicon and Intel)</p>
+          <ul class="assets" data-assets="mac">
+            <li><a class="asset" href="https://github.com/9shrey/timeblock/releases/latest"><span class="label"><span class="fmt">.dmg</span><span class="desc">Disk image</span></span></a></li>
+          </ul>
+          <div class="note">
+            <p>Open the .dmg and drag Timeblock to Applications. The app isn't notarized yet, so the first launch is blocked: open <em>System Settings → Privacy &amp; Security</em> and click <strong>Open Anyway</strong>.</p>
+          </div>
+        </article>
+
+        <article class="platform" data-os="windows">
+          <div class="platform-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/></svg>
+            <h2>Windows</h2>
+            <span class="badge" hidden>Your system</span>
+          </div>
+          <p class="req">Windows 10 and 11, 64-bit</p>
+          <ul class="assets" data-assets="windows">
+            <li><a class="asset" href="https://github.com/9shrey/timeblock/releases/latest"><span class="label"><span class="fmt">.exe</span><span class="desc">Installer</span></span></a></li>
+            <li><a class="asset" href="https://github.com/9shrey/timeblock/releases/latest"><span class="label"><span class="fmt">.msi</span><span class="desc">Windows Installer package</span></span></a></li>
+          </ul>
+          <div class="note">
+            <p>If SmartScreen warns about an unrecognized app, click <strong>More info → Run anyway</strong>.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="notice" style="margin-top: 28px">
+        <p><strong>About unsigned builds.</strong> Timeblock builds are not code-signed yet, which is why macOS and Windows show a warning on first launch. Every build is produced by a public <a href="https://github.com/9shrey/timeblock/actions/workflows/release.yml">GitHub Actions workflow</a> from the tagged source code.</p>
+      </div>
+    </section>
+
+    <section class="section" style="margin-top: 96px">
+      <div class="container two-col">
+        <div>
+          <h2>Release notes</h2>
+          <p>Every change is listed in the <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">changelog</a>. Older versions are available on the <a href="https://github.com/9shrey/timeblock/releases">releases page</a>.</p>
+          <h2 style="margin-top: 32px">After installing</h2>
+          <p>Read <a href="docs/">Getting started</a> for a short tour, or see <a href="docs/troubleshooting.html">Troubleshooting</a> if the app doesn't start.</p>
+        </div>
+        <div>
+          <h2>Build from source</h2>
+          <p>You need Node 22+, stable Rust and the <a href="https://tauri.app/start/prerequisites/">Tauri system dependencies</a>.</p>
+<pre><code>git clone https://github.com/9shrey/timeblock.git
+cd timeblock
+npm install
+npm run tauri build</code></pre>
+          <p>Bundles are written to <code>src-tauri/target/release/bundle/</code>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shrey Singh · MIT License</span>
+      <nav aria-label="Footer">
+        <a href="docs/">Documentation</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/9shrey/timeblock">Source code</a>
+        <a href="https://github.com/9shrey/timeblock/issues">Report an issue</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="assets/reveal.js" defer></script>
+</body>
+</html>

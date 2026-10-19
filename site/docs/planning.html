@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planning your day · Timeblock documentation</title>
+  <meta name="description" content="The Day view is split into a Plan lane and an Actual lane. You plan in one and record reality in the other.">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
+      <nav class="nav" aria-label="Main">
+        <a href="./" aria-current="page">Documentation</a>
+        <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="../download.html">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container docs">
+    <aside class="docs-side">
+      <details class="docs-menu" open>
+        <summary>Planning your day</summary>
+        <nav class="docs-nav" aria-label="Documentation">
+          <h4>Getting started</h4>
+          <ul>
+            <li><a href="./">Introduction</a></li>
+            <li><a href="planning.html" aria-current="page">Planning your day</a></li>
+            <li><a href="goals.html">Goals and reviews</a></li>
+          </ul>
+          <h4>Reference</h4>
+          <ul>
+            <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+            <li><a href="settings.html">Settings</a></li>
+            <li><a href="data.html">Data and backups</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </nav>
+      </details>
+    </aside>
+
+    <main id="main" class="prose">
+      <p class="crumb">Documentation / Getting started</p>
+      <h1>Planning your day</h1>
+      <p class="lead">The Day view is split into a Plan lane and an Actual lane. You plan in one and record reality in the other.</p>
+<figure><div class="shot">
+<img class="only-light" src="../assets/screenshots/day-light.png" width="2880" height="1800" alt="Day view with confirmed blocks in Plan and Actual, and an unconfirmed ghost" loading="lazy">
+<img class="only-dark" src="../assets/screenshots/day-dark.png" width="2880" height="1800" alt="" loading="lazy">
+</div></figure>
+
+<h2 id="blocks">Creating and editing blocks</h2>
+<ul>
+<li><strong>Create:</strong> drag in an empty part of a lane, or double-click to create a block of the default length.</li>
+<li><strong>Move:</strong> drag a block. In the Week view you can drag blocks across days.</li>
+<li><strong>Resize:</strong> drag the top or bottom edge of a block.</li>
+<li><strong>Copy:</strong> hold <kbd>Ctrl</kbd> (<kbd>⌘</kbd> on macOS) while dragging.</li>
+<li><strong>Fine steps:</strong> hold <kbd>Shift</kbd> while dragging to snap to 5 minutes instead of the default step.</li>
+<li><strong>Cancel:</strong> press <kbd>Esc</kbd> during a drag.</li>
+</ul>
+<p>Select a block and press <kbd>Enter</kbd> to open the editor. There you can set the title, goal, start and end time, and notes. The time fields offer a list of slots, and moving the start time keeps the block's duration.</p>
+<p>With a block selected, <kbd>↑</kbd> and <kbd>↓</kbd> nudge it, <kbd>Shift</kbd>+<kbd>↑</kbd> and <kbd>Shift</kbd>+<kbd>↓</kbd> resize it, and <kbd>1</kbd>–<kbd>9</kbd> set its goal. <kbd>Delete</kbd> removes it.</p>
+<p>Blocks that overlap in the Plan lane are shown side by side.</p>
+
+<h2 id="ghosts">Ghosts</h2>
+<p>Every planned block appears as a dashed <strong>ghost</strong> in the Actual lane until you deal with it. A ghost is a reminder, not a record. It does not count as actual time.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Action</th><th>How</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Happened as planned</td><td>Click ✓ or press <kbd>a</kbd></td><td>The ghost becomes a confirmed actual block.</td></tr>
+<tr><td>Didn't happen</td><td>Click ✗, press <kbd>s</kbd> or <kbd>Delete</kbd></td><td>The plan block is marked as skipped.</td></tr>
+<tr><td>Happened differently</td><td>Drag or resize the ghost, or press <kbd>Enter</kbd></td><td>An actual block is logged at the new time, linked to the plan.</td></tr>
+</tbody></table></div>
+<p>If you change the plan before confirming, its ghost follows automatically. A skipped plan block can be brought back with <strong>Restore</strong> from its context menu.</p>
+
+<h2 id="confirm-rest">Confirm rest of day</h2>
+<p>When the day went mostly to plan, click <strong>Confirm rest</strong> above the Actual lane or press <kbd>Shift</kbd>+<kbd>A</kbd>. Every past ghost is logged as actual time, fitted around anything you have already logged. Time after the current moment is never confirmed.</p>
+
+<h2 id="actual">Unplanned time</h2>
+<p>Drag directly in the Actual lane to record something you didn't plan. The Actual lane never overlaps: a new actual block trims or splits the confirmed blocks it covers. You can't log time in the future.</p>
+
+<h2 id="summary">The summary bar</h2>
+<p>The bar under the date shows totals for the day:</p>
+<ul>
+<li><strong>Plan</strong>: total planned time.</li>
+<li><strong>Actual</strong>: confirmed time only.</li>
+<li><strong>Unplanned</strong>: actual time that wasn't in the plan.</li>
+<li><strong>Skipped</strong>: planned time marked as not happened.</li>
+<li><strong>Unconfirmed</strong>: planned time still shown as ghosts.</li>
+</ul>
+<p>Next to the totals, a chip for each goal shows actual time over planned time for that day.</p>
+
+<h2 id="locking">Past plans</h2>
+<p>A past day's plan is locked so that your record of what you intended stays intact. To change it, click the lock icon next to <strong>Plan</strong> in the lane header. The Actual lane of past days stays editable.</p>
+
+<h2 id="menus">Context menus and copying</h2>
+<p>Right-click a block or an empty slot for more actions:</p>
+<ul>
+<li>On an empty slot: <strong>New block</strong>, <strong>Confirm rest of day as planned</strong>, <strong>Copy yesterday's plan</strong> and <strong>Copy last week's plan</strong> for the same weekday.</li>
+<li>On a plan block: <strong>Edit</strong>, <strong>Set goal</strong>, <strong>Happened as planned</strong>, <strong>Didn't happen</strong> and <strong>Copy to tomorrow</strong>.</li>
+<li>On a ghost: <strong>Happened as planned</strong>, <strong>Didn't happen</strong> and <strong>Log differently</strong>.</li>
+</ul>
+
+<h2 id="undo">Undo</h2>
+<p>Every change can be undone with <kbd>Ctrl</kbd>+<kbd>Z</kbd> and redone with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>, or with the arrows in the top-right corner.</p>
+      <nav class="pager" aria-label="Pages">
+        <a class="prev" href="./"><span>Previous</span>Introduction</a>
+        <a class="next" href="goals.html"><span>Next</span>Goals and reviews</a>
+      </nav>
+    </main>
+
+    <nav class="toc" aria-label="On this page">
+      <h4>On this page</h4>
+      <ul>
+          <li><a href="#blocks">Creating and editing blocks</a></li>
+          <li><a href="#ghosts">Ghosts</a></li>
+          <li><a href="#confirm-rest">Confirm rest of day</a></li>
+          <li><a href="#actual">Unplanned time</a></li>
+          <li><a href="#summary">The summary bar</a></li>
+          <li><a href="#locking">Past plans</a></li>
+          <li><a href="#menus">Context menus and copying</a></li>
+          <li><a href="#undo">Undo</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shrey Singh · MIT License</span>
+      <nav aria-label="Footer">
+        <a href="./">Documentation</a>
+        <a href="../download.html">Download</a>
+        <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/9shrey/timeblock">Source code</a>
+        <a href="https://github.com/9shrey/timeblock/issues">Report an issue</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    // Collapse the docs menu on small screens; it stays open (and usable) without JavaScript.
+    if (window.matchMedia("(max-width: 860px)").matches) document.querySelector(".docs-menu").removeAttribute("open");
+  </script>
+</body>
+</html>

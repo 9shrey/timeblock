@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Troubleshooting · Timeblock documentation</title>
+  <meta name="description" content="Solutions to common problems when installing or running Timeblock.">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
+      <nav class="nav" aria-label="Main">
+        <a href="./" aria-current="page">Documentation</a>
+        <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="../download.html">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container docs">
+    <aside class="docs-side">
+      <details class="docs-menu" open>
+        <summary>Troubleshooting</summary>
+        <nav class="docs-nav" aria-label="Documentation">
+          <h4>Getting started</h4>
+          <ul>
+            <li><a href="./">Introduction</a></li>
+            <li><a href="planning.html">Planning your day</a></li>
+            <li><a href="goals.html">Goals and reviews</a></li>
+          </ul>
+          <h4>Reference</h4>
+          <ul>
+            <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+            <li><a href="settings.html">Settings</a></li>
+            <li><a href="data.html">Data and backups</a></li>
+            <li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li>
+          </ul>
+        </nav>
+      </details>
+    </aside>
+
+    <main id="main" class="prose">
+      <p class="crumb">Documentation / Reference</p>
+      <h1>Troubleshooting</h1>
+      <p class="lead">Solutions to common problems when installing or running Timeblock.</p>
+<h2 id="macos">macOS: "Timeblock can't be opened"</h2>
+<p>Timeblock isn't notarized by Apple yet, so macOS blocks the first launch.</p>
+<ol>
+<li>Try to open Timeblock once and dismiss the warning.</li>
+<li>Open <em>System Settings → Privacy &amp; Security</em>.</li>
+<li>Scroll down and click <strong>Open Anyway</strong> next to the message about Timeblock.</li>
+</ol>
+<p>You only need to do this once.</p>
+
+<h2 id="windows">Windows: SmartScreen warning</h2>
+<p>Windows may show "Windows protected your PC" because the installer isn't code-signed. Click <strong>More info</strong>, then <strong>Run anyway</strong>.</p>
+
+<h2 id="appimage">Linux: the AppImage doesn't start</h2>
+<p>The AppImage needs glibc 2.39 or newer (Fedora 40+, Ubuntu 24.04+). On older systems, install the <code>.rpm</code> or <code>.deb</code> package instead. Make sure the file is executable:</p>
+<pre><code>chmod +x Timeblock_*.AppImage</code></pre>
+
+<h2 id="blank-window">Linux: blank or flickering window</h2>
+<p>WebKitGTK, which Timeblock uses to draw its window on Linux, doesn't always work well with the proprietary NVIDIA driver, especially on Wayland. Timeblock already sets <code>WEBKIT_DISABLE_DMABUF_RENDERER=1</code> when the NVIDIA kernel module is loaded (unless you set it yourself).</p>
+<p>If the window is still blank or flickers, start Timeblock from a terminal with one of these, trying them one at a time:</p>
+<pre><code>WEBKIT_DISABLE_COMPOSITING_MODE=1 timeblock
+__NV_DISABLE_EXPLICIT_SYNC=1 timeblock
+GDK_BACKEND=x11 timeblock</code></pre>
+<p>Once you find one that works, add it to the <code>Exec=</code> line of Timeblock's desktop entry, for example with <code>env WEBKIT_DISABLE_COMPOSITING_MODE=1 timeblock</code>.</p>
+
+<h2 id="second-window">A second launch doesn't open a new window</h2>
+<p>This is intentional. Only one copy of Timeblock runs at a time so that two windows can't write to the same database. Launching it again brings the open window to the front.</p>
+
+<h2 id="save-error">An error says a change could not be saved</h2>
+<p>If a save fails, Timeblock reloads your data from disk and discards the changes that were waiting behind the failed save. Check that the disk isn't full and that the <a href="data.html#location">data folder</a> is writable. Your <a href="data.html#backups">backups</a> are not affected.</p>
+
+<h2 id="report">Reporting a problem</h2>
+<p>If none of this helps, <a href="https://github.com/9shrey/timeblock/issues/new">open an issue on GitHub</a>. Include your operating system and version, how you installed Timeblock, and what you see. The app version is shown at the bottom of Settings.</p>
+      <nav class="pager" aria-label="Pages">
+        <a class="prev" href="data.html"><span>Previous</span>Data and backups</a>
+      </nav>
+    </main>
+
+    <nav class="toc" aria-label="On this page">
+      <h4>On this page</h4>
+      <ul>
+          <li><a href="#macos">macOS: "Timeblock can't be opened"</a></li>
+          <li><a href="#windows">Windows: SmartScreen warning</a></li>
+          <li><a href="#appimage">Linux: the AppImage doesn't start</a></li>
+          <li><a href="#blank-window">Linux: blank or flickering window</a></li>
+          <li><a href="#second-window">A second launch doesn't open a new window</a></li>
+          <li><a href="#save-error">An error says a change could not be saved</a></li>
+          <li><a href="#report">Reporting a problem</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shrey Singh · MIT License</span>
+      <nav aria-label="Footer">
+        <a href="./">Documentation</a>
+        <a href="../download.html">Download</a>
+        <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/9shrey/timeblock">Source code</a>
+        <a href="https://github.com/9shrey/timeblock/issues">Report an issue</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    // Collapse the docs menu on small screens; it stays open (and usable) without JavaScript.
+    if (window.matchMedia("(max-width: 860px)").matches) document.querySelector(".docs-menu").removeAttribute("open");
+  </script>
+</body>
+</html>

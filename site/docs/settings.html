@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · Timeblock documentation</title>
+  <meta name="description" content="Open Settings from the bottom of the sidebar. Changes are saved immediately.">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
+      <nav class="nav" aria-label="Main">
+        <a href="./" aria-current="page">Documentation</a>
+        <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="../download.html">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container docs">
+    <aside class="docs-side">
+      <details class="docs-menu" open>
+        <summary>Settings</summary>
+        <nav class="docs-nav" aria-label="Documentation">
+          <h4>Getting started</h4>
+          <ul>
+            <li><a href="./">Introduction</a></li>
+            <li><a href="planning.html">Planning your day</a></li>
+            <li><a href="goals.html">Goals and reviews</a></li>
+          </ul>
+          <h4>Reference</h4>
+          <ul>
+            <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+            <li><a href="settings.html" aria-current="page">Settings</a></li>
+            <li><a href="data.html">Data and backups</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </nav>
+      </details>
+    </aside>
+
+    <main id="main" class="prose">
+      <p class="crumb">Documentation / Reference</p>
+      <h1>Settings</h1>
+      <p class="lead">Open Settings from the bottom of the sidebar. Changes are saved immediately.</p>
+<h2 id="preferences">Preferences</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Setting</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>Week starts on</td><td>Monday, Sunday or Saturday. Changing it moves targets, outcomes and reflections to the matching weeks and clears the undo history.</td></tr>
+<tr><td>Day starts at</td><td>Where the Day and Week views scroll to for days other than today.</td></tr>
+<tr><td>Snap to</td><td>The step used when dragging blocks. Hold <kbd>Shift</kbd> for 5-minute steps.</td></tr>
+<tr><td>Default block length</td><td>The length of a block created by double-clicking an empty slot.</td></tr>
+<tr><td>Theme</td><td>System, Light or Dark. System follows your desktop's setting.</td></tr>
+</tbody></table></div>
+
+<h2 id="data">Data</h2>
+<p>The Data section shows where your database is stored and when the last backup was made. It has these actions:</p>
+<ul>
+<li><strong>Export JSON</strong>: save all your data as a readable JSON file.</li>
+<li><strong>Import JSON</strong>: replace your data with an exported file. A backup is made first.</li>
+<li><strong>Back up now</strong>: make a backup immediately.</li>
+<li><strong>Restore a backup</strong>: choose an automatic backup to restore. Your current data is backed up first, and the app reloads.</li>
+<li><strong>Open data folder</strong>: show the folder containing your database and backups.</li>
+</ul>
+<p>See <a href="data.html">Data and backups</a> for details.</p>
+      <nav class="pager" aria-label="Pages">
+        <a class="prev" href="shortcuts.html"><span>Previous</span>Keyboard shortcuts</a>
+        <a class="next" href="data.html"><span>Next</span>Data and backups</a>
+      </nav>
+    </main>
+
+
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shrey Singh · MIT License</span>
+      <nav aria-label="Footer">
+        <a href="./">Documentation</a>
+        <a href="../download.html">Download</a>
+        <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/9shrey/timeblock">Source code</a>
+        <a href="https://github.com/9shrey/timeblock/issues">Report an issue</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    // Collapse the docs menu on small screens; it stays open (and usable) without JavaScript.
+    if (window.matchMedia("(max-width: 860px)").matches) document.querySelector(".docs-menu").removeAttribute("open");
+  </script>
+</body>
+</html>

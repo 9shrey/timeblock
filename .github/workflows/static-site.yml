@@ -1,0 +1,35 @@
+name: Deploy static site
+
+# This site now owns the automatic deploy to the repo's GitHub Pages slot
+# (9shrey.github.io/timeblock), replacing the Astro marketing site that site.yml used
+# to publish there automatically (site.yml is still around, manual-dispatch only, if
+# you want that site back temporarily). No build step: it's plain HTML/CSS served as-is.
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/static-site.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: site-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
