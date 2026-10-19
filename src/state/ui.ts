@@ -1,7 +1,7 @@
 /** Transient UI state that is not part of the data model or undo history. */
 import { create } from "zustand";
 import type { ItemRef } from "@/features/timeline/dragMachine";
-import type { LocalDate } from "@/domain/types";
+import type { Layer, LocalDate } from "@/domain/types";
 
 export interface Editing {
   ref: ItemRef;
@@ -13,15 +13,39 @@ export interface Editing {
   focus: boolean;
 }
 
+export type TemplateDialogState =
+  | { kind: "save"; scope: "day" | "week"; day: LocalDate }
+  | { kind: "apply"; scope: "day" | "week"; day: LocalDate };
+
 interface UiState {
   editing: Editing | null;
   /** Past days whose Plan lane was unlocked for this session. */
   unlockedPlanDays: LocalDate[];
   /** Right-clicked thing for the shared context menu. */
   menu: { kind: "item"; ref: ItemRef; col: number; minute: number } | { kind: "empty"; col: number; minute: number } | null;
+  /** Save-as-template or apply-template dialog, opened from a context menu or empty-day prompt. */
+  templateDialog: TemplateDialogState | null;
+  /** One-line quick-add input (`n` key), for a day and lane. */
+  quickAdd: { day: LocalDate; layer: Layer } | null;
+  commandPaletteOpen: boolean;
+  shortcutsOpen: boolean;
+  /** Goal clicked in BudgetPanel: every other goal's blocks are dimmed. Click again to clear. */
+  highlightedGoalId: string | null;
+  /** The actual block the clock tick extends to "now", until `stopTimer` is called. */
+  runningBlockId: string | null;
 }
 
-export const useUi = create<UiState>(() => ({ editing: null, unlockedPlanDays: [], menu: null }));
+export const useUi = create<UiState>(() => ({
+  editing: null,
+  unlockedPlanDays: [],
+  menu: null,
+  templateDialog: null,
+  quickAdd: null,
+  commandPaletteOpen: false,
+  shortcutsOpen: false,
+  highlightedGoalId: null,
+  runningBlockId: null,
+}));
 
 let sessionCounter = 0;
 
@@ -35,4 +59,33 @@ export function closeEditor(): void {
 
 export function unlockPlanDay(day: LocalDate): void {
   useUi.setState((s) => (s.unlockedPlanDays.includes(day) ? s : { unlockedPlanDays: [...s.unlockedPlanDays, day] }));
+}
+
+export function openTemplateDialog(state: TemplateDialogState): void {
+  useUi.setState({ templateDialog: state });
+}
+
+export function closeTemplateDialog(): void {
+  useUi.setState({ templateDialog: null });
+}
+
+export function openQuickAdd(day: LocalDate, layer: Layer): void {
+  useUi.setState({ quickAdd: { day, layer } });
+}
+
+export function closeQuickAdd(): void {
+  useUi.setState({ quickAdd: null });
+}
+
+export function setCommandPaletteOpen(open: boolean): void {
+  useUi.setState({ commandPaletteOpen: open });
+}
+
+export function setShortcutsOpen(open: boolean): void {
+  useUi.setState({ shortcutsOpen: open });
+}
+
+/** Toggles highlighting a goal's blocks; clicking the already-highlighted goal clears it. */
+export function toggleHighlightedGoal(goalId: string): void {
+  useUi.setState((s) => ({ highlightedGoalId: s.highlightedGoalId === goalId ? null : goalId }));
 }

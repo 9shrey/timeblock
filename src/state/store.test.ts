@@ -18,6 +18,7 @@ const block = (id: string, extra: Partial<Block> = {}): Block => ({
   notes: "",
   planBlockId: null,
   skipped: false,
+  routineId: null,
   createdAt: 1,
   updatedAt: 1,
   ...extra,

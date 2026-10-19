@@ -8,17 +8,19 @@ import type {
   ChecklistItem,
   EntityMap,
   ExportData,
-  ExportFileV1,
+  ExportFile,
   Goal,
   LocalDate,
+  Routine,
   SettingRow,
   Table,
+  Template,
   WeekNote,
   WeekTarget,
 } from "../types";
 
 export const EXPORT_FORMAT = "timeblock.export";
-export const EXPORT_VERSION = 1;
+export const EXPORT_VERSION = 2;
 
 /** Code-unit order, independent of locale. */
 function cmp(a: string, b: string): number {
@@ -77,8 +79,40 @@ const blockOut = (b: Block): Block => ({
   notes: b.notes,
   planBlockId: b.planBlockId,
   skipped: b.skipped,
+  routineId: b.routineId,
   createdAt: b.createdAt,
   updatedAt: b.updatedAt,
+});
+
+const templateOut = (t: Template): Template => ({
+  id: t.id,
+  name: t.name,
+  spanDays: t.spanDays,
+  blocks: t.blocks.map((b) => ({
+    dayOffset: b.dayOffset,
+    startMinute: b.startMinute,
+    endMinute: b.endMinute,
+    title: b.title,
+    goalId: b.goalId,
+    notes: b.notes,
+  })),
+  createdAt: t.createdAt,
+  updatedAt: t.updatedAt,
+});
+
+const routineOut = (r: Routine): Routine => ({
+  id: r.id,
+  title: r.title,
+  goalId: r.goalId,
+  notes: r.notes,
+  startMinute: r.startMinute,
+  endMinute: r.endMinute,
+  weekdays: r.weekdays,
+  startsOn: r.startsOn,
+  endsOn: r.endsOn,
+  materializedThrough: r.materializedThrough,
+  createdAt: r.createdAt,
+  updatedAt: r.updatedAt,
 });
 
 const noteOut = (n: WeekNote): WeekNote => ({ weekStart: n.weekStart, text: n.text, updatedAt: n.updatedAt });
@@ -90,13 +124,15 @@ export function normalizeExportData(data: ExportData): ExportData {
     goals: sortRows("goals", data.goals).map(goalOut),
     weekTargets: sortRows("weekTargets", data.weekTargets).map(targetOut),
     checklistItems: sortRows("checklistItems", data.checklistItems).map(itemOut),
+    templates: sortRows("templates", data.templates).map(templateOut),
+    routines: sortRows("routines", data.routines).map(routineOut),
     blocks: sortRows("blocks", data.blocks).map(blockOut),
     weekNotes: sortRows("weekNotes", data.weekNotes).map(noteOut),
   };
 }
 
-/** Wraps all data in a v1 export envelope with deterministic ordering. */
-export function toExportFile(data: ExportData, meta: { appVersion: string; exportedAt: number }): ExportFileV1 {
+/** Wraps all data in a v2 export envelope with deterministic ordering. */
+export function toExportFile(data: ExportData, meta: { appVersion: string; exportedAt: number }): ExportFile {
   return {
     format: EXPORT_FORMAT,
     version: EXPORT_VERSION,
@@ -107,7 +143,7 @@ export function toExportFile(data: ExportData, meta: { appVersion: string; expor
 }
 
 /** Pretty-printed JSON with a trailing newline. */
-export function serializeExport(file: ExportFileV1): string {
+export function serializeExport(file: ExportFile): string {
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 

@@ -15,6 +15,7 @@ const block = (id: string, start: number, title = ""): Block => ({
   notes: "",
   planBlockId: null,
   skipped: false,
+  routineId: null,
   createdAt: 0,
   updatedAt: 0,
 });

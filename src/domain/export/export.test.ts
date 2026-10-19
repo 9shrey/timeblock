@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { exportFileName, serializeExport, toExportFile } from "./format";
 import { parseImportFile, type ImportResult } from "./schema";
 import { settingRow } from "../settings";
-import type { Block, ChecklistItem, ExportData, Goal, WeekNote, WeekTarget } from "../types";
+import type { Block, ChecklistItem, ExportData, Goal, Routine, Template, WeekNote, WeekTarget } from "../types";
 
 const meta = { appVersion: "0.1.0", exportedAt: 1_760_000_000_000 };
 
@@ -30,6 +30,7 @@ const block = (id: string, over: Partial<Block> = {}): Block => ({
   notes: "",
   planBlockId: null,
   skipped: false,
+  routineId: null,
   createdAt: 1,
   updatedAt: 2,
   ...over,
@@ -63,11 +64,39 @@ const note = (weekStart: string, over: Partial<WeekNote> = {}): WeekNote => ({
   ...over,
 });
 
+const template = (id: string, over: Partial<Template> = {}): Template => ({
+  id,
+  name: `Template ${id}`,
+  spanDays: 1,
+  blocks: [{ dayOffset: 0, startMinute: 540, endMinute: 600, title: "Block", goalId: null, notes: "" }],
+  createdAt: 1,
+  updatedAt: 2,
+  ...over,
+});
+
+const routine = (id: string, over: Partial<Routine> = {}): Routine => ({
+  id,
+  title: `Routine ${id}`,
+  goalId: null,
+  notes: "",
+  startMinute: 540,
+  endMinute: 600,
+  weekdays: 0b0111110,
+  startsOn: "2026-10-19",
+  endsOn: null,
+  materializedThrough: null,
+  createdAt: 1,
+  updatedAt: 2,
+  ...over,
+});
+
 const empty = (): ExportData => ({
   settings: [],
   goals: [],
   weekTargets: [],
   checklistItems: [],
+  templates: [],
+  routines: [],
   blocks: [],
   weekNotes: [],
 });
@@ -78,9 +107,11 @@ const sample = (): ExportData => ({
   goals: [goal("g2", { kind: "max", archivedOn: "2026-10-01" }), goal("g1", { name: "Deep work 🚀" })],
   weekTargets: [target("g1", "2026-10-19"), target("g1", "2026-10-12", { targetMinutes: null })],
   checklistItems: [item("c2", "g1", { done: true, carriedFromId: "c1" }), item("c1", "g2", { weekStart: "2026-10-12" })],
+  templates: [template("t1"), template("t2", { spanDays: 7, name: "Week template" })],
+  routines: [routine("r1", { goalId: "g1" })],
   blocks: [
     block("b3", { layer: "actual", planBlockId: "b1", goalId: "g1", notes: "went well" }),
-    block("b1", { goalId: "g1", title: "Write" }),
+    block("b1", { goalId: "g1", title: "Write", routineId: "r1" }),
     block("b2", { skipped: true, startMinute: 0, endMinute: 1440 }),
   ],
   weekNotes: [note("2026-10-19"), note("2026-10-12", { text: "" })],
@@ -103,14 +134,16 @@ const rawFile = (data: unknown, over: Record<string, unknown> = {}) =>
   JSON.stringify({ format: "timeblock.export", version: 1, exportedAt: 1, appVersion: "x", ...(data as object), ...over });
 
 describe("toExportFile / serializeExport", () => {
-  it("builds a v1 envelope with sorted arrays", () => {
+  it("builds a v2 envelope with sorted arrays", () => {
     const f = toExportFile(sample(), meta);
     expect(f.format).toBe("timeblock.export");
-    expect(f.version).toBe(1);
+    expect(f.version).toBe(2);
     expect(f.exportedAt).toBe(meta.exportedAt);
     expect(f.appVersion).toBe("0.1.0");
     expect(f.goals.map((g) => g.id)).toEqual(["g1", "g2"]);
     expect(f.blocks.map((b) => b.id)).toEqual(["b1", "b2", "b3"]);
+    expect(f.templates.map((t) => t.id)).toEqual(["t1", "t2"]);
+    expect(f.routines.map((r) => r.id)).toEqual(["r1"]);
     expect(f.weekTargets.map((t) => t.weekStart)).toEqual(["2026-10-12", "2026-10-19"]);
     expect(f.weekNotes.map((n) => n.weekStart)).toEqual(["2026-10-12", "2026-10-19"]);
     expect(f.settings.map((s) => s.key)).toEqual(["snapMinutes", "weekStartDay"]);
@@ -131,6 +164,8 @@ describe("toExportFile / serializeExport", () => {
       "goals",
       "weekTargets",
       "checklistItems",
+      "templates",
+      "routines",
       "blocks",
       "weekNotes",
     ]);
@@ -175,7 +210,16 @@ describe("parseImportFile", () => {
     const { format: _f, version: _v, exportedAt: _e, appVersion: _a, ...data } = toExportFile(sample(), meta);
     expect(r.data).toEqual(data);
     expect(r.warnings).toEqual([]);
-    expect(r.counts).toEqual({ settings: 2, goals: 2, weekTargets: 2, checklistItems: 2, blocks: 3, weekNotes: 2 });
+    expect(r.counts).toEqual({
+      settings: 2,
+      goals: 2,
+      weekTargets: 2,
+      checklistItems: 2,
+      templates: 2,
+      routines: 1,
+      blocks: 3,
+      weekNotes: 2,
+    });
     // And re-exporting the parsed data gives the same bytes.
     expect(fileText(r.data)).toBe(fileText(sample()));
   });
@@ -187,7 +231,7 @@ describe("parseImportFile", () => {
   });
 
   it("rejects files from a newer version", () => {
-    const errors = expectErr(parseImportFile(rawFile(empty(), { version: 2 })));
+    const errors = expectErr(parseImportFile(rawFile(empty(), { version: 3 })));
     expect(errors).toHaveLength(1);
     expect(errors[0]).toMatch(/newer version of Timeblock/);
   });
@@ -397,6 +441,91 @@ describe("parseImportFile", () => {
       const r = parse({ goals: [goal("b"), goal("a"), goal("c")], blocks: [block("z"), block("y")] });
       expect(r.data.goals.map((g) => g.id)).toEqual(["a", "b", "c"]);
       expect(r.data.blocks.map((b) => b.id)).toEqual(["y", "z"]);
+    });
+  });
+
+  describe("version compatibility", () => {
+    it("imports a genuine v1 file (no templates/routines/routineId), defaulting them", () => {
+      // A hand-built v1 envelope: no `templates`, `routines`, or `blocks[].routineId`.
+      const v1 = {
+        format: "timeblock.export",
+        version: 1,
+        exportedAt: 1,
+        appVersion: "0.1.0",
+        settings: [],
+        goals: [{ id: "g1", name: "Thesis", color: "#2563eb", kind: "min", sortOrder: 0, archivedOn: null, createdAt: 1, updatedAt: 1 }],
+        weekTargets: [],
+        checklistItems: [],
+        blocks: [
+          {
+            id: "b1",
+            day: "2026-10-19",
+            layer: "plan",
+            startMinute: 540,
+            endMinute: 600,
+            title: "Write",
+            goalId: "g1",
+            notes: "",
+            planBlockId: null,
+            skipped: false,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+        weekNotes: [],
+      };
+      const r = expectOk(parseImportFile(JSON.stringify(v1)));
+      expect(r.data.templates).toEqual([]);
+      expect(r.data.routines).toEqual([]);
+      expect(r.data.blocks).toEqual([block("b1", { goalId: "g1", title: "Write", createdAt: 1, updatedAt: 1 })]);
+      expect(r.warnings).toEqual([]);
+      expect(r.counts.templates).toBe(0);
+      expect(r.counts.routines).toBe(0);
+    });
+
+    it("round-trips a v2 export with templates, routines and routineId", () => {
+      const data = sample();
+      const file = toExportFile(data, meta);
+      expect(file.version).toBe(2);
+      const r = expectOk(parseImportFile(serializeExport(file)));
+      const { format: _f, version: _v, exportedAt: _e, appVersion: _a, ...expected } = file;
+      expect(r.data).toEqual(expected);
+      expect(r.warnings).toEqual([]);
+      expect(r.data.blocks.find((b) => b.id === "b1")?.routineId).toBe("r1");
+      expect(serializeExport(toExportFile(r.data, meta))).toBe(serializeExport(file));
+    });
+
+    it("clears a dangling routineId and a routine's dangling goalId on import", () => {
+      const r = expectOk(
+        parseImportFile(
+          rawFile(
+            {
+              ...empty(),
+              routines: [routine("r1", { goalId: "ghost" })],
+              blocks: [block("b1", { routineId: "nope" }), block("b2", { layer: "actual", routineId: "r1" })],
+            },
+            { version: 2 },
+          ),
+        ),
+      );
+      expect(r.data.routines[0]?.goalId).toBeNull();
+      expect(r.data.blocks.find((b) => b.id === "b1")?.routineId).toBeNull();
+      expect(r.data.blocks.find((b) => b.id === "b2")?.routineId).toBeNull();
+      expect(r.warnings.some((w) => /routine referenced a missing goal/.test(w))).toBe(true);
+      expect(r.warnings.some((w) => /referenced a missing routine or was not a plan block/.test(w))).toBe(true);
+    });
+
+    it("clears a dangling goalId in a template block", () => {
+      const r = expectOk(
+        parseImportFile(
+          rawFile(
+            { ...empty(), templates: [template("t1", { blocks: [{ dayOffset: 0, startMinute: 0, endMinute: 60, title: "x", goalId: "ghost", notes: "" }] })] },
+            { version: 2 },
+          ),
+        ),
+      );
+      expect(r.data.templates[0]?.blocks[0]?.goalId).toBeNull();
+      expect(r.warnings).toEqual([expect.stringMatching(/1 template block referenced a missing goal/)]);
     });
   });
 });

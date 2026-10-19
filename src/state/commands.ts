@@ -15,15 +15,18 @@ import {
   moveBlock,
   restorePlan,
   skipPlan,
+  splitAtMidnight,
   updateBlock,
   type BlockPatch,
 } from "@/domain/blocks/reconcile";
+import { parseQuickAdd } from "@/domain/blocks/quickAdd";
 import { validateBlock } from "@/domain/blocks/validate";
-import { applyChanges } from "@/domain/changes";
+import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
-import type { Block, ChangeSet, Layer, LocalDate } from "@/domain/types";
+import { addDays, weekDays } from "@/domain/time/localDate";
+import type { Block, ChangeSet, Layer, LocalDate, Now } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
-import { allBlocks } from "./selectors";
+import { activeGoals, allBlocks, goalList } from "./selectors";
 import { commit, redo as storeRedo, undo as storeUndo, useStore } from "./store";
 import { closeEditor, openEditor, useUi } from "./ui";
 
@@ -81,6 +84,23 @@ export function createBlockAt(day: LocalDate, layer: Layer, start: number, end: 
   return block.id;
 }
 
+/**
+ * Parses `input` as `<start>-<end> <title> [#tag]` and creates a block from it. Returns
+ * an error string on failure (bad syntax, or the lane is locked/read-only).
+ */
+export function quickAddBlock(day: LocalDate, layer: Layer, input: string): string | null {
+  if (!canEditLane(day, layer)) return laneError(layer);
+  const parsed = parseQuickAdd(input, goalList(state().data.goals));
+  if (!parsed) return 'Couldn\'t parse that. Try "9-10:30 Title #tag".';
+  const { block, changes } = createBlock(
+    { day, layer, startMinute: parsed.startMinute, endMinute: parsed.endMinute, title: parsed.title, goalId: parsed.goalId },
+    env,
+  );
+  if (!commitChecked(changes, "Quick add")) return "Couldn't create that block.";
+  select({ kind: "block", id: block.id });
+  return null;
+}
+
 /** Double-click on empty space: a default-length block at the snapped slot. */
 export function createDefaultAt(day: LocalDate, layer: Layer, minute: number): string | null {
   const { snapMinutes, defaultBlockMinutes } = state().settings;
@@ -101,6 +121,35 @@ export function updateBlockFields(id: string, patch: BlockPatch, coalesceKey?: s
 
 export function resizeBlock(id: string, start: number, end: number): void {
   updateBlockFields(id, { startMinute: start, endMinute: end });
+}
+
+/**
+ * A resize whose pointer went past 24:00 offers a continuation on the next day instead of
+ * clamping silently: `overflowMinutes` (minutes past midnight) comes from the drag. Falls
+ * back to an ordinary (clamped) resize if there's no overflow, or the next day's lane isn't
+ * editable (locked, or a future Actual lane).
+ */
+export function resizeOrSplitAtMidnight(id: string, start: number, end: number, overflowMinutes?: number): void {
+  const b = blockById(id);
+  if (!b || !overflowMinutes || overflowMinutes < 1) {
+    resizeBlock(id, start, end);
+    return;
+  }
+  const nextDay = addDays(b.day, 1);
+  if (!canEditLane(nextDay, b.layer)) {
+    resizeBlock(id, start, end);
+    toast("Can't split a block into tomorrow there; resized to end at midnight instead.");
+    return;
+  }
+  if (!canEditLane(b.day, b.layer)) {
+    toast(laneError(b.layer));
+    return;
+  }
+  const { continuation, changes } = splitAtMidnight(b, start, overflowMinutes, env);
+  if (commitChecked(changes, "Split at midnight")) {
+    toast(`Split at midnight: the rest continues on ${nextDay}.`);
+    select({ kind: "block", id: continuation.id });
+  }
 }
 
 export function moveBlockTo(id: string, day: LocalDate, start: number, end: number, copy: boolean): void {
@@ -188,6 +237,93 @@ export function copyPlanFrom(fromDay: LocalDate, toDay: LocalDate): void {
   const changes = copyPlan(fromDay, toDay, blocks(), env);
   if (changes.length === 0) toast("That day has no plan to copy.");
   else commitChecked(changes, "Copy plan");
+}
+
+/**
+ * Copies every day of `fromWeek` onto the same weekday of `toWeek`, in one undo step.
+ * Locked and past target days are skipped (even if manually unlocked); a copied block
+ * whose goal is archived as of `toWeek` has its goal cleared so `validateBlock` doesn't
+ * reject the whole change.
+ */
+export function copyWeekPlan(fromWeek: LocalDate, toWeek: LocalDate): void {
+  const now = state().now;
+  const fromDays = weekDays(fromWeek);
+  const toDays = weekDays(toWeek);
+  const activeGoalIds = new Set(activeGoals(state().data, toWeek).map((g) => g.id));
+  const all = blocks();
+  const changes: ChangeSet = [];
+  let eligibleDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const toDay = toDays[i]!;
+    if (toDay < now.day || isPlanLocked(toDay)) continue;
+    eligibleDays++;
+    for (const c of copyPlan(fromDays[i]!, toDay, all, env)) {
+      if (c.op === "put" && c.table === "blocks" && c.row.goalId !== null && !activeGoalIds.has(c.row.goalId)) {
+        changes.push(put("blocks", { ...c.row, goalId: null }));
+      } else {
+        changes.push(c);
+      }
+    }
+  }
+  if (eligibleDays === 0) {
+    toast("No unlocked, upcoming days to copy into.");
+    return;
+  }
+  if (changes.length === 0) toast("Last week has no plan to copy.");
+  else commitChecked(changes, "Copy last week's plan");
+}
+
+// --- running timer -----------------------------------------------------------
+
+/** True while a timer is running (and the block it extends still exists today). */
+export function isTimerRunning(): boolean {
+  const id = useUi.getState().runningBlockId;
+  const b = id ? blockById(id) : undefined;
+  return !!b && b.day === state().now.day;
+}
+
+/**
+ * Starts an actual block from now to now+snap (optionally from a ghost's title/goal, to
+ * "start this planned block now") and marks it as the running timer: the clock tick in
+ * main.tsx extends its end to the current minute until `stopTimer` is called, or the day
+ * rolls over (blocks never cross midnight).
+ */
+export function startTimer(from?: { title: string; goalId: string | null }): string | null {
+  const { day, minute } = state().now;
+  if (!canEditLane(day, "actual")) {
+    toast(laneError("actual"));
+    return null;
+  }
+  const end = Math.min(1440, minute + state().settings.snapMinutes);
+  if (end <= minute) {
+    toast("Can't start a timer this late in the day.");
+    return null;
+  }
+  const { block, changes } = createBlock(
+    { day, layer: "actual", startMinute: minute, endMinute: end, title: from?.title, goalId: from?.goalId },
+    env,
+  );
+  if (!commitChecked(changes, "Start timer")) return null;
+  useUi.setState({ runningBlockId: block.id });
+  select({ kind: "block", id: block.id });
+  return block.id;
+}
+
+/** Stops extending the running timer; the block keeps its current end time. */
+export function stopTimer(): void {
+  useUi.setState({ runningBlockId: null });
+}
+
+/** Called from the clock tick: extends the running block's end to `now`, or stops it at midnight. */
+export function extendRunningTimer(now: Now): void {
+  const id = useUi.getState().runningBlockId;
+  if (!id) return;
+  const block = blockById(id);
+  if (!block || block.day !== now.day) {
+    stopTimer();
+    return;
+  }
+  if (now.minute > block.endMinute) commit(updateBlock(block, { endMinute: Math.min(1440, now.minute) }, env), { noHistory: true });
 }
 
 // --- item-level helpers used by keyboard and menus -------------------------

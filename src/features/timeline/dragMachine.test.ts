@@ -121,10 +121,10 @@ describe("dragMachine", () => {
   it("resize clamps, and an edge press without movement is a click", () => {
     const edge = down({ type: "edge", ref: { kind: "block", id: "b1" }, edge: "end", col: 0 }, 660);
     expect(run([edge, move(1500), { type: "up", ctrl: false }]).effects).toEqual([
-      { type: "resize", id: "b1", start: 540, end: 1440 },
+      { type: "resize", id: "b1", start: 540, end: 1440, edge: "end" },
     ]);
     expect(run([edge, move(500), { type: "up", ctrl: false }]).effects).toEqual([
-      { type: "resize", id: "b1", start: 540, end: 555 },
+      { type: "resize", id: "b1", start: 540, end: 555, edge: "end" },
     ]);
     // A press on an edge without movement selects.
     expect(run([edge, { type: "up", ctrl: false }]).effects[0]).toMatchObject({ type: "click" });

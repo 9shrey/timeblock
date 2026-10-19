@@ -7,7 +7,7 @@ import {
   intervalOfRef,
   materialize,
   moveBlockTo,
-  resizeBlock,
+  resizeOrSplitAtMidnight,
   select,
 } from "@/state/commands";
 import { useStore } from "@/state/store";
@@ -88,7 +88,7 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
         return;
       }
       case "resize":
-        resizeBlock(e.id, e.start, e.end);
+        resizeOrSplitAtMidnight(e.id, e.start, e.end, e.overflowMinutes);
         return;
       case "materialize":
         materialize(e.planBlockId, { startMinute: e.start, endMinute: e.end });

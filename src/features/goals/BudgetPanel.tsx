@@ -3,8 +3,10 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
 import type { GoalStats } from "@/domain/stats/stats";
+import { cn } from "@/lib/utils";
 import { checklistList, statsFor, weekOf } from "@/state/selectors";
 import { useStore } from "@/state/store";
+import { toggleHighlightedGoal, useUi } from "@/state/ui";
 import { BulletBar, bulletScale } from "./BulletBar";
 import { Checklist } from "./Checklist";
 
@@ -31,6 +33,7 @@ export function BudgetPanel() {
   const stats = useMemo(() => statsFor(data, weekDays(weekStart), weekStart, now), [data, weekStart, now]);
   const scale = bulletScale(stats.goals);
   const items = checklistList(data.checklistItems).filter((c) => c.weekStart === weekStart);
+  const highlighted = useUi((s) => s.highlightedGoalId);
 
   return (
     <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l bg-muted/20" aria-label="Week budget">
@@ -43,15 +46,21 @@ export function BudgetPanel() {
       <div className="grid gap-3 px-4">
         {stats.goals.length === 0 && <p className="text-sm text-muted-foreground">No goals for this week.</p>}
         {stats.goals.map((g) => (
-          <div key={g.goalId} className="grid gap-1">
-            <div className="flex items-baseline gap-1.5 text-sm">
+          <div key={g.goalId} className={cn("grid gap-1", highlighted !== null && highlighted !== g.goalId && "opacity-50")}>
+            <button
+              type="button"
+              className="flex items-baseline gap-1.5 rounded text-left text-sm hover:underline"
+              aria-pressed={highlighted === g.goalId}
+              title="Dim every other goal's blocks in the timeline"
+              onClick={() => toggleHighlightedGoal(g.goalId)}
+            >
               <span className="size-2.5 self-center rounded-full" style={{ background: g.goal?.color }} />
               <span className="font-medium">{g.goal?.name}</span>
               <span className="ml-auto text-xs tabular-nums text-muted-foreground">
                 {formatDuration(g.actual)}
                 {g.target !== null && ` / ${g.kind === "min" ? "≥" : "≤"}${formatDuration(g.target)}`}
               </span>
-            </div>
+            </button>
             <BulletBar target={g.target} planned={g.planned} actual={g.actual} unconfirmed={g.unconfirmed} kind={g.kind} color={g.goal?.color} scaleMax={scale} />
             <p className="text-xs text-muted-foreground">
               {remainingText(g)}

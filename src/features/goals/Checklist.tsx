@@ -1,14 +1,32 @@
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { GripVertical, Plus, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { ChecklistItem, LocalDate } from "@/domain/types";
 import { cn } from "@/lib/utils";
-import { addChecklistItem, editChecklistItem, removeChecklistItem, toggleChecklistItem } from "@/state/goalCommands";
+import { addChecklistItem, editChecklistItem, removeChecklistItem, reorderChecklistItems, toggleChecklistItem } from "@/state/goalCommands";
+import { useDragReorder } from "./useDragReorder";
 
-function ItemRow({ item, editable }: { item: ChecklistItem; editable: boolean }) {
+function ItemRow({
+  item,
+  editable,
+  dragHandleProps,
+  dropZoneProps,
+  dragOver,
+}: {
+  item: ChecklistItem;
+  editable: boolean;
+  dragHandleProps: React.HTMLAttributes<HTMLButtonElement>;
+  dropZoneProps: React.HTMLAttributes<HTMLElement>;
+  dragOver: boolean;
+}) {
   const [text, setText] = useState(item.text);
   return (
-    <li className="group flex items-center gap-2">
+    <li className={cn("group flex items-center gap-2 rounded", dragOver && "bg-muted")} {...dropZoneProps}>
+      {editable && (
+        <button type="button" aria-label={`Reorder: ${item.text}`} className="cursor-grab text-muted-foreground/0 group-hover:text-muted-foreground/50" {...dragHandleProps}>
+          <GripVertical className="size-3.5" />
+        </button>
+      )}
       <Checkbox checked={item.done} onCheckedChange={() => toggleChecklistItem(item)} aria-label={`Done: ${item.text}`} />
       {editable ? (
         <input
@@ -47,11 +65,22 @@ function ItemRow({ item, editable }: { item: ChecklistItem; editable: boolean })
 export function Checklist({ goalId, weekStart, items, editable = true }: { goalId: string; weekStart: LocalDate; items: readonly ChecklistItem[]; editable?: boolean }) {
   const [draft, setDraft] = useState("");
   const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+  const { dragHandleProps, dropZoneProps, isDragOver } = useDragReorder(
+    sorted.map((i) => i.id),
+    reorderChecklistItems,
+  );
   return (
     <ul className="grid gap-1">
       {sorted.map((i) => (
         // Remount when the stored text changes (undo) so the field shows it.
-        <ItemRow key={`${i.id}:${i.text}`} item={i} editable={editable} />
+        <ItemRow
+          key={`${i.id}:${i.text}`}
+          item={i}
+          editable={editable}
+          dragHandleProps={dragHandleProps(i.id)}
+          dropZoneProps={dropZoneProps(i.id)}
+          dragOver={isDragOver(i.id)}
+        />
       ))}
       {editable && (
         <li className="flex items-center gap-2 text-muted-foreground">

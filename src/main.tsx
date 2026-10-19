@@ -9,7 +9,9 @@ import { SqliteRepository } from "./data/SqliteRepository";
 import { CLOCK_TICK_MS, makeClock, parseNowOverride } from "./domain/time/clock";
 import type { Now } from "./domain/types";
 import { getPlatform } from "./platform";
+import { extendRunningTimer } from "./state/commands";
 import { flushWrites, initStore, pendingWrites, useStore } from "./state/store";
+import { useUi } from "./state/ui";
 import "./styles/index.css";
 
 /** Dev and end-to-end test builds accept `?seed`, `?reset` and `?now`; release builds never do. */
@@ -97,8 +99,20 @@ async function boot() {
   setInterval(() => {
     const next = clock();
     const cur = useStore.getState().now;
-    if (next.day !== cur.day || next.minute !== cur.minute) useStore.setState({ now: next });
+    if (next.day !== cur.day || next.minute !== cur.minute) {
+      useStore.setState({ now: next });
+      extendRunningTimer(next);
+    }
   }, CLOCK_TICK_MS);
+
+  // The running block's title in the window title, so you can tell at a glance.
+  const updateTitle = () => {
+    const id = useUi.getState().runningBlockId;
+    const block = id ? useStore.getState().data.blocks[id] : null;
+    document.title = block ? `⏱ ${block.title || "Untitled"} — Timeblock` : "Timeblock";
+  };
+  useStore.subscribe(updateTitle);
+  useUi.subscribe(updateTitle);
 
   platform.backupIfStale(24).catch((e: unknown) => {
     console.warn("Automatic backup failed", e);

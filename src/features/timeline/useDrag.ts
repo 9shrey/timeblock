@@ -37,13 +37,19 @@ export function useDrag({ lanesRef, scrollerRef, pxPerHour, getCtx, onEffect }: 
   const last = useRef<{ x: number; y: number; shift: boolean; ctrl: boolean } | null>(null);
   const raf = useRef<number | null>(null);
   const pointerId = useRef<number | null>(null);
+  // How far an end-edge resize's pointer went past midnight (minutes), unclamped; reset each drag.
+  const overflowPastMidnight = useRef(0);
 
   const dispatch = useCallback(
     (e: Parameters<typeof reduce>[1]) => {
       const step = reduce(state.current, e, getCtx());
       state.current = step.state;
       setDraft(draftOf(step.state));
-      if (step.effect) onEffect(step.effect);
+      if (step.effect?.type === "resize" && step.effect.edge === "end" && overflowPastMidnight.current > 0) {
+        onEffect({ ...step.effect, overflowMinutes: overflowPastMidnight.current });
+      } else if (step.effect) {
+        onEffect(step.effect);
+      }
     },
     [getCtx, onEffect],
   );
@@ -56,8 +62,12 @@ export function useDrag({ lanesRef, scrollerRef, pxPerHour, getCtx, onEffect }: 
   const sendMove = useCallback(() => {
     const p = last.current;
     if (!p || !lanesRef.current) return;
+    if (state.current.kind === "active") {
+      const raw = ((p.y - lanesRef.current.getBoundingClientRect().top) / pxPerHour) * 60;
+      if (raw > 1440) overflowPastMidnight.current = Math.max(overflowPastMidnight.current, raw - 1440);
+    }
     dispatch({ type: "move", x: p.x, y: p.y, minute: minute(p.y), col: columnAt(p.x, rects.current), shift: p.shift, ctrl: p.ctrl });
-  }, [dispatch, lanesRef, minute]);
+  }, [dispatch, lanesRef, minute, pxPerHour]);
 
   const stopAutoscroll = () => {
     if (raf.current !== null) cancelAnimationFrame(raf.current);
@@ -114,6 +124,7 @@ export function useDrag({ lanesRef, scrollerRef, pxPerHour, getCtx, onEffect }: 
       pointerId.current = e.pointerId;
       lanesRef.current.setPointerCapture(e.pointerId);
       last.current = { x: e.clientX, y: e.clientY, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey };
+      overflowPastMidnight.current = 0;
       dispatch({ type: "down", target, x: e.clientX, y: e.clientY, minute: minute(e.clientY) });
     },
     [dispatch, lanesRef, minute],

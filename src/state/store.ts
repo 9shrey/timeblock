@@ -88,7 +88,13 @@ function mergeWeek(data: DataState, week: WeekData): DataState {
 
 async function loadAll(repo: Repository, weeks: readonly LocalDate[]): Promise<DataState> {
   const base = await repo.loadBase();
-  let data = stateFrom({ goals: base.goals, weekTargets: base.weekTargets, settings: base.settings });
+  let data = stateFrom({
+    goals: base.goals,
+    weekTargets: base.weekTargets,
+    settings: base.settings,
+    templates: base.templates,
+    routines: base.routines,
+  });
   for (const w of weeks) data = mergeWeek(data, await repo.loadWeek(w));
   return data;
 }

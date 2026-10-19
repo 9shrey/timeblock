@@ -18,6 +18,7 @@ import {
   planStates,
   restorePlan,
   skipPlan,
+  splitAtMidnight,
   updateBlock,
 } from "./reconcile";
 
@@ -43,6 +44,7 @@ function blk(
     notes: "",
     planBlockId: null,
     skipped: false,
+    routineId: null,
     createdAt: T0,
     updatedAt: T0,
     ...extra,
@@ -96,6 +98,7 @@ describe("createBlock / updateBlock", () => {
       notes: "",
       planBlockId: null,
       skipped: false,
+      routineId: null,
     });
     expect(block.createdAt).toBe(5_000);
     expect(changes).toEqual([{ op: "put", table: "blocks", row: block }]);
@@ -519,5 +522,42 @@ describe("isActualReadOnly", () => {
     expect(isActualReadOnly(NEXT, now)).toBe(true);
     expect(isActualReadOnly(DAY, now)).toBe(false);
     expect(isActualReadOnly("2026-10-18", now)).toBe(false);
+  });
+});
+
+describe("splitAtMidnight", () => {
+  it("trims the block to end at midnight and creates an unlinked continuation on the next day", () => {
+    const p = blk("p", "plan", 1320, 1440, { title: "Deep sleep", goalId: "g", notes: "n" }); // 22:00-24:00, already at the boundary
+    const { continuation, changes } = splitAtMidnight(p, 1320, 90, testEnv(9));
+    const trimmed = (changes[0] as { row: Block }).row;
+    expect(trimmed).toMatchObject({ id: "p", day: DAY, startMinute: 1320, endMinute: 1440, updatedAt: 9 });
+    expect(continuation).toMatchObject({
+      day: NEXT,
+      layer: "plan",
+      startMinute: 0,
+      endMinute: 90,
+      title: "Deep sleep",
+      goalId: "g",
+      notes: "n",
+      planBlockId: null,
+      skipped: false,
+      routineId: null,
+    });
+    expect(changes).toHaveLength(2);
+    expect(changes[1]).toEqual({ op: "put", table: "blocks", row: continuation });
+  });
+
+  it("applies the resize's start too (the far edge may have given way)", () => {
+    const p = blk("p", "plan", 1430, 1440, {});
+    const { changes } = splitAtMidnight(p, 1400, 30, testEnv());
+    expect((changes[0] as { row: Block }).row.startMinute).toBe(1400);
+  });
+
+  it("clamps the continuation to [1, 1440]", () => {
+    const p = blk("p", "actual", 1400, 1440, { planBlockId: "plan1" });
+    expect(splitAtMidnight(p, 1400, 0, testEnv()).continuation.endMinute).toBe(1);
+    expect(splitAtMidnight(p, 1400, 5000, testEnv()).continuation.endMinute).toBe(1440);
+    // The continuation is a fresh, unlinked block even though the original was linked.
+    expect(splitAtMidnight(p, 1400, 30, testEnv()).continuation.planBlockId).toBeNull();
   });
 });

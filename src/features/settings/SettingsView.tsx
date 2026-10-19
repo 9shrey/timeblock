@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, FolderOpen, HardDriveDownload, History, Upload } from "lucide-react";
+import { Download, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,15 +10,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ImportResult } from "@/domain/export/schema";
 import { formatMinute } from "@/domain/time/localDate";
-import type { SnapMinutes, ThemePref, WeekStartDay } from "@/domain/types";
+import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
 import { applyImport, backupNow, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
+import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
+import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
 import { BackupList } from "./BackupList";
+import { RoutineDialog } from "./RoutineDialog";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -67,10 +71,111 @@ const COUNT_LABELS: Record<string, string> = {
   goals: "goals",
   weekTargets: "weekly targets",
   checklistItems: "outcomes",
+  templates: "templates",
+  routines: "routines",
   blocks: "blocks",
   weekNotes: "reflections",
   settings: "settings",
 };
+
+function TemplateRow({ template }: { template: Template }) {
+  const [name, setName] = useState(template.name);
+  const commitRename = () => {
+    if (name.trim() !== template.name) renameTemplate(template, name);
+    else setName(template.name);
+  };
+  return (
+    <div className="flex items-center gap-2 border-b py-2 last:border-0">
+      <Input
+        value={name}
+        maxLength={80}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={commitRename}
+        onKeyDown={(e) => e.key === "Enter" && commitRename()}
+        className="h-8"
+      />
+      <span className="shrink-0 text-xs text-muted-foreground">
+        {template.spanDays === 1 ? "Day" : "Week"} · {template.blocks.length} block{template.blocks.length === 1 ? "" : "s"}
+      </span>
+      <Button variant="ghost" size="icon-xs" aria-label={`Delete "${template.name}"`} onClick={() => deleteTemplate(template)}>
+        <Trash2 />
+      </Button>
+    </div>
+  );
+}
+
+function TemplatesSection() {
+  const templates = useTemplates();
+  if (templates.length === 0) return null;
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Templates</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Saved from a day or week's plan. Apply them from the block/empty-space menu in Day or Week view.
+      </p>
+      <div className="rounded-lg border px-4">
+        {templates.map((t) => (
+          <TemplateRow key={t.id} template={t} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const WEEKDAY_LETTERS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function weekdaysSummary(mask: number): string {
+  if (mask === 0b0111110) return "Weekdays";
+  if (mask === 0b1000001) return "Weekends";
+  if (mask === 0b1111111) return "Every day";
+  return WEEKDAY_LETTERS.filter((_, i) => (mask & (1 << i)) !== 0).join(" ");
+}
+
+function RoutineRow({ routine, onEdit }: { routine: Routine; onEdit: () => void }) {
+  const goals = useGoalMap();
+  const goal = routine.goalId ? goals[routine.goalId] : null;
+  return (
+    <div className="flex items-center gap-3 border-b py-2 last:border-0">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 text-sm">
+          {goal && <span className="size-2 shrink-0 rounded-full" style={{ background: goal.color }} />}
+          <span className="truncate">{routine.title}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {formatMinute(routine.startMinute)}–{formatMinute(routine.endMinute)} · {weekdaysSummary(routine.weekdays)}
+          {routine.endsOn ? ` · until ${routine.endsOn}` : ""}
+        </p>
+      </div>
+      <Button variant="ghost" size="icon-xs" aria-label={`Edit "${routine.title}"`} onClick={onEdit}>
+        <Pencil />
+      </Button>
+    </div>
+  );
+}
+
+function RoutinesSection() {
+  const routines = useRoutines();
+  const today = useStore((s) => s.now.day);
+  const [editing, setEditing] = useState<Routine | null | undefined>(undefined);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Routines</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Recurring plan blocks. Editing one only updates occurrences you haven't customized.
+      </p>
+      <div className="rounded-lg border px-4">
+        {routines.length === 0 && <p className="py-3 text-sm text-muted-foreground">No routines yet.</p>}
+        {routines.map((r) => (
+          <RoutineRow key={r.id} routine={r} onEdit={() => setEditing(r)} />
+        ))}
+      </div>
+      <Button variant="outline" className="mt-2" onClick={() => setEditing(null)}>
+        <Plus /> New routine
+      </Button>
+      <RoutineDialog open={editing !== undefined} onOpenChange={(o) => !o && setEditing(undefined)} routine={editing ?? null} today={today} />
+    </section>
+  );
+}
 
 function ImportDialog({ pending, onClose }: { pending: { name: string; result: ImportResult } | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
@@ -185,6 +290,9 @@ export function SettingsView() {
             </Row>
           </div>
         </section>
+
+        <TemplatesSection />
+        <RoutinesSection />
 
         <section>
           <h2 className="mb-1 text-lg font-semibold">Data</h2>

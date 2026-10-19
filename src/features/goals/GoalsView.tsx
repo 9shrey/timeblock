@@ -1,26 +1,45 @@
 import { useMemo, useState } from "react";
-import { Archive, ArrowRightToLine, Pencil, Plus } from "lucide-react";
+import { Archive, ArrowRightToLine, GripVertical, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { carryableCount } from "@/domain/goals/checklist";
 import { effectiveTarget } from "@/domain/goals/targets";
 import { addDays, formatDateLong, formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
 import type { Goal, GoalKind } from "@/domain/types";
-import { carryOverItems, editGoal } from "@/state/goalCommands";
+import { carryOverItems, editGoal, reorderGoals } from "@/state/goalCommands";
 import { checklistList, goalList, statsFor, targetList, weekOf } from "@/state/selectors";
 import { useStore } from "@/state/store";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useDragReorder } from "./useDragReorder";
 import { Checklist } from "./Checklist";
 import { GoalDialog } from "./GoalDialog";
 import { TargetInput } from "./TargetInput";
 
-function GoalRow({ goal, weekStart, onEdit }: { goal: Goal; weekStart: string; onEdit: () => void }) {
+function GoalRow({
+  goal,
+  weekStart,
+  onEdit,
+  dragHandleProps,
+  dropZoneProps,
+  dragOver,
+}: {
+  goal: Goal;
+  weekStart: string;
+  onEdit: () => void;
+  dragHandleProps: React.HTMLAttributes<HTMLButtonElement>;
+  dropZoneProps: React.HTMLAttributes<HTMLElement>;
+  dragOver: boolean;
+}) {
   const data = useStore((s) => s.data);
   const target = effectiveTarget(targetList(data.weekTargets), goal.id, weekStart);
   const items = checklistList(data.checklistItems).filter((c) => c.goalId === goal.id && c.weekStart === weekStart);
   return (
-    <section className="rounded-lg border p-3" aria-label={goal.name}>
+    <section className={cn("rounded-lg border p-3", dragOver && "border-primary")} aria-label={goal.name} {...dropZoneProps}>
       <div className="flex flex-wrap items-center gap-3">
+        <button type="button" aria-label={`Reorder ${goal.name}`} className="cursor-grab text-muted-foreground/50 hover:text-muted-foreground" {...dragHandleProps}>
+          <GripVertical className="size-4" />
+        </button>
         <button type="button" onClick={onEdit} className="flex items-center gap-2 font-medium hover:underline">
           <span className="size-3 rounded-full" style={{ background: goal.color }} />
           {goal.name}
@@ -73,6 +92,8 @@ export function GoalsView() {
   const carryable = carryableCount(checklistList(data.checklistItems), prevWeek, weekStart);
   const stats = useMemo(() => statsFor(data, weekDays(weekStart), weekStart, now), [data, weekStart, now]);
   const byGoal = new Map(stats.goals.map((g) => [g.goalId, g]));
+  const activeIds = active.map((g) => g.id);
+  const { dragHandleProps, dropZoneProps, isDragOver } = useDragReorder(activeIds, reorderGoals);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -109,7 +130,14 @@ export function GoalsView() {
         )}
         {active.map((g) => (
           <div key={g.id}>
-            <GoalRow goal={g} weekStart={weekStart} onEdit={() => setDialog({ goal: g })} />
+            <GoalRow
+              goal={g}
+              weekStart={weekStart}
+              onEdit={() => setDialog({ goal: g })}
+              dragHandleProps={dragHandleProps(g.id)}
+              dropZoneProps={dropZoneProps(g.id)}
+              dragOver={isDragOver(g.id)}
+            />
             {byGoal.get(g.id) && (
               <p className="mt-1 pl-1 text-xs text-muted-foreground">
                 This week: planned {formatDuration(byGoal.get(g.id)!.planned)} · actual {formatDuration(byGoal.get(g.id)!.actual)}

@@ -16,12 +16,13 @@ interface Props {
   col: number;
   selected: boolean;
   editable: boolean;
+  dimmed?: boolean;
 }
 
 const GHOST_WIDTH = 0.7;
 
 /** A plan block mirrored into the Actual lane until it is confirmed (✓) or skipped (✗). */
-export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHour, col, selected, editable }: Props) {
+export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHour, col, selected, editable, dimmed }: Props) {
   const dragging = useDraft((s) => s.draft?.ref?.kind === "ghost" && s.draft.ref.planBlockId === ghost.planBlockId);
   const title = displayTitle(ghost.title, goal);
   const time = `${formatMinute(ghost.startMinute)}–${formatMinute(ghost.endMinute)}`;
@@ -43,6 +44,7 @@ export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHou
         "opacity-55 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
         selected && "z-10 opacity-90 ring-2 ring-ring ring-offset-1 ring-offset-background",
         dragging && "opacity-25",
+        dimmed && !selected && "opacity-20",
       )}
       // Ghosts leave the right of their slot free, so unplanned time can be drawn over planned time.
       style={{ ...slotStyle(ghost.startMinute, ghost.endMinute, slot, pxPerHour, GHOST_WIDTH), borderColor: color }}

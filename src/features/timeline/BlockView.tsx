@@ -74,9 +74,10 @@ interface Props {
   planState: PlanState | null;
   selected: boolean;
   editable: boolean;
+  dimmed?: boolean;
 }
 
-export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, selected, editable }: Props) {
+export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, selected, editable, dimmed }: Props) {
   const dragging = useDraft((s) => s.draft?.ref?.kind === "block" && s.draft.ref.id === block.id && !s.draft.copy);
   const len = block.endMinute - block.startMinute;
   const short = minutesToPx(len, pxPerHour) < 34;
@@ -110,6 +111,7 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
         planState === "skipped" && "opacity-50",
         selected && "z-10 ring-2 ring-ring ring-offset-1 ring-offset-background",
         dragging && "opacity-40",
+        dimmed && "opacity-25",
       )}
       style={{
         ...slotStyle(block.startMinute, block.endMinute, slot, pxPerHour),

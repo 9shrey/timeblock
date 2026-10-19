@@ -54,6 +54,21 @@ export function deleteItem(item: ChecklistItem): ChangeSet {
   return [del("checklistItems", item.id)];
 }
 
+/**
+ * Writes `sortOrder` for the items of one goal/week in `orderedIds` (0, 1, 2, …), skipping
+ * any already at that index. Used for drag-to-reorder.
+ */
+export function reorderItemsChanges(items: readonly ChecklistItem[], orderedIds: readonly string[], env: Env): ChangeSet {
+  const now = env.nowMs();
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const changes: ChangeSet = [];
+  orderedIds.forEach((id, i) => {
+    const item = byId.get(id);
+    if (item && item.sortOrder !== i) changes.push(put("checklistItems", { ...item, sortOrder: i, updatedAt: now }));
+  });
+  return changes;
+}
+
 /** Unfinished items of `fromWeek` (optionally one goal) not yet carried into `toWeek`. */
 function carryable(
   items: readonly ChecklistItem[],

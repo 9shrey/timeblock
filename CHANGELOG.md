@@ -9,6 +9,34 @@ All notable changes to this project are documented here. The format follows
 ### Added
 - **Restore a backup** from Settings, or from the error screen when Timeblock can't start.
   The current data is backed up first. Settings also shows when the last backup was made.
+- **Copy last week's plan**, from the Week view header and the empty-day prompt in Day
+  view. Locked and past target days are skipped, and a block whose goal is archived by
+  the target week loses its goal link instead of blocking the copy.
+- Export format v2: templates, routines and `blocks.routineId`. Importing a v1 file still
+  works.
+- **Templates**: save a day or week's plan as a named template from the block/empty-space
+  menu, then apply it to another day or week. Templates never link back to the blocks
+  they created, so applying one is an ordinary, undoable edit. Manage saved templates
+  (rename, delete) from Settings.
+- **Routines**: recurring plan blocks, managed from Settings. Occurrences are materialized
+  automatically up to two weeks out as you use the app; past days are never touched.
+  Editing a routine updates its future occurrences that you haven't customized yourself;
+  deleting one keeps the blocks it already created.
+- **Quick add**: press `n` in Day view for a one-line input like `9-10:30 Thesis #thesis`
+  (start-end, title, optional `#tag` to set the goal by name). Creates a plan block without
+  touching the mouse.
+- **Command palette** (`Ctrl+K`): go to a date, apply a template, confirm the rest of the
+  day, switch the selected block's goal, or export. `?` opens a keyboard shortcuts sheet.
+- **Highlight a goal**: clicking a goal in the week budget panel dims every other goal's
+  blocks in the timeline. Click it again to clear.
+- **Drag to reorder** goals and outcomes, by their grip handle (using the existing
+  `sortOrder` column on each).
+- **Running block / timer**: "Start now" in Day view's Actual header creates a block from
+  now to now+snap; the clock tick extends it until "Stop timer", never past midnight. The
+  running block's title shows in the window title.
+- **Split at midnight**: dragging a block's end past 24:00 trims it to midnight and creates
+  an unlinked continuation on the next day, instead of silently clamping. Blocks still never
+  cross midnight.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

@@ -1,14 +1,14 @@
 import { useMemo } from "react";
-import { CheckCheck, Lock, LockOpen } from "lucide-react";
+import { CheckCheck, CirclePlay, CircleStop, Lock, LockOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isActualReadOnly } from "@/domain/blocks/reconcile";
-import { addDays, weekdayLong } from "@/domain/time/localDate";
+import { addDays, weekdayLong, weekStartOf } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
-import { confirmRestOfDay, copyPlanFrom } from "@/state/commands";
+import { confirmRestOfDay, copyPlanFrom, copyWeekPlan, startTimer, stopTimer } from "@/state/commands";
 import { useDayBlocks } from "@/state/selectors";
 import { useStore } from "@/state/store";
-import { unlockPlanDay, useUi } from "@/state/ui";
+import { openTemplateDialog, unlockPlanDay, useUi } from "@/state/ui";
 import { DAY_PX_PER_HOUR, type ColumnSpec } from "../timeline/geometry";
 import { Timeline } from "../timeline/Timeline";
 import { SummaryBar } from "./SummaryBar";
@@ -16,8 +16,10 @@ import { SummaryBar } from "./SummaryBar";
 function PlanHeader({ col }: { col: ColumnSpec }) {
   const blocks = useDayBlocks(col.day);
   const isPast = useStore((s) => col.day < s.now.day);
+  const weekStartDay = useStore((s) => s.settings.weekStartDay);
   const hasPlan = blocks.some((b) => b.layer === "plan");
   const lastWeek = addDays(col.day, -7);
+  const weekStart = weekStartOf(col.day, weekStartDay);
   return (
     <div className="flex h-9 items-center gap-1 px-2 text-xs">
       <span className="font-semibold tracking-wide text-muted-foreground uppercase">Plan</span>
@@ -46,6 +48,12 @@ function PlanHeader({ col }: { col: ColumnSpec }) {
           <Button variant="outline" size="xs" onClick={() => copyPlanFrom(lastWeek, col.day)}>
             Copy last {weekdayLong(lastWeek)}'s
           </Button>
+          <Button variant="outline" size="xs" onClick={() => copyWeekPlan(addDays(weekStart, -7), weekStart)}>
+            Copy last week's plan
+          </Button>
+          <Button variant="outline" size="xs" onClick={() => openTemplateDialog({ kind: "apply", scope: "day", day: col.day })}>
+            Apply template…
+          </Button>
         </>
       )}
     </div>
@@ -53,11 +61,29 @@ function PlanHeader({ col }: { col: ColumnSpec }) {
 }
 
 function ActualHeader({ col }: { col: ColumnSpec }) {
+  const now = useStore((s) => s.now);
+  const runningId = useUi((s) => s.runningBlockId);
+  const runningBlock = useStore((s) => (runningId ? s.data.blocks[runningId] : null));
+  const isToday = col.day === now.day;
+  const runningHere = isToday && !!runningBlock && runningBlock.day === col.day;
   return (
     <div className="flex h-9 items-center gap-1 px-2 text-xs">
       <span className="font-semibold tracking-wide text-muted-foreground uppercase">Actual</span>
       {col.readOnly && <span className="text-muted-foreground">· future</span>}
       <div className="flex-1" />
+      {isToday && (
+        <Button variant={runningHere ? "secondary" : "outline"} size="xs" onClick={() => (runningHere ? stopTimer() : startTimer())}>
+          {runningHere ? (
+            <>
+              <CircleStop /> Stop timer
+            </>
+          ) : (
+            <>
+              <CirclePlay /> Start now
+            </>
+          )}
+        </Button>
+      )}
       {!col.readOnly && (
         <Tooltip>
           <TooltipTrigger asChild>
