@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started · Timeblock documentation</title>
+  <meta name="description" content="Timeblock helps you plan your day in time blocks, record what actually happened, and compare both against weekly goals. This page covers installation and a first week with the app.">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
+      <nav class="nav" aria-label="Main">
+        <a href="./" aria-current="page">Documentation</a>
+        <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="../download.html">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container docs">
+    <aside class="docs-side">
+      <details class="docs-menu" open>
+        <summary>Introduction</summary>
+        <nav class="docs-nav" aria-label="Documentation">
+          <h4>Getting started</h4>
+          <ul>
+            <li><a href="./" aria-current="page">Introduction</a></li>
+            <li><a href="planning.html">Planning your day</a></li>
+            <li><a href="goals.html">Goals and reviews</a></li>
+          </ul>
+          <h4>Reference</h4>
+          <ul>
+            <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+            <li><a href="settings.html">Settings</a></li>
+            <li><a href="data.html">Data and backups</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </nav>
+      </details>
+    </aside>
+
+    <main id="main" class="prose">
+      <p class="crumb">Documentation / Getting started</p>
+      <h1>Getting started</h1>
+      <p class="lead">Timeblock helps you plan your day in time blocks, record what actually happened, and compare both against weekly goals. This page covers installation and a first week with the app.</p>
+<h2 id="concepts">Core ideas</h2>
+<p>Timeblock is built around three ideas:</p>
+<ul>
+<li><strong>Plan and Actual are separate.</strong> Every day has a Plan lane for what you intend to do and an Actual lane for what really happened.</li>
+<li><strong>Only confirmed time counts.</strong> A planned block is not counted as actual time until you confirm it. Your weekly numbers never assume the plan went as expected.</li>
+<li><strong>Goals have weekly targets.</strong> Each goal can require at least, or at most, a number of hours per week. The review compares target, plan and actual for every goal.</li>
+</ul>
+
+<h2 id="install">Install</h2>
+<p>Download the file for your system from the <a href="../download.html">download page</a>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>System</th><th>File</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Linux</td><td><code>.rpm</code>, <code>.deb</code>, <code>.AppImage</code></td><td>The AppImage needs glibc 2.39 or newer (Fedora 40+, Ubuntu 24.04+).</td></tr>
+<tr><td>macOS</td><td><code>.dmg</code></td><td>Universal build for Apple silicon and Intel.</td></tr>
+<tr><td>Windows</td><td><code>-setup.exe</code>, <code>.msi</code></td><td>64-bit.</td></tr>
+</tbody></table></div>
+<div class="notice"><p><strong>Builds are not code-signed yet.</strong> macOS blocks the first launch: open <em>System Settings → Privacy &amp; Security</em> and click <strong>Open Anyway</strong>. On Windows, if SmartScreen warns about an unrecognized app, click <strong>More info → Run anyway</strong>.</p></div>
+<p>Only one copy of Timeblock runs at a time. Launching it again brings the open window to the front.</p>
+
+<h2 id="tour">The four views</h2>
+<p>The sidebar on the left switches between the four main views. Each has a single-key shortcut.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>View</th><th>Key</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>Day</td><td><kbd>d</kbd></td><td>Plan and Actual lanes for one day. Where you spend most of your time.</td></tr>
+<tr><td>Week</td><td><kbd>w</kbd></td><td>All seven days. Past days show Plan and Actual side by side.</td></tr>
+<tr><td>Goals</td><td><kbd>g</kbd></td><td>Goals, weekly targets and outcome checklists.</td></tr>
+<tr><td>Review</td><td><kbd>r</kbd></td><td>Target, plan and actual for every goal, with a reflection note.</td></tr>
+</tbody></table></div>
+<p>Use <kbd>t</kbd> to jump to today, and <kbd>[</kbd> and <kbd>]</kbd> to move to the previous or next day or week.</p>
+
+<h2 id="first-week">Your first week</h2>
+<ol>
+<li><strong>Create your goals.</strong> Open Goals (<kbd>g</kbd>), click <strong>New goal</strong>, and give it a name, a color and an optional weekly target. See <a href="goals.html">Goals and reviews</a>.</li>
+<li><strong>Plan your days.</strong> In the Day or Week view, drag in the Plan lane to create blocks, and assign each block a goal. See <a href="planning.html">Planning your day</a>.</li>
+<li><strong>Record what happened.</strong> As the day goes on, confirm planned blocks that happened (<kbd>a</kbd>), skip those that didn't (<kbd>s</kbd>), and add anything unplanned directly to the Actual lane.</li>
+<li><strong>Review the week.</strong> Open Review (<kbd>r</kbd>) to compare your targets with the time you planned and spent, tick off outcomes and write a short reflection.</li>
+</ol>
+<figure><div class="shot">
+<img class="only-light" src="../assets/screenshots/week-light.png" width="2880" height="1800" alt="Week view with Plan and Actual lanes for each past day" loading="lazy">
+<img class="only-dark" src="../assets/screenshots/week-dark.png" width="2880" height="1800" alt="" loading="lazy">
+</div></figure>
+      <nav class="pager" aria-label="Pages">
+        <a class="next" href="planning.html"><span>Next</span>Planning your day</a>
+      </nav>
+    </main>
+
+    <nav class="toc" aria-label="On this page">
+      <h4>On this page</h4>
+      <ul>
+          <li><a href="#concepts">Core ideas</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="#tour">The four views</a></li>
+          <li><a href="#first-week">Your first week</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shrey Singh · MIT License</span>
+      <nav aria-label="Footer">
+        <a href="./">Documentation</a>
+        <a href="../download.html">Download</a>
+        <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/9shrey/timeblock">Source code</a>
+        <a href="https://github.com/9shrey/timeblock/issues">Report an issue</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    // Collapse the docs menu on small screens; it stays open (and usable) without JavaScript.
+    if (window.matchMedia("(max-width: 860px)").matches) document.querySelector(".docs-menu").removeAttribute("open");
+  </script>
+</body>
+</html>

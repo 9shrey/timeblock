@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e3a8a"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <!-- Plan column: outlined blocks -->
+  <rect x="200" y="210" width="270" height="200" rx="36" fill="#60a5fa" fill-opacity="0.18" stroke="#60a5fa" stroke-width="22"/>
+  <rect x="200" y="460" width="270" height="130" rx="36" fill="#34d399" fill-opacity="0.18" stroke="#34d399" stroke-width="22"/>
+  <rect x="200" y="640" width="270" height="174" rx="36" fill="#fb7185" fill-opacity="0.18" stroke="#fb7185" stroke-width="22"/>
+  <!-- Actual column: solid blocks, slightly shifted -->
+  <rect x="554" y="240" width="270" height="200" rx="36" fill="#3b82f6"/>
+  <rect x="554" y="476" width="270" height="130" rx="36" fill="#10b981"/>
+  <rect x="554" y="642" width="270" height="110" rx="36" fill="#f43f5e"/>
+  <!-- Now line -->
+  <rect x="160" y="520" width="704" height="14" rx="7" fill="#f87171"/>
+</svg>
