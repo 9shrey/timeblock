@@ -121,6 +121,17 @@ describe("SqliteRepository", () => {
     expect(week.weekNote?.text).toBe("hi");
   });
 
+  it("loadRange returns every block whose day falls in [from, to], across week boundaries", async () => {
+    await repo.applyChanges([
+      put("blocks", block("before", { day: "2026-09-30" })),
+      put("blocks", block("in1", { day: "2026-10-05" })),
+      put("blocks", block("in2", { day: "2026-10-19" })),
+      put("blocks", block("after", { day: "2026-11-01" })),
+    ]);
+    const range = await repo.loadRange("2026-10-01", "2026-10-31");
+    expect(range.map((b) => b.id).sort()).toEqual(["in1", "in2"]);
+  });
+
   it("upserts and deletes", async () => {
     await repo.applyChanges([put("blocks", block("b"))]);
     await repo.applyChanges([put("blocks", block("b", { title: "renamed", skipped: true }))]);

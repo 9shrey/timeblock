@@ -3,6 +3,7 @@ import { settingRow } from "@/domain/settings";
 import { weekDays } from "@/domain/time/localDate";
 import type {
   BaseData,
+  Block,
   ChangeSet,
   ExportData,
   GoalUsage,
@@ -64,6 +65,11 @@ export class SqliteRepository implements Repository {
       checklistItems: fromRows("checklistItems", items),
       weekNote: fromRows("weekNotes", notes)[0] ?? null,
     };
+  }
+
+  async loadRange(from: LocalDate, to: LocalDate): Promise<Block[]> {
+    const rows = await this.driver.select("SELECT * FROM blocks WHERE day BETWEEN ? AND ? ORDER BY day, start_minute, end_minute", [from, to]);
+    return fromRows("blocks", rows);
   }
 
   async applyChanges(changes: ChangeSet): Promise<void> {

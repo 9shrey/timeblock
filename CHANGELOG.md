@@ -59,6 +59,8 @@ All notable changes to this project are documented here. The format follows
   unconfirmed plan blocks.
 - **Reschedule skipped blocks**: copies this week's skipped plan blocks onto a chosen
   day as new, unskipped blocks.
+- **Trends view** (`i` key): per-goal planned vs. actual bars over the last 4, 12 or 26
+  weeks, with the target as a dashed line and a streak of weeks met.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

@@ -254,6 +254,8 @@ export interface Repository {
   init(): Promise<void>;
   loadBase(): Promise<BaseData>;
   loadWeek(weekStart: LocalDate): Promise<WeekData>;
+  /** Every block with `day` in `[from, to]` (inclusive), for reports spanning many weeks. */
+  loadRange(from: LocalDate, to: LocalDate): Promise<Block[]>;
   applyChanges(changes: ChangeSet): Promise<void>;
   /** Shifts every stored week key by `shiftDays` (in [-3, 3]) and saves the new start day. */
   changeWeekStart(shiftDays: number, weekStartDay: WeekStartDay): Promise<void>;

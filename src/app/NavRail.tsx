@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, ClipboardCheck, Settings, Target, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarRange, ClipboardCheck, Settings, Target, TrendingUp, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { statsFor, weekOf } from "@/state/selectors";
@@ -9,6 +9,7 @@ const ITEMS: { view: View; label: string; icon: LucideIcon; key: string }[] = [
   { view: "week", label: "Week", icon: CalendarRange, key: "W" },
   { view: "goals", label: "Goals", icon: Target, key: "G" },
   { view: "review", label: "Review", icon: ClipboardCheck, key: "R" },
+  { view: "trends", label: "Trends", icon: TrendingUp, key: "I" },
 ];
 
 /** Number of days up to today in the current week with unconfirmed plan blocks. */
