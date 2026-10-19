@@ -68,6 +68,11 @@ pub fn run() {
             }
         }));
     }
+    // Same reasoning as single-instance: an e2e run shouldn't inherit (or leave behind)
+    // window geometry from a real session, so it skips remembering it.
+    if option_env!("VITE_E2E") != Some("1") {
+        builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
+    }
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())

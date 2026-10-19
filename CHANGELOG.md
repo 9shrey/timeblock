@@ -37,6 +37,7 @@ All notable changes to this project are documented here. The format follows
 - **Split at midnight**: dragging a block's end past 24:00 trims it to midnight and creates
   an unlinked continuation on the next day, instead of silently clamping. Blocks still never
   cross midnight.
+- The window remembers its size, position and maximized state between launches.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it
