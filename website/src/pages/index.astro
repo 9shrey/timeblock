@@ -1,12 +1,28 @@
 ---
 import Layout from "../layouts/Layout.astro";
 const base = import.meta.env.BASE_URL;
+const title = "Time-blocking that stays honest";
+const description = "Timeblock is a local-first, offline desktop app for time-blocking your day and tracking what actually happened, with weekly goals that carry forward.";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Timeblock",
+  description,
+  url: new URL(base, Astro.site).toString(),
+  applicationCategory: "ProductivityApplication",
+  operatingSystem: "macOS, Windows, Linux",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
 ---
-<Layout
-  title="Time-blocking that stays honest"
-  description="Timeblock is a local-first, offline desktop app for time-blocking your day and tracking what actually happened, with weekly goals that carry forward."
->
+<Layout title={title} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <section class="hero">
+    <p class="badge">Local-first · Open source · Free</p>
     <h1>Plan your day. See what really happened.</h1>
     <p class="lede">
       Timeblock is a local-first desktop app for time-blocking: drag out a <strong>Plan</strong>,
