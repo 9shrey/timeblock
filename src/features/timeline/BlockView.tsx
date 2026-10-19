@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Check, Circle, X } from "lucide-react";
+import type { BlockDelta } from "@/domain/blocks/delta";
 import { formatDuration, formatMinute } from "@/domain/time/localDate";
 import type { Block, Goal, PlanState } from "@/domain/types";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,14 @@ export function slotStyle(start: number, end: number, slot: Slot, pxPerHour: num
 }
 
 export const displayTitle = (title: string, goal: Goal | null | undefined) => title.trim() || goal?.name || "Untitled";
+
+/** "+15m late", "-5m early", "goal changed", or both joined. */
+export function deltaLabel(d: BlockDelta): string {
+  const parts: string[] = [];
+  if (d.startDriftMinutes !== 0) parts.push(`${d.startDriftMinutes > 0 ? "+" : ""}${d.startDriftMinutes}m ${d.startDriftMinutes > 0 ? "late" : "early"}`);
+  if (d.goalChanged) parts.push("goal changed");
+  return parts.join(", ");
+}
 
 const STATE_LABEL: Record<PlanState, string> = {
   done: "done",
@@ -75,9 +84,10 @@ interface Props {
   selected: boolean;
   editable: boolean;
   dimmed?: boolean;
+  delta?: BlockDelta | null;
 }
 
-export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, selected, editable, dimmed }: Props) {
+export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, selected, editable, dimmed, delta }: Props) {
   const dragging = useDraft((s) => s.draft?.ref?.kind === "block" && s.draft.ref.id === block.id && !s.draft.copy);
   const len = block.endMinute - block.startMinute;
   const short = minutesToPx(len, pxPerHour) < 34;
@@ -90,6 +100,7 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
     title,
     goal ? `goal ${goal.name}` : "no goal",
     planState ? STATE_LABEL[planState] : !isPlan && !block.planBlockId ? "unplanned" : null,
+    delta ? deltaLabel(delta) : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -130,6 +141,7 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
           {time}
           {!short && len >= 45 && ` · ${formatDuration(len)}`}
         </span>
+        {!short && delta && <span className="truncate text-[10px] font-medium opacity-90">{deltaLabel(delta)}</span>}
       </span>
       {editable && minutesToPx(len, pxPerHour) >= 3 * EDGE_PX && <ResizeHandles />}
     </button>

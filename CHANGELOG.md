@@ -53,6 +53,8 @@ All notable changes to this project are documented here. The format follows
   and the average start drift of confirmed blocks.
 - **CSV export** (Settings → Calendar): the plan and actual blocks for a date range, or
   the current week's per-goal stats, next to the JSON and ICS export.
+- **Delta badges** on actual blocks confirmed with a change: start drift (`+15m late`,
+  `-5m early`) and/or `goal changed`.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

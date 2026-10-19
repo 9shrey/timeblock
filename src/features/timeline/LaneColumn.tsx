@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { blockDelta } from "@/domain/blocks/delta";
 import { layoutLanes } from "@/domain/blocks/layout";
 import { ghostsOf, planStates } from "@/domain/blocks/reconcile";
 import type { Block, Ghost } from "@/domain/types";
@@ -33,6 +34,13 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
     () => (spec.layer === "plan" ? planStates(dayBlocks, { day: spec.day, minute: laneMinute }) : null),
     [dayBlocks, laneMinute, spec.day, spec.layer],
   );
+
+  const planById = useMemo(() => {
+    if (spec.layer !== "actual") return null;
+    const map = new Map<string, Block>();
+    for (const bl of dayBlocks) if (bl.layer === "plan") map.set(bl.id, bl);
+    return map;
+  }, [dayBlocks, spec.layer]);
 
   const { items, slots } = useMemo(() => {
     const items: Item[] = dayBlocks
@@ -90,6 +98,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
           );
         }
         const b = it.block;
+        const plan = b.planBlockId ? (planById?.get(b.planBlockId) ?? null) : null;
         return (
           <BlockView
             key={it.id}
@@ -102,6 +111,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
             selected={selected === `block:${b.id}`}
             editable={editable}
             dimmed={dim(b.goalId)}
+            delta={plan ? blockDelta(b, plan) : null}
           />
         );
       })}
