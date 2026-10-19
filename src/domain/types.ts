@@ -130,6 +130,12 @@ export interface Settings {
   snapMinutes: SnapMinutes;
   defaultBlockMinutes: number;
   theme: ThemePref;
+  /** "Next block in 5 min: …" shortly before a plan block starts. */
+  notifyNextBlock: boolean;
+  /** An evening nudge when today has unconfirmed blocks. */
+  notifyUnconfirmed: boolean;
+  /** On the last day of the week, once Review has something to show. */
+  notifyWeeklyReview: boolean;
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -177,6 +178,52 @@ function RoutinesSection() {
   );
 }
 
+function NotifyRow({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+      <div className="flex items-center gap-2">
+        <Checkbox id={`notify-${label}`} checked={checked} onCheckedChange={(c) => onChange(c === true)} />
+        <Label htmlFor={`notify-${label}`} className="text-sm">
+          {label}
+        </Label>
+      </div>
+      <p className="max-w-xs text-right text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function NotificationsSection() {
+  const settings = useStore((s) => s.settings);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Notifications</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Scheduled while Timeblock is running, from the same clock as the rest of the app — no background process.
+      </p>
+      <div className="rounded-lg border px-4">
+        <NotifyRow
+          label="Upcoming block"
+          hint="5 minutes before a plan block starts."
+          checked={settings.notifyNextBlock}
+          onChange={(v) => setSetting("notifyNextBlock", v)}
+        />
+        <NotifyRow
+          label="Unconfirmed blocks"
+          hint="An evening nudge if today has anything unconfirmed."
+          checked={settings.notifyUnconfirmed}
+          onChange={(v) => setSetting("notifyUnconfirmed", v)}
+        />
+        <NotifyRow
+          label="Weekly review"
+          hint="On the last day of the week, once there's something to look back on."
+          checked={settings.notifyWeeklyReview}
+          onChange={(v) => setSetting("notifyWeeklyReview", v)}
+        />
+      </div>
+    </section>
+  );
+}
+
 function ImportDialog({ pending, onClose }: { pending: { name: string; result: ImportResult } | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const result = pending?.result;
@@ -291,6 +338,7 @@ export function SettingsView() {
           </div>
         </section>
 
+        <NotificationsSection />
         <TemplatesSection />
         <RoutinesSection />
 

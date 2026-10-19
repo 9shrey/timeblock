@@ -1,6 +1,7 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isPermissionGranted, onAction, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
 import type { BackupInfo, OpenedFile, Platform, SystemTheme } from "./index";
 
@@ -28,5 +29,18 @@ export const tauriPlatform: Platform = {
     await getCurrentWindow().onCloseRequested(() =>
       Promise.race([writes.flush(), new Promise<void>((resolve) => setTimeout(resolve, CLOSE_FLUSH_TIMEOUT_MS))]),
     );
+  },
+  async notify(id, title, body) {
+    let granted = await isPermissionGranted();
+    if (!granted) granted = (await requestPermission()) === "granted";
+    if (granted) sendNotification({ id, title, body });
+  },
+  async onNotificationClick(cb) {
+    // `tap` covers both an actual click and (per the plugin's docs) is the only actionId
+    // desktop ever reports, since we never register custom action types/buttons.
+    const listener = await onAction((event) => {
+      if (event.actionId === "tap" && event.notification) cb(event.notification.id);
+    });
+    return () => listener.unregister();
   },
 };

@@ -38,6 +38,10 @@ All notable changes to this project are documented here. The format follows
   an unlinked continuation on the next day, instead of silently clamping. Blocks still never
   cross midnight.
 - The window remembers its size, position and maximized state between launches.
+- **Notifications** (each off by default, enable in Settings): an upcoming-block reminder 5
+  minutes before it starts, an evening nudge for unconfirmed blocks, and a weekly-review
+  notification on the last day of the week. Scheduled from the app's own clock while it's
+  running — no background process.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

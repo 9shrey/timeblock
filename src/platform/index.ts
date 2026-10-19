@@ -40,6 +40,14 @@ export interface Platform {
   appVersion(): Promise<string>;
   /** Keeps the window open until queued writes are saved (desktop) or warns before leaving (web). */
   guardClose(writes: { flush(): Promise<void>; pending(): number }): Promise<void>;
+  /**
+   * Shows a desktop notification tagged with `id`, requesting permission first if it hasn't
+   * been granted or denied yet. A denied permission (or an unsupported platform) makes this
+   * a silent no-op.
+   */
+  notify(id: number, title: string, body: string): Promise<void>;
+  /** Fires with `id` when the user clicks a notification shown by `notify`. */
+  onNotificationClick(cb: (id: number) => void): Promise<() => void>;
 }
 
 export { isTauri };

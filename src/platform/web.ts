@@ -73,4 +73,18 @@ export const webPlatform: Platform = {
       if (writes.pending() > 0) e.preventDefault();
     });
   },
+  async notify(id, title, body) {
+    if (!("Notification" in window)) return;
+    let permission = Notification.permission;
+    if (permission === "default") permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+    const n = new Notification(title, { body, tag: String(id) });
+    n.onclick = () => notificationClickListeners.forEach((cb) => cb(id));
+  },
+  async onNotificationClick(cb) {
+    notificationClickListeners.add(cb);
+    return () => notificationClickListeners.delete(cb);
+  },
 };
+
+const notificationClickListeners = new Set<(id: number) => void>();
