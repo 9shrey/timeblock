@@ -11,6 +11,7 @@ import { useStore } from "@/state/store";
 import { openTemplateDialog, unlockPlanDay, useUi } from "@/state/ui";
 import { DAY_PX_PER_HOUR, type ColumnSpec } from "../timeline/geometry";
 import { Timeline } from "../timeline/Timeline";
+import { IcsOverlay } from "./IcsOverlay";
 import { SummaryBar } from "./SummaryBar";
 
 function PlanHeader({ col }: { col: ColumnSpec }) {
@@ -120,6 +121,7 @@ export function DayView() {
   return (
     <div className="flex h-full flex-col">
       <SummaryBar day={day} />
+      <IcsOverlay day={day} />
       <div className="min-h-0 flex-1">
         <div className="mx-auto h-full max-w-6xl">
           <Timeline

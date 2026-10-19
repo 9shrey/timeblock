@@ -31,6 +31,8 @@ function save(image: Uint8Array): void {
 const media = () => window.matchMedia("(prefers-color-scheme: dark)");
 const current = (): SystemTheme => (media().matches ? "dark" : "light");
 
+const MIME_TYPES: Record<string, string> = { json: "application/json", ics: "text/calendar" };
+
 export const webPlatform: Platform = {
   kind: "web",
   createDriver: () => createSqlJsDriver({ wasmUrl, data: load(), onPersist: save }),
@@ -40,16 +42,18 @@ export const webPlatform: Platform = {
   restoreBackup: async () => {
     throw new Error("Backups are only available in the desktop app.");
   },
-  async saveTextFile(defaultName, contents) {
-    const url = URL.createObjectURL(new Blob([contents], { type: "application/json" }));
+  async saveTextFile(defaultName, contents, filter) {
+    const type = MIME_TYPES[filter.extensions[0] ?? ""] ?? "text/plain";
+    const url = URL.createObjectURL(new Blob([contents], { type }));
     const a = Object.assign(document.createElement("a"), { href: url, download: defaultName });
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     return defaultName;
   },
-  openTextFile() {
+  openTextFile(filter) {
     return new Promise((resolve) => {
-      const input = Object.assign(document.createElement("input"), { type: "file", accept: ".json,application/json" });
+      const accept = filter.extensions.map((ext) => `.${ext}`).join(",");
+      const input = Object.assign(document.createElement("input"), { type: "file", accept });
       input.onchange = async () => {
         const file = input.files?.[0];
         resolve(file ? { path: file.name, contents: await file.text() } : null);
@@ -73,4 +77,23 @@ export const webPlatform: Platform = {
       if (writes.pending() > 0) e.preventDefault();
     });
   },
+  async notify(id, title, body) {
+    if (!("Notification" in window)) return;
+    let permission = Notification.permission;
+    if (permission === "default") permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+    const n = new Notification(title, { body, tag: String(id) });
+    n.onclick = () => notificationClickListeners.forEach((cb) => cb(id));
+  },
+  async onNotificationClick(cb) {
+    notificationClickListeners.add(cb);
+    return () => notificationClickListeners.delete(cb);
+  },
+  async setTrayNextBlock() {},
+  async setCloseToTray() {},
+  async onTrayAction() {
+    return () => {};
+  },
 };
+
+const notificationClickListeners = new Set<(id: number) => void>();

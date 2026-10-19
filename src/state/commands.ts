@@ -101,6 +101,18 @@ export function quickAddBlock(day: LocalDate, layer: Layer, input: string): stri
   return null;
 }
 
+/** Copies a read-only imported calendar event into an ordinary, undoable plan block. */
+export function copyIcsEventToPlan(day: LocalDate, start: number, end: number, title: string): string | null {
+  if (!canEditLane(day, "plan")) {
+    toast(laneError("plan"));
+    return null;
+  }
+  const { block, changes } = createBlock({ day, layer: "plan", startMinute: start, endMinute: end, title }, env);
+  if (!commitChecked(changes, "Copy calendar event to plan")) return null;
+  select({ kind: "block", id: block.id });
+  return block.id;
+}
+
 /** Double-click on empty space: a default-length block at the snapped slot. */
 export function createDefaultAt(day: LocalDate, layer: Layer, minute: number): string | null {
   const { snapMinutes, defaultBlockMinutes } = state().settings;

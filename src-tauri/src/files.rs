@@ -17,12 +17,15 @@ pub async fn save_text_file<R: Runtime>(
     app: AppHandle<R>,
     default_name: String,
     contents: String,
+    filter_name: String,
+    filter_extensions: Vec<String>,
 ) -> Result<Option<String>, String> {
+    let extensions: Vec<&str> = filter_extensions.iter().map(String::as_str).collect();
     let mut dialog = app
         .dialog()
         .file()
         .set_file_name(&default_name)
-        .add_filter("JSON", &["json"]);
+        .add_filter(&filter_name, &extensions);
     if let Ok(docs) = app.path().document_dir() {
         dialog = dialog.set_directory(docs);
     }
@@ -37,8 +40,13 @@ pub async fn save_text_file<R: Runtime>(
 
 /// Shows an open dialog and reads the chosen file as UTF-8. None if cancelled.
 #[tauri::command]
-pub async fn open_text_file<R: Runtime>(app: AppHandle<R>) -> Result<Option<OpenedFile>, String> {
-    let mut dialog = app.dialog().file().add_filter("JSON", &["json"]);
+pub async fn open_text_file<R: Runtime>(
+    app: AppHandle<R>,
+    filter_name: String,
+    filter_extensions: Vec<String>,
+) -> Result<Option<OpenedFile>, String> {
+    let extensions: Vec<&str> = filter_extensions.iter().map(String::as_str).collect();
+    let mut dialog = app.dialog().file().add_filter(&filter_name, &extensions);
     if let Ok(docs) = app.path().document_dir() {
         dialog = dialog.set_directory(docs);
     }

@@ -10,7 +10,7 @@ const platform = vi.hoisted(() => ({
   saveTextFile: vi.fn(async (name: string, _contents: string) => `/exports/${name}`),
   appVersion: async () => "test",
 }));
-vi.mock("@/platform", () => ({ getPlatform: async () => platform }));
+vi.mock("@/platform", async (importOriginal) => ({ ...(await importOriginal<object>()), getPlatform: async () => platform }));
 
 import { put } from "@/domain/changes";
 import { serializeExport, toExportFile } from "@/domain/export/format";

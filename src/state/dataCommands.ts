@@ -6,7 +6,7 @@ import { exportFileName, serializeExport, toExportFile } from "@/domain/export/f
 import { parseImportFile, type ImportResult } from "@/domain/export/schema";
 import { settingRow } from "@/domain/settings";
 import type { ExportData, Settings } from "@/domain/types";
-import { getPlatform } from "@/platform";
+import { getPlatform, JSON_FILTER } from "@/platform";
 import { commit, flushWrites, getRepo, reloadAll, useStore } from "./store";
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -17,7 +17,7 @@ export async function exportJson(): Promise<void> {
     const platform = await getPlatform();
     const data = await getRepo().exportAll();
     const file = toExportFile(data, { appVersion: await platform.appVersion(), exportedAt: systemEnv.nowMs() });
-    const path = await platform.saveTextFile(exportFileName(useStore.getState().now.day), serializeExport(file));
+    const path = await platform.saveTextFile(exportFileName(useStore.getState().now.day), serializeExport(file), JSON_FILTER);
     if (path) toast.success("Exported", { description: path });
   } catch (e) {
     toast.error("Export failed", { description: errorText(e) });
@@ -27,7 +27,7 @@ export async function exportJson(): Promise<void> {
 /** Opens a file and validates it. Returns null if the user cancelled. */
 export async function pickImportFile(): Promise<{ name: string; result: ImportResult } | null> {
   try {
-    const file = await (await getPlatform()).openTextFile();
+    const file = await (await getPlatform()).openTextFile(JSON_FILTER);
     if (!file) return null;
     return { name: file.path, result: parseImportFile(file.contents) };
   } catch (e) {
