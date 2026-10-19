@@ -1,8 +1,7 @@
 # Roadmap after 0.1.0
 
 Four milestones: M9 hardening, M10 planning features, M11 desktop integration and
-M12 insights. M9 is done. M10 has started, and the unfinished work is committed and
-does **not** compile yet; see [Handoff](#handoff) below.
+M12 insights. M9 and M10 are done.
 
 ## Status
 
@@ -10,8 +9,14 @@ does **not** compile yet; see [Handoff](#handoff) below.
 |---|---|
 | M9a: hardening, batch 1 | ✅ Done: week-load retry, dropping writes queued behind a failure, flush on close, single instance, narrower SQL bridge |
 | M9b: hardening, batch 2 | ✅ Done: schema v2 integrity triggers, backup restore UI, lane re-render fixes, tests, CI (e2e, audits, dependabot), doc fixes |
-| M10.1: copy week and templates | 🚧 Data layer half done (see Handoff) |
-| M10.2–M10.8 | ⏳ Not started |
+| M10.1: copy week and templates | ✅ Done: `copyWeekPlan`, templates (save/apply/rename/delete), export format v2 |
+| M10.2: routines | ✅ Done: materialization, editing syncs future unedited occurrences, deletion unlinks |
+| M10.3: quick-add | ✅ Done: `n` opens a one-line `<start>-<end> <title> [#tag]` input |
+| M10.4: command palette & shortcuts sheet | ✅ Done: `Ctrl+K`, `?` |
+| M10.5: highlight a goal | ✅ Done |
+| M10.6: drag to reorder | ✅ Done: goals and outcomes |
+| M10.7: running block / timer | ✅ Done |
+| M10.8: split at midnight | ✅ Done |
 | M11 | ⏳ Not started |
 | M12 | ⏳ Not started |
 
@@ -30,64 +35,19 @@ does **not** compile yet; see [Handoff](#handoff) below.
   - in `src-tauri`: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
   - `npm run e2e:build && npm run e2e` (Linux, needs tauri-driver and WebKitWebDriver)
 
-## Handoff
+## Handoff (M10 → M11)
 
-### Done in the working tree (uncommitted until this commit)
+M10 is complete (see Status above); `npx tsc --noEmit`, `npm run lint`, `npm test` and
+`npm run test:tz` are all clean as of this commit. Each M10.x item landed as its own
+commit on `claude/affectionate-edison-mxlaal`; see that branch's log for the detail of
+what each one touched.
 
-- **Types** (`src/domain/types.ts`):
-  - `Block.routineId: string | null` (required);
-  - new `TemplateBlock`, `Template` and `Routine` types;
-  - `EntityMap`, `ExportData` and `BaseData` gain `templates` and `routines`;
-  - `GoalUsage.routines`;
-  - `ExportFileV1` was renamed `ExportFile`, with `version: 2`.
-- **`src/domain/changes.ts`:** `TABLES` (with routines before blocks) and `emptyState`.
-- **`src/data/migrations/0003_templates_routines.sql`:** creates `templates` (blocks stored
-  as a JSON column) and `routines`, and adds `blocks.routine_id` (`ON DELETE SET NULL`) plus
-  a partial index. Registered in `migrate.ts`.
-- **`src/data/mappers.ts`:** specs for `templates` and `routines`; `blocks` gains the
-  `routine_id` column.
-- **`src/data/SqliteRepository.ts`:** `loadBase` loads templates and routines, and
-  `goalUsage` counts routines.
-
-### Next steps, in order
-
-1. **Make it compile.** `npx tsc --noEmit` currently reports about 28 errors.
-   - Add `routineId: null` to every `Block` literal and fixture: `reconcile.ts`
-     `createBlock`, `devSeed.ts`, and the `*.test.ts` block factories.
-   - `devSeed`'s `EMPTY_DATA` and `demoSeed` need `templates: []` and `routines: []`.
-   - `store.ts` `loadAll`/`stateFrom` must pass `base.templates` and `base.routines`.
-2. **Export format v2** (`src/domain/export/format.ts` and `schema.ts`):
-   - `EXPORT_VERSION = 2`;
-   - add `templateOut` and `routineOut` and include them in `normalizeExportData`;
-   - `blockOut` gains `routineId`;
-   - zod schemas for the new tables;
-   - import must still accept **v1** files, defaulting `routineId` to null and the new
-     tables to `[]`;
-   - repair dangling `goalId`s in templates and routines, and dangling `routineId`s on
-     blocks;
-   - `duplicateKeys`, `counts` and `COUNT_LABELS` (in `SettingsView`).
-
-   Tests: v1 import, a v2 round trip, and the repository upgrade test from v2 to v3.
-3. **Copy last week's plan:** a `copyWeekPlan(fromWeek, toWeek)` command built on
-   `copyPlan` (`src/domain/blocks/reconcile.ts`).
-   - Skip locked or past target days.
-   - Clear goals that are archived as of the target week, otherwise `validateBlock`
-     rejects the whole ChangeSet.
-   - Add a button in the WeekView header and the empty-day prompt in `DayView`.
-4. **Templates.** Commands live in a new `src/state/templateCommands.ts`, with the pure
-   logic in `src/domain/templates.ts`:
-   - save day or week as template;
-   - apply a template to a day or week (it creates ordinary plan blocks, as one undo step);
-   - rename and delete.
-
-   UI: the block/empty-space context menu, the DayView empty prompt, and a Settings
-   section that lists templates.
-5. Continue with **M10.2 routines**, using the `routines` table that already exists.
-   Materialize occurrences on load and when the day changes, up to the end of next week
-   or the end of the viewed week, whichever is later. Commit them with `noHistory`. Advance
-   `materializedThrough` so deleted occurrences don't come back. Editing a routine updates
-   future occurrences that haven't been edited. Then work through the rest of M10, M11 and
-   M12 below, in order.
+Not yet verified in this environment (no Rust system libraries — `libgtk-3-dev`,
+`libwebkit2gtk-4.1-dev` etc. — and no apt mirror carrying them, no `tauri-driver` /
+WebKitWebDriver): `cargo fmt/clippy/test` in `src-tauri`, and `npm run e2e`. No Rust
+files changed in M10, so this is a pre-existing environment gap, not a new risk — but
+whoever picks up M11 (which touches `src-tauri` directly: window state, notifications,
+tray icon) needs an environment that can actually build and test the Tauri side.
 
 ### Notes for the next session
 
