@@ -37,6 +37,20 @@ All notable changes to this project are documented here. The format follows
 - **Split at midnight**: dragging a block's end past 24:00 trims it to midnight and creates
   an unlinked continuation on the next day, instead of silently clamping. Blocks still never
   cross midnight.
+- **Window state**: size, position and maximized state are remembered across launches.
+- **Notifications**, each independently toggleable in Settings → Desktop: a "Next block in
+  5 min" alert, an evening nudge when today has unconfirmed blocks (its Confirm action opens
+  Day view), and "Weekly review is ready" on the week's last day. Scheduled from the existing
+  clock tick; no background process.
+- **Tray icon**: today's next block, Start timer, Confirm rest of day, Show/Hide and Quit.
+  "Close to tray" and "Launch on login" settings in Settings → Desktop.
+- **ICS import and export**: import a `.ics` file as a read-only overlay of events you can
+  "Copy to plan" individually (Settings → Calendar); export the plan and actual blocks for a
+  date range to `.ics`. The parser is hand-rolled (`src/domain/ics/`), covering single,
+  timed `VEVENT`s; all-day and recurring (`RRULE`) events are reported as skipped rather than
+  guessed at, since the block model doesn't have either. Imported events aren't persisted
+  (no new DB table): they're a read-only overlay for the session, there to be copied over
+  or re-imported.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

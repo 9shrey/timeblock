@@ -17,7 +17,11 @@ M12 insights. M9 and M10 are done.
 | M10.6: drag to reorder | ✅ Done: goals and outcomes |
 | M10.7: running block / timer | ✅ Done |
 | M10.8: split at midnight | ✅ Done |
-| M11 | ⏳ Not started |
+| M11.1: window state | ✅ Done: `tauri-plugin-window-state` remembers size/position/maximized state |
+| M11.2: notifications | ✅ Done: next block, evening nudge (with Confirm action), weekly review; each toggleable in Settings |
+| M11.3: tray icon | ✅ Done: next block, Start timer, Confirm rest of day, Show/Hide, Quit; close-to-tray and autostart settings |
+| M11.4: ICS import/export | ✅ Done: read-only `.ics` import overlay with Copy to plan, `.ics` export for a date range; hand-rolled parser |
+| M11.5: auto-update & signing | ⏳ Deferred: needs the owner's signing keys/accounts (see Conventions and Handoff below) |
 | M12 | ⏳ Not started |
 
 ## Conventions
@@ -46,6 +50,52 @@ what each one touched.
 `src-tauri` are also clean (no Rust files changed in M10). `npm run e2e` (needs
 `tauri-driver` and WebKitWebDriver) is still unconfirmed in this environment.
 
+## Handoff (M11 → M12)
+
+M11.1–M11.4 are complete (see Status above); M11.5 (auto-update/signing) is explicitly
+deferred, per the note below. Each M11.x item landed as its own commit on
+`m11-desktop-integration`, branched from `main` after the M10 PR merged; see that branch's
+log for the detail of what each one touched.
+
+- **Window state**: `tauri-plugin-window-state`, registered as a plugin with no extra
+  wiring needed.
+- **Notifications**: pure scheduling decisions in `src/domain/notifications/schedule.ts`
+  (unit tested), driven from the existing clock tick in `src/main.tsx` via
+  `src/state/notifications.ts`, which owns the "already fired" bookkeeping. Each of the
+  three notifications has its own setting (`notifyNextBlock`, `notifyEveningNudge`,
+  `notifyWeeklyReview`). The evening nudge's "Confirm" action opens Day view for today.
+- **Tray icon**: Rust-side (`src-tauri/src/tray.rs`), with "Start timer" and "Confirm rest
+  of day" emitted as Tauri events the frontend subscribes to (`platform.onTrayAction`),
+  since that logic lives in the TS domain/state layer. `closeToTray` is mirrored into Rust
+  app state via a `set_close_to_tray` command and checked in `on_window_event`.
+- **ICS import/export**: hand-rolled RFC 5545 subset in `src/domain/ics/ics.ts` (pure,
+  unit tested) — chosen over `ical.js` because the read-only, non-recurring overlay this
+  needs is a much smaller surface than a general iCalendar library. Only single,
+  timed `VEVENT`s import; all-day and recurring (`RRULE`) events are reported as skipped.
+  **Decision**: imported events are *not* persisted (no new DB table/migration) — they're
+  a read-only overlay held in `src/state/ics.ts` for the session only, since the roadmap
+  left persistence optional and a non-persisted overlay is the smallest correct version of
+  "read-only, Copy to plan". Revisit if users want imports to survive a restart.
+- `npx tsc --noEmit`, `npm run lint`, `npm test` and `npm run test:tz` are all clean.
+  `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` in
+  `src-tauri` are clean too (system deps for the GTK/webkit2gtk build were already present
+  in this environment).
+- **Unverified**: tray menu interaction, OS notification delivery (including the evening
+  nudge's action button) and window-state persistence across real restarts — none of
+  these are exercisable headlessly. `npm run e2e:build && npm run e2e` was not run in this
+  environment (not attempted; see whether `tauri-driver`/WebKitWebDriver are available
+  before relying on it). Settings toggles and the ICS import/export dialogs were checked
+  against a dev server in the browser pane.
+
+### ⚠️ Possible duplicate work in flight
+
+`origin/claude/m11-desktop-integration` (a differently-named branch than this one) already
+has three M11 commits — window state, notifications, and a tray icon — built on an older
+merge base (before the M10 PR #5 merge and the later website PRs). No PR is open for it.
+Compare the two before merging either, to avoid double-implementing the same features or
+fighting a merge conflict later; this handoff's `m11-desktop-integration` branch is the one
+described above, built on current `main`.
+
 ### Notes for the next session
 
 - This repo was being edited by two Claude sessions in one checkout, and a `website`
@@ -55,7 +105,13 @@ what each one touched.
 - The e2e suite can be flaky locally: WebKitWebDriver sometimes reports "page crash or
   hang" in the middle of a drag. CI retries each spec file once.
 - The auto-updater and code signing need keys and accounts from the owner. Don't
-  implement them without asking.
+  implement them without asking. **Still deferred**: `origin` lags local `main` until
+  about 2026-10-25 (the daily-publish timer), so don't wire up `tauri-plugin-updater` or
+  `release.yml`'s `latest.json` until releases are real, even once keys exist.
+- A sibling worktree (`timeblock-m12`, branch `m12-insights`) has what looks like a
+  complete M12 implementation (Trends view, accuracy stats, delta badges, review
+  additions, CSV export) as of 5 commits, not yet pushed or merged to `main`. Check its
+  state before starting M12 work from scratch.
 
 ---
 
