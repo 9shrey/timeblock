@@ -5,6 +5,9 @@ export const TABLES: readonly Table[] = [
   "goals",
   "weekTargets",
   "checklistItems",
+  "templates",
+  // Before blocks: occurrences reference their routine.
+  "routines",
   "blocks",
   "weekNotes",
 ] as const;
@@ -30,7 +33,7 @@ export function targetKey(goalId: string, weekStart: string): string {
 }
 
 export function emptyState(): DataState {
-  return { settings: {}, goals: {}, weekTargets: {}, checklistItems: {}, blocks: {}, weekNotes: {} };
+  return { settings: {}, goals: {}, weekTargets: {}, checklistItems: {}, templates: {}, routines: {}, blocks: {}, weekNotes: {} };
 }
 
 export function stateFrom(rows: { [T in Table]?: EntityMap[T][] }): DataState {

@@ -2,7 +2,7 @@
  * Row ↔ entity mapping and per-table upsert/delete SQL. The only place that knows
  * column names; everything above works with camelCase domain types.
  */
-import type { EntityMap, Table } from "@/domain/types";
+import type { EntityMap, Table, Template } from "@/domain/types";
 import type { SqlRow, SqlStmt, SqlValue } from "./drivers/SqlDriver";
 
 interface TableSpec<T extends Table> {
@@ -23,6 +23,14 @@ const numOrNull = (v: SqlValue | undefined): number | null => (v == null ? null 
 const bool = (v: SqlValue | undefined): boolean => Number(v ?? 0) !== 0;
 const bit = (b: boolean): number => (b ? 1 : 0);
 const single = (key: string): SqlValue[] => [key];
+const parseJsonArray = (v: SqlValue | undefined): unknown[] => {
+  try {
+    const parsed: unknown = JSON.parse(str(v) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
   settings: {
@@ -104,6 +112,68 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
     }),
     keyParams: single,
   },
+  templates: {
+    name: "templates",
+    columns: ["id", "name", "span_days", "blocks", "created_at", "updated_at"],
+    pk: ["id"],
+    toRow: (e) => [e.id, e.name, e.spanDays, JSON.stringify(e.blocks), e.createdAt, e.updatedAt],
+    fromRow: (r) => ({
+      id: str(r.id),
+      name: str(r.name),
+      spanDays: num(r.span_days) === 7 ? 7 : 1,
+      blocks: parseJsonArray(r.blocks) as Template["blocks"],
+      createdAt: num(r.created_at),
+      updatedAt: num(r.updated_at),
+    }),
+    keyParams: single,
+  },
+  routines: {
+    name: "routines",
+    columns: [
+      "id",
+      "title",
+      "goal_id",
+      "notes",
+      "start_minute",
+      "end_minute",
+      "weekdays",
+      "starts_on",
+      "ends_on",
+      "materialized_through",
+      "created_at",
+      "updated_at",
+    ],
+    pk: ["id"],
+    toRow: (e) => [
+      e.id,
+      e.title,
+      e.goalId,
+      e.notes,
+      e.startMinute,
+      e.endMinute,
+      e.weekdays,
+      e.startsOn,
+      e.endsOn,
+      e.materializedThrough,
+      e.createdAt,
+      e.updatedAt,
+    ],
+    fromRow: (r) => ({
+      id: str(r.id),
+      title: str(r.title),
+      goalId: strOrNull(r.goal_id),
+      notes: str(r.notes),
+      startMinute: num(r.start_minute),
+      endMinute: num(r.end_minute),
+      weekdays: num(r.weekdays),
+      startsOn: str(r.starts_on),
+      endsOn: strOrNull(r.ends_on),
+      materializedThrough: strOrNull(r.materialized_through),
+      createdAt: num(r.created_at),
+      updatedAt: num(r.updated_at),
+    }),
+    keyParams: single,
+  },
   blocks: {
     name: "blocks",
     columns: [
@@ -117,6 +187,7 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
       "notes",
       "plan_block_id",
       "skipped",
+      "routine_id",
       "created_at",
       "updated_at",
     ],
@@ -132,6 +203,7 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
       e.notes,
       e.planBlockId,
       bit(e.skipped),
+      e.routineId,
       e.createdAt,
       e.updatedAt,
     ],
@@ -146,6 +218,7 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
       notes: str(r.notes),
       planBlockId: strOrNull(r.plan_block_id),
       skipped: bool(r.skipped),
+      routineId: strOrNull(r.routine_id),
       createdAt: num(r.created_at),
       updatedAt: num(r.updated_at),
     }),

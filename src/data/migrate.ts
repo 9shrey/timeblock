@@ -1,9 +1,10 @@
 import init0001 from "./migrations/0001_init.sql?raw";
 import integrity0002 from "./migrations/0002_integrity.sql?raw";
+import templates0003 from "./migrations/0003_templates_routines.sql?raw";
 import type { SqlDriver } from "./drivers/SqlDriver";
 
 /** Migration N (1-based) brings the DB from user_version N-1 to N. */
-export const MIGRATIONS: readonly string[] = [init0001, integrity0002];
+export const MIGRATIONS: readonly string[] = [init0001, integrity0002, templates0003];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
 export class NewerDatabaseError extends Error {

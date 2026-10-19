@@ -28,6 +28,8 @@ export interface Block {
   planBlockId: string | null;
   /** Plan blocks only: explicitly marked as not done. */
   skipped: boolean;
+  /** Plan blocks created by a routine; cleared when the routine is deleted. */
+  routineId: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -61,6 +63,48 @@ export interface ChecklistItem {
   sortOrder: number;
   /** Set when this item was carried over from an unfinished item of an earlier week. */
   carriedFromId: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** One block of a template, placed relative to the day (or week) it is applied to. */
+export interface TemplateBlock {
+  /** 0 for day templates; 0..6 from the week start for week templates. */
+  dayOffset: number;
+  startMinute: Minute;
+  endMinute: Minute;
+  title: string;
+  goalId: string | null;
+  notes: string;
+}
+
+/** A saved day or week of plan blocks that can be stamped onto another day or week. */
+export interface Template {
+  id: string;
+  name: string; // 1..80 chars
+  spanDays: 1 | 7;
+  blocks: TemplateBlock[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * A recurring plan block. Occurrences are ordinary plan blocks (with `routineId`) created
+ * ahead of time for days up to a horizon; `materializedThrough` records how far, so a
+ * deleted occurrence is never re-created.
+ */
+export interface Routine {
+  id: string;
+  title: string;
+  goalId: string | null;
+  notes: string;
+  startMinute: Minute;
+  endMinute: Minute;
+  /** Bit d set = repeats on weekday d (0 = Sunday … 6 = Saturday). 1..127. */
+  weekdays: number;
+  startsOn: LocalDate;
+  endsOn: LocalDate | null;
+  materializedThrough: LocalDate | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -120,6 +164,8 @@ export interface Env {
 // ---------------------------------------------------------------------------
 
 export interface EntityMap {
+  templates: Template;
+  routines: Routine;
   blocks: Block;
   goals: Goal;
   weekTargets: WeekTarget;
@@ -154,13 +200,16 @@ export interface ExportData {
   goals: Goal[];
   weekTargets: WeekTarget[];
   checklistItems: ChecklistItem[];
+  templates: Template[];
+  routines: Routine[];
   blocks: Block[];
   weekNotes: WeekNote[];
 }
 
-export interface ExportFileV1 extends ExportData {
+export interface ExportFile extends ExportData {
   format: "timeblock.export";
-  version: 1;
+  /** 1: original tables. 2: adds templates, routines and blocks.routineId. */
+  version: 2;
   exportedAt: number;
   appVersion: string;
 }
@@ -173,6 +222,8 @@ export interface BaseData {
   goals: Goal[];
   weekTargets: WeekTarget[];
   settings: SettingRow[];
+  templates: Template[];
+  routines: Routine[];
 }
 
 export interface WeekData {
@@ -187,6 +238,7 @@ export interface WeekData {
 export interface GoalUsage {
   blocks: number;
   checklistItems: number;
+  routines: number;
 }
 
 export interface Repository {
