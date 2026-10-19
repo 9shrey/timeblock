@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { weekStartOf } from "@/domain/time/localDate";
 import { DayView } from "@/features/day/DayView";
 import { BudgetPanel } from "@/features/goals/BudgetPanel";
@@ -30,7 +31,12 @@ export function Shell() {
 
   // Keep the viewed week and its neighbours loaded.
   useEffect(() => {
-    void ensureWeeksAround(weekStartOf(cursor, weekStartDay));
+    ensureWeeksAround(weekStartOf(cursor, weekStartDay)).catch((e: unknown) =>
+      toast.error("Couldn't load this week", {
+        id: "week-load",
+        description: `${e instanceof Error ? e.message : String(e)}. Navigate again to retry.`,
+      }),
+    );
   }, [cursor, weekStartDay]);
 
   // Suppress the webview's native context menu except in editable fields.

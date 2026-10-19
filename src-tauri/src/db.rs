@@ -1,6 +1,7 @@
 //! Schema-agnostic SQLite access. All SQL lives in TypeScript; Rust only runs
 //! statements, converts values, and owns transactions and backups.
 
+use rusqlite::limits::Limit;
 use rusqlite::types::{Value, ValueRef};
 use rusqlite::{Connection, params_from_iter};
 use serde::Deserialize;
@@ -83,6 +84,10 @@ impl Db {
             "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON;",
         )
         .map_err(err)?;
+        // SQL from the webview may not reach other files: no ATTACH, and so no VACUUM INTO
+        // (which attaches its target). `backup_now` lifts this for its own VACUUM INTO.
+        conn.set_limit(Limit::SQLITE_LIMIT_ATTACHED, 0)
+            .map_err(err)?;
         Ok(Self {
             conn: Mutex::new(conn),
             dir: dir.to_path_buf(),
@@ -103,6 +108,12 @@ impl Db {
     pub fn select(&self, sql: &str, values: &[Json]) -> Result<Vec<Row>, String> {
         let conn = self.lock()?;
         let mut stmt = conn.prepare(sql).map_err(err)?;
+        // `readonly()` alone lets `PRAGMA x = y` through, so also require a query.
+        let first = sql.split_whitespace().next().unwrap_or("");
+        let is_query = first.eq_ignore_ascii_case("select") || first.eq_ignore_ascii_case("with");
+        if !is_query || !stmt.readonly() {
+            return Err("db_select only runs read-only SELECT queries".into());
+        }
         let names: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
         let mut rows = stmt.query(params_from_iter(params(values)?)).map_err(err)?;
         let mut out = Vec::new();
@@ -172,9 +183,15 @@ impl Db {
             n += 1;
         }
         let target = path.to_string_lossy().into_owned();
-        self.lock()?
-            .execute("VACUUM INTO ?1", [&target])
-            .map_err(err)?;
+        {
+            let conn = self.lock()?;
+            conn.set_limit(Limit::SQLITE_LIMIT_ATTACHED, 1)
+                .map_err(err)?;
+            let result = conn.execute("VACUUM INTO ?1", [&target]);
+            conn.set_limit(Limit::SQLITE_LIMIT_ATTACHED, 0)
+                .map_err(err)?;
+            result.map_err(err)?;
+        }
         self.prune_backups()?;
         Ok(target)
     }
@@ -254,6 +271,42 @@ mod tests {
     }
 
     #[test]
+    fn webview_sql_cannot_reach_other_files() {
+        let (dir, db) = db();
+        let other = dir
+            .path()
+            .join("other.sqlite3")
+            .to_string_lossy()
+            .into_owned();
+        let attach = stmt("ATTACH ?1 AS other", vec![Json::from(other.clone())]);
+        assert!(db.batch(&[attach]).is_err());
+        assert!(
+            db.exec_script(&format!("ATTACH '{other}' AS other;"))
+                .is_err()
+        );
+        let vacuum = stmt("VACUUM INTO ?1", vec![Json::from(other.clone())]);
+        assert!(db.batch(&[vacuum]).is_err());
+        assert!(!std::path::Path::new(&other).exists());
+        // Backups still work, and the limit is back in place afterwards.
+        db.backup_now("manual").unwrap();
+        assert!(
+            db.exec_script(&format!("ATTACH '{other}' AS other;"))
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn select_is_read_only() {
+        let (_dir, db) = db();
+        let insert = "INSERT INTO t (id, n) VALUES ('a', 1) RETURNING n";
+        assert!(db.select(insert, &[]).is_err());
+        assert!(db.select("PRAGMA foreign_keys = OFF", &[]).is_err());
+        let version = "SELECT user_version FROM pragma_user_version";
+        assert_eq!(db.select(version, &[]).unwrap().len(), 1);
+        assert!(db.select("SELECT * FROM t", &[]).unwrap().is_empty());
+    }
+
+    #[test]
     fn converts_values() {
         assert_eq!(to_sql(&json!(null)).unwrap(), Value::Null);
         assert_eq!(to_sql(&json!(42)).unwrap(), Value::Integer(42));
@@ -324,7 +377,9 @@ mod tests {
         );
         assert!(res.is_err());
         assert!(db.select("SELECT * FROM t", &[]).unwrap().is_empty());
-        let v = db.select("PRAGMA user_version", &[]).unwrap();
+        let v = db
+            .select("SELECT user_version FROM pragma_user_version", &[])
+            .unwrap();
         assert_eq!(v[0]["user_version"], json!(0));
     }
 

@@ -113,6 +113,34 @@ describe("store", () => {
     expect(useStore.getState().history.undo).toHaveLength(0);
   });
 
+  it("drops writes queued behind a failed one", async () => {
+    commit([put("blocks", block("bad", { goalId: "missing-goal" }))]);
+    commit([put("blocks", block("after"))]);
+    await flushWrites();
+    await vi.waitFor(() => expect(onWriteError).toHaveBeenCalledOnce());
+    expect(await dbBlocks()).toEqual([]);
+    expect(blocks()).toEqual({});
+    // Writes made after the failure are saved normally.
+    commit([put("blocks", block("later"))]);
+    await flushWrites();
+    expect((await dbBlocks()).map((b) => b.id)).toEqual(["later"]);
+  });
+
+  it("a failed week load is retried by the next call", async () => {
+    const loadWeek = vi.spyOn(repo, "loadWeek").mockRejectedValueOnce(new Error("disk"));
+    await expect(ensureWeek("2026-11-02")).rejects.toThrow("disk");
+    expect(useStore.getState().loadedWeeks).not.toContain("2026-11-02");
+    await ensureWeek("2026-11-02");
+    expect(useStore.getState().loadedWeeks).toContain("2026-11-02");
+    expect(loadWeek).toHaveBeenCalledTimes(2);
+  });
+
+  it("concurrent ensureWeek calls share one read", async () => {
+    const loadWeek = vi.spyOn(repo, "loadWeek");
+    await Promise.all([ensureWeek("2026-11-02"), ensureWeek("2026-11-02")]);
+    expect(loadWeek).toHaveBeenCalledOnce();
+  });
+
   it("ensureWeek loads a week once and keeps in-memory rows", async () => {
     await repo.applyChanges([put("blocks", block("far", { day: "2026-11-04" }))]);
     await ensureWeek("2026-11-02");

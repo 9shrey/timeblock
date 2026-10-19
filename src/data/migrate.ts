@@ -15,7 +15,7 @@ export class NewerDatabaseError extends Error {
 }
 
 export async function userVersion(driver: SqlDriver): Promise<number> {
-  const rows = await driver.select("PRAGMA user_version");
+  const rows = await driver.select("SELECT user_version FROM pragma_user_version");
   return Number(rows[0]?.user_version ?? 0);
 }
 

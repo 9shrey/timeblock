@@ -45,7 +45,20 @@ fn reveal_data_dir(app: tauri::AppHandle, db: State<'_, Db>) -> Result<(), Strin
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    // Must be registered first. A second launch focuses the running window and exits, so two
+    // copies never write the same database. E2E builds skip it so a test run can't collide with
+    // a Timeblock you have open (they use their own data folder).
+    if option_env!("VITE_E2E") != Some("1") {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }));
+    }
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {

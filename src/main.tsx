@@ -6,7 +6,7 @@ import { SqliteRepository } from "./data/SqliteRepository";
 import { CLOCK_TICK_MS, makeClock, parseNowOverride } from "./domain/time/clock";
 import type { Now } from "./domain/types";
 import { getPlatform } from "./platform";
-import { initStore, useStore } from "./state/store";
+import { flushWrites, initStore, pendingWrites, useStore } from "./state/store";
 import "./styles/index.css";
 
 /** Dev and end-to-end test builds accept `?seed`, `?reset` and `?now`; release builds never do. */
@@ -60,11 +60,12 @@ async function boot() {
       repo,
       onWriteError: (e) =>
         toast.error("Couldn't save your last change", {
-          description: `${e instanceof Error ? e.message : String(e)}. The view was reloaded from disk.`,
+          description: `${e instanceof Error ? e.message : String(e)}. The view was reloaded from disk and undo history was cleared.`,
         }),
     },
     clock(),
   );
+  await platform.guardClose({ flush: flushWrites, pending: pendingWrites });
   useStore.setState({ systemTheme: await platform.systemTheme() });
   void platform.onSystemThemeChange((systemTheme) => useStore.setState({ systemTheme }));
 
@@ -74,7 +75,12 @@ async function boot() {
     if (next.day !== cur.day || next.minute !== cur.minute) useStore.setState({ now: next });
   }, CLOCK_TICK_MS);
 
-  platform.backupIfStale(24).catch((e: unknown) => console.warn("Automatic backup failed", e));
+  platform.backupIfStale(24).catch((e: unknown) => {
+    console.warn("Automatic backup failed", e);
+    toast.error("Automatic backup failed", {
+      description: `${e instanceof Error ? e.message : String(e)}. Try Settings → Back up now.`,
+    });
+  });
 }
 
 boot().then(

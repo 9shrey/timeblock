@@ -9,8 +9,9 @@ export interface WriteQueue {
 }
 
 /**
- * Serial write queue. A failed write calls `onError` (which reloads state from the DB)
- * and the queue keeps going with the next write.
+ * Serial write queue. A failed write calls `onError` (which reloads state from the DB).
+ * Writes queued behind the failed one are dropped: they were built on optimistic state
+ * the reload throws away. Writes pushed after the failure run normally.
  */
 export function createWriteQueue(
   apply: (changes: ChangeSet) => Promise<void>,
@@ -18,13 +19,23 @@ export function createWriteQueue(
 ): WriteQueue {
   let tail: Promise<void> = Promise.resolve();
   let pending = 0;
+  // Bumped on every failure; a write only runs if no failure happened since it was pushed.
+  let generation = 0;
   return {
     push(changes) {
       if (changes.length === 0) return tail;
       pending++;
+      const pushedAt = generation;
       tail = tail
-        .then(() => apply(changes))
-        .catch((e: unknown) => onError(e, changes))
+        .then(async () => {
+          if (pushedAt !== generation) return;
+          try {
+            await apply(changes);
+          } catch (e) {
+            generation++;
+            onError(e, changes);
+          }
+        })
         .finally(() => {
           pending--;
         });

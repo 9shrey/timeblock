@@ -52,8 +52,8 @@ not code-signed yet.
 - **Windows:** run the `.msi` or `-setup.exe`. If SmartScreen warns about an
   unrecognized app, click **More info → Run anyway**.
 
-Run only one copy of Timeblock at a time: two windows writing the same database can
-overwrite each other's changes.
+Only one copy of Timeblock runs at a time: launching it again brings the open window to
+the front.
 
 ## Your data and backups
 

@@ -27,6 +27,8 @@ export interface Platform {
   systemTheme(): Promise<SystemTheme>;
   onSystemThemeChange(cb: (theme: SystemTheme) => void): Promise<() => void>;
   appVersion(): Promise<string>;
+  /** Keeps the window open until queued writes are saved (desktop) or warns before leaving (web). */
+  guardClose(writes: { flush(): Promise<void>; pending(): number }): Promise<void>;
 }
 
 export { isTauri };

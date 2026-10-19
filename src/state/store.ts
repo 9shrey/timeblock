@@ -140,15 +140,23 @@ export async function initStore(d: StoreDeps, now: Now): Promise<void> {
   set({ ready: true });
 }
 
-/** Loads a week (once). */
-export async function ensureWeek(weekStart: LocalDate): Promise<void> {
+/** Week loads in flight, so concurrent callers share one read. */
+const weekLoads = new Map<LocalDate, Promise<void>>();
+
+/** Loads a week (once). A failed load rejects and is retried by the next call. */
+export function ensureWeek(weekStart: LocalDate): Promise<void> {
   const { repo, queue } = requireDeps();
-  if (get().loadedWeeks.includes(weekStart)) return;
-  // Mark first so concurrent callers don't load twice.
-  set((s) => ({ loadedWeeks: [...s.loadedWeeks, weekStart] }));
-  await queue.flush();
-  const week = await repo.loadWeek(weekStart);
-  set((s) => ({ data: mergeWeek(s.data, week) }));
+  if (get().loadedWeeks.includes(weekStart)) return Promise.resolve();
+  let load = weekLoads.get(weekStart);
+  if (!load) {
+    load = (async () => {
+      await queue.flush();
+      const week = await repo.loadWeek(weekStart);
+      set((s) => ({ data: mergeWeek(s.data, week), loadedWeeks: [...s.loadedWeeks, weekStart] }));
+    })().finally(() => weekLoads.delete(weekStart));
+    weekLoads.set(weekStart, load);
+  }
+  return load;
 }
 
 /** Loads the given week and its neighbours. */
@@ -212,6 +220,11 @@ export function sealHistory(): void {
 /** Waits for all queued writes (tests, export, shutdown). */
 export function flushWrites(): Promise<void> {
   return requireDeps().queue.flush();
+}
+
+/** Number of writes queued or in flight. */
+export function pendingWrites(): number {
+  return requireDeps().queue.pending;
 }
 
 export function getRepo(): Repository {

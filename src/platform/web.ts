@@ -64,4 +64,9 @@ export const webPlatform: Platform = {
     return () => m.removeEventListener("change", listener);
   },
   appVersion: async () => __APP_VERSION__,
+  async guardClose(writes) {
+    window.addEventListener("beforeunload", (e) => {
+      if (writes.pending() > 0) e.preventDefault();
+    });
+  },
 };

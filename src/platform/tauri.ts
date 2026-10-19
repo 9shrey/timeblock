@@ -4,6 +4,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
 import type { OpenedFile, Platform, SystemTheme } from "./index";
 
+const CLOSE_FLUSH_TIMEOUT_MS = 3000;
+
 const toTheme = (t: string | null): SystemTheme => (t === "dark" ? "dark" : "light");
 
 export const tauriPlatform: Platform = {
@@ -19,4 +21,10 @@ export const tauriPlatform: Platform = {
   systemTheme: async () => toTheme(await getCurrentWindow().theme()),
   onSystemThemeChange: (cb) => getCurrentWindow().onThemeChanged(({ payload }) => cb(toTheme(payload))),
   appVersion: () => getVersion(),
+  async guardClose(writes) {
+    // The window closes once the handler settles; a stuck write must not keep it open for good.
+    await getCurrentWindow().onCloseRequested(() =>
+      Promise.race([writes.flush(), new Promise<void>((resolve) => setTimeout(resolve, CLOSE_FLUSH_TIMEOUT_MS))]),
+    );
+  },
 };
