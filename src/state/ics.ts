@@ -21,7 +21,25 @@ interface IcsOverlayState {
 
 export const useIcsOverlay = create<IcsOverlayState>(() => ({ events: [], fileName: null }));
 
-export const useIcsEventsOn = (day: LocalDate): IcsEvent[] => useIcsOverlay((s) => s.events.filter((e) => e.day === day));
+const EMPTY: readonly IcsEvent[] = [];
+
+/** Groups events by day once per `events` array identity, so a day with no events keeps a stable (empty) reference. */
+let lastEvents: IcsEvent[] | null = null;
+let lastByDay = new Map<LocalDate, IcsEvent[]>();
+function eventsByDay(events: IcsEvent[]): Map<LocalDate, IcsEvent[]> {
+  if (events === lastEvents) return lastByDay;
+  const byDay = new Map<LocalDate, IcsEvent[]>();
+  for (const e of events) {
+    const list = byDay.get(e.day);
+    if (list) list.push(e);
+    else byDay.set(e.day, [e]);
+  }
+  lastEvents = events;
+  lastByDay = byDay;
+  return byDay;
+}
+
+export const useIcsEventsOn = (day: LocalDate): readonly IcsEvent[] => useIcsOverlay((s) => eventsByDay(s.events).get(day) ?? EMPTY);
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
