@@ -25,3 +25,8 @@ needs a human to actually create that org.
 
 Sync/auth (login, account, cross-device sync) is a separate, later phase and intentionally
 not started here — it needs an explicit decision on the backend/auth provider first.
+
+Pages include Open Graph/Twitter meta tags, a canonical URL, and (on the home page) JSON-LD
+`SoftwareApplication` structured data. `@astrojs/sitemap` generates `sitemap-index.xml` at
+build time, referenced from `public/robots.txt`. There's no `og:image` yet — no brand/screenshot
+asset exists to use for one.
