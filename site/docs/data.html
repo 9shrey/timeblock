@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data and backups · Timeblock documentation</title>
+  <meta name="description" content="Timeblock keeps all of your data in a single SQLite file on your computer. There is no account and no server, and nothing is sent over the network.">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/icon-256.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
+      <nav class="nav" aria-label="Main">
+        <a href="./" aria-current="page">Documentation</a>
+        <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
+        <a class="btn btn-primary btn-sm" href="../download.html">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container docs">
+    <aside class="docs-side">
+      <details class="docs-menu" open>
+        <summary>Data and backups</summary>
+        <nav class="docs-nav" aria-label="Documentation">
+          <h4>Getting started</h4>
+          <ul>
+            <li><a href="./">Introduction</a></li>
+            <li><a href="planning.html">Planning your day</a></li>
+            <li><a href="goals.html">Goals and reviews</a></li>
+          </ul>
+          <h4>Reference</h4>
+          <ul>
+            <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+            <li><a href="settings.html">Settings</a></li>
+            <li><a href="data.html" aria-current="page">Data and backups</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </nav>
+      </details>
+    </aside>
+
+    <main id="main" class="prose">
+      <p class="crumb">Documentation / Reference</p>
+      <h1>Data and backups</h1>
+      <p class="lead">Timeblock keeps all of your data in a single SQLite file on your computer. There is no account and no server, and nothing is sent over the network.</p>
+<h2 id="location">Where your data is stored</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>System</th><th>Folder</th></tr></thead>
+<tbody>
+<tr><td>Linux</td><td><code>~/.local/share/com.shreysingh.timeblock/</code></td></tr>
+<tr><td>macOS</td><td><code>~/Library/Application Support/com.shreysingh.timeblock/</code></td></tr>
+<tr><td>Windows</td><td><code>%APPDATA%\com.shreysingh.timeblock\</code></td></tr>
+</tbody></table></div>
+<p>The folder contains:</p>
+<ul>
+<li><code>data.sqlite3</code>: everything (blocks, goals, targets, outcomes, notes and settings).</li>
+<li><code>backups/</code>: automatic backups.</li>
+</ul>
+<p>To open the folder, use <strong>Settings → Open data folder</strong>.</p>
+
+<h2 id="backups">Automatic backups</h2>
+<p>Timeblock copies your database to <code>backups/</code>:</p>
+<ul>
+<li>at most once a day,</li>
+<li>before every import,</li>
+<li>before upgrading the database to a new version of the app.</li>
+</ul>
+<p>The newest 14 backups are kept. If an automatic backup fails, the app tells you.</p>
+
+<h2 id="restore">Restoring a backup</h2>
+<p>Use <strong>Settings → Restore a backup</strong> and pick a backup from the list. Your current data is backed up first, so a restore can be undone by restoring again.</p>
+<p>To restore by hand, quit Timeblock and copy a file from <code>backups/</code> over <code>data.sqlite3</code>.</p>
+
+<h2 id="export">Export and import</h2>
+<p><strong>Settings → Export JSON</strong> writes all of your data to a readable JSON file. Keep it as an extra backup, or move your data to another computer with <strong>Settings → Import JSON</strong>.</p>
+<div class="notice warn"><p><strong>Importing replaces all current data.</strong> Timeblock makes a backup before importing, so you can restore it if needed.</p></div>
+
+<h2 id="saving">How saving works</h2>
+<p>Every change is saved as you make it. If a save fails, Timeblock reloads your data from disk, discards changes that were waiting behind the failed save, and tells you. Undo history is cleared in that case. When you close the window, the app waits up to three seconds for pending saves to finish.</p>
+
+<h2 id="privacy">Privacy</h2>
+<p>Timeblock has no account, no server and no telemetry. It does not connect to the network.</p>
+      <nav class="pager" aria-label="Pages">
+        <a class="prev" href="settings.html"><span>Previous</span>Settings</a>
+        <a class="next" href="troubleshooting.html"><span>Next</span>Troubleshooting</a>
+      </nav>
+    </main>
+
+    <nav class="toc" aria-label="On this page">
+      <h4>On this page</h4>
+      <ul>
+          <li><a href="#location">Where your data is stored</a></li>
+          <li><a href="#backups">Automatic backups</a></li>
+          <li><a href="#restore">Restoring a backup</a></li>
+          <li><a href="#export">Export and import</a></li>
+          <li><a href="#saving">How saving works</a></li>
+          <li><a href="#privacy">Privacy</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shrey Singh · MIT License</span>
+      <nav aria-label="Footer">
+        <a href="./">Documentation</a>
+        <a href="../download.html">Download</a>
+        <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/9shrey/timeblock">Source code</a>
+        <a href="https://github.com/9shrey/timeblock/issues">Report an issue</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    // Collapse the docs menu on small screens; it stays open (and usable) without JavaScript.
+    if (window.matchMedia("(max-width: 860px)").matches) document.querySelector(".docs-menu").removeAttribute("open");
+  </script>
+</body>
+</html>
