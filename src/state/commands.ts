@@ -13,6 +13,7 @@ import {
   isActualReadOnly,
   materializeGhost,
   moveBlock,
+  rescheduleToDay,
   restorePlan,
   skipPlan,
   splitAtMidnight,
@@ -23,7 +24,7 @@ import { parseQuickAdd } from "@/domain/blocks/quickAdd";
 import { validateBlock } from "@/domain/blocks/validate";
 import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
-import { addDays, weekDays } from "@/domain/time/localDate";
+import { addDays, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { Block, ChangeSet, Layer, LocalDate, Now } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { activeGoals, allBlocks, goalList } from "./selectors";
@@ -283,6 +284,29 @@ export function copyWeekPlan(fromWeek: LocalDate, toWeek: LocalDate): void {
   }
   if (changes.length === 0) toast("Last week has no plan to copy.");
   else commitChecked(changes, "Copy last week's plan");
+}
+
+/**
+ * Copies every skipped plan block in `weekStart`'s week onto `toDay`, as new, unskipped
+ * plan blocks (the originals are untouched). A goal archived as of `toDay`'s week is
+ * cleared, same as `copyWeekPlan`.
+ */
+export function rescheduleSkippedToDay(weekStart: LocalDate, toDay: LocalDate): void {
+  if (!canEditLane(toDay, "plan")) {
+    toast(laneError("plan"));
+    return;
+  }
+  const days = new Set(weekDays(weekStart));
+  const skipped = blocks().filter((b) => b.layer === "plan" && b.skipped && days.has(b.day));
+  if (skipped.length === 0) {
+    toast("No skipped blocks this week.");
+    return;
+  }
+  const activeGoalIds = new Set(activeGoals(state().data, weekStartOf(toDay, state().settings.weekStartDay)).map((g) => g.id));
+  const changes = rescheduleToDay(skipped, toDay, env).map((c) =>
+    c.op === "put" && c.table === "blocks" && c.row.goalId !== null && !activeGoalIds.has(c.row.goalId) ? put("blocks", { ...c.row, goalId: null }) : c,
+  );
+  commitChecked(changes, "Reschedule skipped blocks");
 }
 
 // --- running timer -----------------------------------------------------------

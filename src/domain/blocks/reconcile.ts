@@ -433,3 +433,24 @@ export function copyPlan(
         ).changes,
     );
 }
+
+/** Copies `blocks` (any day/week) onto `toDay` as new, unskipped plan blocks, keeping their time of day. */
+export function rescheduleToDay(blocks: readonly Block[], toDay: LocalDate, env: Env): ChangeSet {
+  return [...blocks]
+    .sort((a, b) => a.startMinute - b.startMinute || a.endMinute - b.endMinute)
+    .flatMap(
+      (b) =>
+        createBlock(
+          {
+            day: toDay,
+            layer: "plan",
+            startMinute: b.startMinute,
+            endMinute: b.endMinute,
+            title: b.title,
+            goalId: b.goalId,
+            notes: b.notes,
+          },
+          env,
+        ).changes,
+    );
+}

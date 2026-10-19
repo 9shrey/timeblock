@@ -55,6 +55,10 @@ All notable changes to this project are documented here. The format follows
   the current week's per-goal stats, next to the JSON and ICS export.
 - **Delta badges** on actual blocks confirmed with a change: start drift (`+15m late`,
   `-5m early`) and/or `goal changed`.
+- **Biggest gaps** on the Review page: the week's largest unplanned actual blocks and
+  unconfirmed plan blocks.
+- **Reschedule skipped blocks**: copies this week's skipped plan blocks onto a chosen
+  day as new, unskipped blocks.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

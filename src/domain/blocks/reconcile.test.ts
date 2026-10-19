@@ -16,6 +16,7 @@ import {
   moveBlock,
   planState,
   planStates,
+  rescheduleToDay,
   restorePlan,
   skipPlan,
   splitAtMidnight,
@@ -456,6 +457,22 @@ describe("copyPlan", () => {
       ["id1", "p1", 540, null, "", false],
       ["id2", "p2", 600, "g", "n", false],
     ]);
+  });
+});
+
+describe("rescheduleToDay", () => {
+  it("creates new, unskipped plan blocks on the target day, ordered by start time", () => {
+    const blocks = [plan("p2", 600, 660, { goalId: "g", notes: "n", skipped: true }), plan("p1", 540, 600, { skipped: true })];
+    const { all } = run(blocks, rescheduleToDay(blocks, NEXT, testEnv()));
+    const copies = all.filter((b) => b.day === NEXT).sort((x, y) => x.startMinute - y.startMinute);
+    expect(copies.map((b) => [b.title, b.startMinute, b.goalId, b.notes, b.skipped])).toEqual([
+      ["p1", 540, null, "", false],
+      ["p2", 600, "g", "n", false],
+    ]);
+  });
+
+  it("returns no changes for an empty list", () => {
+    expect(rescheduleToDay([], NEXT, testEnv())).toEqual([]);
   });
 });
 

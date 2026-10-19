@@ -1,14 +1,19 @@
-import { AlertCircle, ArrowRight, ArrowRightToLine } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, ArrowRight, ArrowRightToLine, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { carryableCount } from "@/domain/goals/checklist";
 import { computeAccuracy } from "@/domain/stats/accuracy";
-import { addDays, formatDateLong, formatDayLabel, formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
+import { biggestGaps } from "@/domain/stats/gaps";
+import { addDays, formatDateLong, formatDayLabel, formatDuration, formatMinute, isoWeek, weekDays } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
-import { confirmRestOfDay } from "@/state/commands";
+import { confirmRestOfDay, rescheduleSkippedToDay } from "@/state/commands";
 import { carryOverItems, setWeekNote } from "@/state/goalCommands";
-import { allBlocks, checklistList, statsFor, weekOf } from "@/state/selectors";
+import { allBlocks, checklistList, statsFor, useGoalMap, weekOf } from "@/state/selectors";
 import { sealHistory, useStore } from "@/state/store";
 import { Checklist } from "../goals/Checklist";
 import { GoalTable } from "./GoalTable";
@@ -69,6 +74,64 @@ function AccuracyRow({ days, weekStart }: { days: readonly LocalDate[]; weekStar
   );
 }
 
+function GapsSection({ days, weekStart }: { days: readonly LocalDate[]; weekStart: LocalDate }) {
+  const blocks = useStore((s) => allBlocks(s.data.blocks));
+  const goals = useGoalMap();
+  const now = useStore((s) => s.now);
+  const gaps = biggestGaps(blocks, days, goals, now);
+  if (gaps.length === 0) return null;
+  return (
+    <section aria-label="Biggest gaps">
+      <h3 className="mb-2 text-sm font-semibold">Biggest gaps</h3>
+      <ul className="grid gap-1 rounded-lg border px-4 py-2 text-sm">
+        {gaps.map((g, i) => (
+          <li key={`${weekStart}:${i}`} className="flex items-center gap-2 border-b py-1.5 last:border-0">
+            <span className="w-28 shrink-0 text-muted-foreground">{formatDayLabel(g.day)}</span>
+            <span className="w-28 shrink-0 tabular-nums text-muted-foreground">
+              {formatMinute(g.startMinute)}–{formatMinute(g.endMinute)}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{g.title}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{g.kind === "unplanned" ? "unplanned" : "unconfirmed"}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RescheduleSkippedDialog({ open, onClose, weekStart, nextWeek }: { open: boolean; onClose: () => void; weekStart: LocalDate; nextWeek: LocalDate }) {
+  const [to, setTo] = useState(nextWeek);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Reschedule skipped blocks</DialogTitle>
+          <DialogDescription>Copies this week's skipped plan blocks to the day you choose, as new, unskipped blocks.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-1">
+          <Label htmlFor="reschedule-to">To</Label>
+          <Input id="reschedule-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+        <DialogFooter>
+          <Button
+            onClick={() => {
+              rescheduleSkippedToDay(weekStart, to);
+              onClose();
+            }}
+          >
+            Reschedule
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /** Bound straight to the store (commits are synchronous), so undo and imports show up too. */
 function Reflection({ weekStart }: { weekStart: LocalDate }) {
   const text = useStore((s) => s.data.weekNotes[weekStart]?.text ?? "");
@@ -97,6 +160,7 @@ export function ReviewView() {
   const t = stats.totals;
   const done = items.filter((i) => i.done).length;
   const phaseLabel = stats.phase === "past" ? "" : stats.phase === "current" ? " (in progress)" : " (upcoming)";
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -146,6 +210,8 @@ export function ReviewView() {
           )}
         </section>
 
+        <GapsSection days={weekDays(weekStart)} weekStart={weekStart} />
+
         <div className="grid gap-5 md:grid-cols-2">
           <section>
             <h3 className="mb-2 text-sm font-semibold">Outcomes</h3>
@@ -178,11 +244,15 @@ export function ReviewView() {
           >
             <ArrowRightToLine /> Carry {carryable || ""} unfinished → next week
           </Button>
+          <Button variant="outline" disabled={stats.totals.skipped === 0} onClick={() => setRescheduleOpen(true)}>
+            <CalendarClock /> Reschedule skipped…
+          </Button>
           <Button onClick={() => useStore.setState({ view: "goals", cursor: nextWeek })}>
             Set next week's targets <ArrowRight />
           </Button>
         </footer>
       </div>
+      <RescheduleSkippedDialog open={rescheduleOpen} onClose={() => setRescheduleOpen(false)} weekStart={weekStart} nextWeek={nextWeek} />
     </div>
   );
 }
