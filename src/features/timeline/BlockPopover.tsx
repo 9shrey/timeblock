@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { ghostOf, isActualReadOnly, linksByPlan, planState } from "@/domain/blocks/reconcile";
 import { formatDuration, formatMinute, parseTimeInput, weekStartOf } from "@/domain/time/localDate";
 import type { Ghost, Goal } from "@/domain/types";
@@ -32,12 +33,51 @@ function GoalDot({ color }: { color: string }) {
   return <span className="inline-block size-2.5 shrink-0 rounded-full" style={{ background: color }} />;
 }
 
-/** Time field that accepts "915", "9:15", "9.15"; commits on blur/Enter. Remount (key) to reset. */
-function TimeField({ label, value, disabled, onCommit }: { label: string; value: number; disabled: boolean; onCommit: (m: number) => boolean }) {
+/**
+ * Time field: type "915", "9:15", "9.15", or pick from a slot list that opens on focus
+ * (↑/↓ walk it, Enter commits). `from` labels each slot with its offset, like an end time's
+ * duration. Commits on blur/Enter; remount (key) to reset.
+ */
+function TimeField({
+  label,
+  value,
+  disabled,
+  min,
+  max,
+  step,
+  from,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  disabled: boolean;
+  min: number;
+  max: number;
+  step: number;
+  from?: number;
+  onCommit: (m: number) => boolean;
+}) {
   const [text, setText] = useState(formatMinute(value));
   const [invalid, setInvalid] = useState(false);
-  const commit = () => {
-    const m = parseTimeInput(text);
+  const [open, setOpen] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listId = `${label.replace(/\s+/g, "-").toLowerCase()}-slots`;
+
+  const slots = useMemo(() => {
+    const out: number[] = [];
+    for (let m = Math.ceil(min / step) * step; m <= max; m += step) out.push(m);
+    return out;
+  }, [min, max, step]);
+  const typed = parseTimeInput(text);
+  // Highlight the slot at or just after what's typed.
+  const active = typed === null ? -1 : Math.max(0, Math.min(slots.length - 1, slots.findIndex((m) => m >= typed)));
+
+  useEffect(() => {
+    if (!open || active < 0) return;
+    listRef.current?.children[active]?.scrollIntoView({ block: "nearest" });
+  }, [open, active]);
+
+  const commit = (m: number | null = parseTimeInput(text)) => {
     if (m === value) {
       setInvalid(false);
       setText(formatMinute(m));
@@ -50,22 +90,82 @@ function TimeField({ label, value, disabled, onCommit }: { label: string; value:
     setInvalid(false);
     setText(formatMinute(m));
   };
+
   return (
-    <Input
-      aria-label={label}
-      aria-invalid={invalid}
-      disabled={disabled}
-      className="h-8 w-[4.5rem] text-center tabular-nums"
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
+    <div className="relative">
+      <Input
+        aria-label={label}
+        aria-invalid={invalid}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="none"
+        disabled={disabled}
+        className="h-8 w-[4.5rem] text-center tabular-nums"
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={(e) => {
+          e.target.select();
+          setOpen(true);
+        }}
+        onClick={() => setOpen(true)}
+        onBlur={() => {
+          setOpen(false);
           commit();
-        }
-      }}
-    />
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            setOpen(false);
+            commit();
+          } else if (e.key === "Escape" && open) {
+            // The editor's own Esc handler skips this (see BlockPopover); only the list closes.
+            setOpen(false);
+          } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && slots.length) {
+            e.preventDefault();
+            setOpen(true);
+            const dir = e.key === "ArrowDown" ? 1 : -1;
+            let i = active < 0 ? 0 : active + dir;
+            // Typed off-grid: the first ↓ lands on the slot just after it, not the one after that.
+            if (dir === 1 && typed !== null && active >= 0 && slots[active] !== typed) i = active;
+            setText(formatMinute(slots[Math.max(0, Math.min(slots.length - 1, i))]!));
+          }
+        }}
+      />
+      {open && !disabled && slots.length > 0 && (
+        <div
+          ref={listRef}
+          id={listId}
+          role="listbox"
+          aria-label={`${label} options`}
+          className="absolute top-full left-0 z-50 mt-1 max-h-52 min-w-full overflow-y-auto rounded-md bg-popover p-1 shadow-md ring-1 ring-foreground/10"
+          // Keep focus in the input so blur doesn't commit before the click lands.
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {slots.map((m, i) => (
+            <div
+              key={m}
+              role="option"
+              aria-selected={i === active}
+              className={cn(
+                "flex cursor-default items-baseline gap-2 rounded-sm px-2 py-1 whitespace-nowrap tabular-nums hover:bg-accent",
+                i === active && "bg-accent text-accent-foreground",
+              )}
+              onClick={() => {
+                setOpen(false);
+                commit(m);
+              }}
+            >
+              {formatMinute(m)}
+              {from !== undefined && <span className="text-xs text-muted-foreground">{formatDuration(m - from)}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -74,6 +174,7 @@ function Editor({ editing }: { editing: Editing }) {
   const data = useStore((s) => s.data);
   const now = useStore((s) => s.now);
   const weekStartDay = useStore((s) => s.settings.weekStartDay);
+  const snap = useStore((s) => s.settings.snapMinutes);
   const block = ref.kind === "block" ? data.blocks[ref.id] : undefined;
   const plan = ref.kind === "ghost" ? data.blocks[ref.planBlockId] : undefined;
   const item: { day: string; startMinute: number; endMinute: number; title: string; goalId: string | null; notes: string } | undefined =
@@ -173,7 +274,15 @@ function Editor({ editing }: { editing: Editing }) {
           label="Start time"
           disabled={disabled}
           value={item.startMinute}
-          onCommit={(m) => !disabled && m < item.endMinute && m <= 1439 && apply({ startMinute: m })}
+          min={0}
+          max={1440 - snap}
+          step={snap}
+          onCommit={(m) => {
+            if (disabled || m > 1439) return false;
+            // Moving the start keeps the duration (clamped to midnight), so any slot is valid.
+            const end = Math.min(1440, m + (item.endMinute - item.startMinute));
+            return m < end && apply({ startMinute: m, endMinute: end });
+          }}
         />
         <span className="text-muted-foreground">–</span>
         <TimeField
@@ -181,6 +290,10 @@ function Editor({ editing }: { editing: Editing }) {
           label="End time"
           disabled={disabled}
           value={item.endMinute}
+          min={item.startMinute + snap}
+          max={1440}
+          step={snap}
+          from={item.startMinute}
           onCommit={(m) => !disabled && m > item.startMinute && apply({ endMinute: m })}
         />
         <span className="ml-1 text-xs text-muted-foreground">{formatDuration(item.endMinute - item.startMinute)}</span>
@@ -260,7 +373,12 @@ export function BlockPopover() {
         align="start"
         className="w-80"
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onEscapeKeyDown={() => {
+        onEscapeKeyDown={(e) => {
+          // Esc in an open time list closes just the list.
+          if ((e.target as Element | null)?.closest?.('[role="combobox"][aria-expanded="true"]')) {
+            e.preventDefault();
+            return;
+          }
           // Esc on a freshly drawn block with nothing entered cancels the create.
           const s = useStore.getState();
           const ed = useUi.getState().editing;
