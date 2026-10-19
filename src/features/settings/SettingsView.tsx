@@ -224,6 +224,23 @@ function NotificationsSection() {
   );
 }
 
+function DesktopSection() {
+  const settings = useStore((s) => s.settings);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Desktop</h2>
+      <div className="rounded-lg border px-4">
+        <NotifyRow
+          label="Close to tray"
+          hint="Closing the window hides it instead of quitting. Quit from the tray icon."
+          checked={settings.closeToTray}
+          onChange={(v) => setSetting("closeToTray", v)}
+        />
+      </div>
+    </section>
+  );
+}
+
 function ImportDialog({ pending, onClose }: { pending: { name: string; result: ImportResult } | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const result = pending?.result;
@@ -339,6 +356,7 @@ export function SettingsView() {
         </section>
 
         <NotificationsSection />
+        {info?.kind === "tauri" && <DesktopSection />}
         <TemplatesSection />
         <RoutinesSection />
 

@@ -42,6 +42,9 @@ All notable changes to this project are documented here. The format follows
   minutes before it starts, an evening nudge for unconfirmed blocks, and a weekly-review
   notification on the last day of the week. Scheduled from the app's own clock while it's
   running — no background process.
+- **Tray icon**: shows today's next (or running) plan block, with Start timer, Confirm
+  rest of day, Show/Hide and Quit. "Close to tray" in Settings keeps the app running when
+  the window is closed; otherwise closing the window quits as before.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

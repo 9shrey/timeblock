@@ -85,6 +85,11 @@ export const webPlatform: Platform = {
     notificationClickListeners.add(cb);
     return () => notificationClickListeners.delete(cb);
   },
+  async setTrayNextBlock() {},
+  async setCloseToTray() {},
+  async onTrayAction() {
+    return () => {};
+  },
 };
 
 const notificationClickListeners = new Set<(id: number) => void>();

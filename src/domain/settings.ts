@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notifyNextBlock: false,
   notifyUnconfirmed: false,
   notifyWeeklyReview: false,
+  closeToTray: false,
 };
 
 /** Per-key schemas. Invalid or missing values fall back to the default. */
@@ -22,6 +23,7 @@ const schemas: { [K in keyof Settings]: z.ZodType<Settings[K]> } = {
   notifyNextBlock: z.boolean(),
   notifyUnconfirmed: z.boolean(),
   notifyWeeklyReview: z.boolean(),
+  closeToTray: z.boolean(),
 };
 
 export const SETTING_KEYS = Object.keys(schemas) as (keyof Settings)[];

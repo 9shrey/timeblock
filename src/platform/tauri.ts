@@ -1,9 +1,10 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isPermissionGranted, onAction, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
-import type { BackupInfo, OpenedFile, Platform, SystemTheme } from "./index";
+import type { BackupInfo, OpenedFile, Platform, SystemTheme, TrayAction } from "./index";
 
 const CLOSE_FLUSH_TIMEOUT_MS = 3000;
 
@@ -43,4 +44,7 @@ export const tauriPlatform: Platform = {
     });
     return () => listener.unregister();
   },
+  setTrayNextBlock: (label) => invoke("set_tray_next_block", { label }),
+  setCloseToTray: (enabled) => invoke("set_close_to_tray", { enabled }),
+  onTrayAction: (cb) => listen<TrayAction>("tray-action", (event) => cb(event.payload)),
 };

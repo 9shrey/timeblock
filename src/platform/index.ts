@@ -48,7 +48,15 @@ export interface Platform {
   notify(id: number, title: string, body: string): Promise<void>;
   /** Fires with `id` when the user clicks a notification shown by `notify`. */
   onNotificationClick(cb: (id: number) => void): Promise<() => void>;
+  /** Sets the "Today's next block" line in the tray menu. No-op where there is no tray (web). */
+  setTrayNextBlock(label: string | null): Promise<void>;
+  /** Whether closing the window hides it to the tray instead of quitting. No-op on web. */
+  setCloseToTray(enabled: boolean): Promise<void>;
+  /** Fires when a tray menu action needing app state (not just show/hide/quit) is clicked. */
+  onTrayAction(cb: (action: TrayAction) => void): Promise<() => void>;
 }
+
+export type TrayAction = "startTimer" | "confirmRestOfDay";
 
 export { isTauri };
 

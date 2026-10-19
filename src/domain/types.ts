@@ -136,6 +136,8 @@ export interface Settings {
   notifyUnconfirmed: boolean;
   /** On the last day of the week, once Review has something to show. */
   notifyWeeklyReview: boolean;
+  /** Closing the window hides it to the tray instead of quitting. */
+  closeToTray: boolean;
 }
 
 // ---------------------------------------------------------------------------
