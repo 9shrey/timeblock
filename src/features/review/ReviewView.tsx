@@ -1,13 +1,17 @@
-import { AlertCircle, ArrowRight, ArrowRightToLine } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, ArrowRight, ArrowRightToLine, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { carryableCount } from "@/domain/goals/checklist";
-import { addDays, formatDateLong, formatDayLabel, formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
+import { computeAccuracy } from "@/domain/stats/accuracy";
+import { biggestGaps } from "@/domain/stats/gaps";
+import { addDays, formatDateLong, formatDayLabel, formatDuration, formatMinute, isoWeek, weekDays } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
-import { confirmRestOfDay } from "@/state/commands";
+import { confirmRestOfDay, rescheduleSkippedTo } from "@/state/commands";
 import { carryOverItems, setWeekNote } from "@/state/goalCommands";
-import { checklistList, statsFor, weekOf } from "@/state/selectors";
+import { allBlocks, checklistList, statsFor, weekOf } from "@/state/selectors";
 import { sealHistory, useStore } from "@/state/store";
 import { Checklist } from "../goals/Checklist";
 import { GoalTable } from "./GoalTable";
@@ -49,6 +53,97 @@ function Reflection({ weekStart }: { weekStart: LocalDate }) {
       onChange={(e) => setWeekNote(weekStart, e.target.value, `note:${weekStart}`)}
       onBlur={sealHistory}
     />
+  );
+}
+
+/** Blocks of `weekStart`'s 7 days, memoized so it doesn't re-filter (or re-trigger effects) every render. */
+function useWeekBlocks(weekStart: LocalDate) {
+  const blocksById = useStore((s) => s.data.blocks);
+  return useMemo(() => {
+    const days = new Set(weekDays(weekStart));
+    return allBlocks(blocksById).filter((b) => days.has(b.day));
+  }, [blocksById, weekStart]);
+}
+
+function AccuracySection({ weekStart }: { weekStart: LocalDate }) {
+  const now = useStore((s) => s.now);
+  const weekBlocks = useWeekBlocks(weekStart);
+  const accuracy = useMemo(() => computeAccuracy(weekBlocks, now), [weekBlocks, now]);
+  if (accuracy.countedPlans === 0) return null;
+  const pct = (n: number) => `${Math.round(n)}%`;
+  return (
+    <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm" aria-label="Plan accuracy">
+      <span>
+        Confirmed as planned <b className="tabular-nums">{pct(accuracy.confirmedPct)}</b>
+      </span>
+      <span>
+        Skipped <b className="tabular-nums">{pct(accuracy.skippedPct)}</b>
+      </span>
+      <span>
+        Unplanned <b className="tabular-nums">{pct(accuracy.unplannedPct)}</b>
+      </span>
+      {accuracy.avgStartDriftMinutes !== null && (
+        <span>
+          Avg. start drift{" "}
+          <b className="tabular-nums">
+            {accuracy.avgStartDriftMinutes >= 0 ? "+" : ""}
+            {formatDuration(accuracy.avgStartDriftMinutes)}
+          </b>
+        </span>
+      )}
+    </p>
+  );
+}
+
+function BiggestGapsSection({ weekStart }: { weekStart: LocalDate }) {
+  const now = useStore((s) => s.now);
+  const weekBlocks = useWeekBlocks(weekStart);
+  const gaps = useMemo(() => biggestGaps(weekBlocks, now), [weekBlocks, now]);
+  if (gaps.length === 0) return null;
+  return (
+    <section>
+      <h3 className="mb-2 text-sm font-semibold">Biggest gaps</h3>
+      <ul className="grid gap-1 rounded-lg border px-4 py-2 text-sm">
+        {gaps.map((g, i) => (
+          <li key={i} className="flex items-center gap-2">
+            <span className="w-24 shrink-0 text-muted-foreground">{formatDayLabel(g.day)}</span>
+            <span className="w-28 shrink-0 tabular-nums text-muted-foreground">
+              {formatMinute(g.startMinute)}–{formatMinute(g.endMinute)}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{g.title || "Untitled"}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{g.kind === "unplanned" ? "unplanned" : "unconfirmed"}</span>
+            <b className="shrink-0 tabular-nums">{formatDuration(g.minutes)}</b>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RescheduleSkippedSection({ weekStart, nextWeek }: { weekStart: LocalDate; nextWeek: LocalDate }) {
+  const nextWeekDays = weekDays(nextWeek);
+  const [toDay, setToDay] = useState<LocalDate>(nextWeekDays[0]!);
+  const weekBlocks = useWeekBlocks(weekStart);
+  const skippedCount = useMemo(() => weekBlocks.filter((b) => b.layer === "plan" && b.skipped).length, [weekBlocks]);
+  if (skippedCount === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button variant="outline" onClick={() => rescheduleSkippedTo(weekStart, toDay)}>
+        <CalendarClock /> Reschedule {skippedCount} skipped →
+      </Button>
+      <Select value={toDay} onValueChange={(v) => setToDay(v as LocalDate)}>
+        <SelectTrigger className="h-9 w-40" aria-label="Day to reschedule into">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {nextWeekDays.map((d) => (
+            <SelectItem key={d} value={d}>
+              {formatDayLabel(d)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -104,6 +199,8 @@ export function ReviewView() {
           </span>
         </p>
 
+        <AccuracySection weekStart={weekStart} />
+
         <section className="rounded-lg border px-4 py-2">
           {stats.goals.length === 0 && !stats.unassigned ? (
             <p className="py-4 text-center text-sm text-muted-foreground">No goals or tracked time this week.</p>
@@ -133,6 +230,8 @@ export function ReviewView() {
           </section>
         </div>
 
+        <BiggestGapsSection weekStart={weekStart} />
+
         <footer className="flex flex-wrap gap-2">
           <Button
             variant="outline"
@@ -148,6 +247,8 @@ export function ReviewView() {
             Set next week's targets <ArrowRight />
           </Button>
         </footer>
+
+        <RescheduleSkippedSection weekStart={weekStart} nextWeek={nextWeek} />
       </div>
     </div>
   );
