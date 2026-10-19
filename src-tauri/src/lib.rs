@@ -1,7 +1,7 @@
 mod db;
 mod files;
 
-use db::{Db, Row, Stmt};
+use db::{BackupInfo, Db, Row, Stmt};
 use serde_json::Value as Json;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -29,6 +29,16 @@ async fn backup_now(db: State<'_, Db>, reason: String) -> Result<String, String>
 #[tauri::command]
 async fn backup_if_stale(db: State<'_, Db>, max_age_hours: u64) -> Result<Option<String>, String> {
     db.backup_if_stale(max_age_hours)
+}
+
+#[tauri::command]
+async fn list_backups(db: State<'_, Db>) -> Result<Vec<BackupInfo>, String> {
+    db.backups()
+}
+
+#[tauri::command]
+async fn restore_backup(db: State<'_, Db>, name: String) -> Result<(), String> {
+    db.restore_backup(&name)
 }
 
 #[tauri::command]
@@ -74,6 +84,8 @@ pub fn run() {
             db_exec_script,
             backup_now,
             backup_if_stale,
+            list_backups,
+            restore_backup,
             data_dir,
             reveal_data_dir,
             files::save_text_file,

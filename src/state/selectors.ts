@@ -21,6 +21,11 @@ function memoByIdentity<K extends object, V>(fn: (k: K) => V): (k: K) => V {
 
 const byStart = (a: Block, b: Block) => a.startMinute - b.startMinute || a.endMinute - b.endMinute || (a.id < b.id ? -1 : 1);
 
+/** The previous result, so days whose blocks didn't change keep their array identity. */
+let lastByDay = new Map<LocalDate, Block[]>();
+
+const sameItems = (a: readonly Block[], b: readonly Block[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+
 const blocksByDay = memoByIdentity((blocks: DataState["blocks"]) => {
   const map = new Map<LocalDate, Block[]>();
   for (const b of Object.values(blocks)) {
@@ -28,7 +33,14 @@ const blocksByDay = memoByIdentity((blocks: DataState["blocks"]) => {
     if (list) list.push(b);
     else map.set(b.day, [b]);
   }
-  for (const list of map.values()) list.sort(byStart);
+  for (const [day, list] of map) {
+    list.sort(byStart);
+    // A commit rebuilds every day; reuse the old array where nothing changed so only
+    // the edited day's lanes re-render.
+    const prev = lastByDay.get(day);
+    if (prev && sameItems(prev, list)) map.set(day, prev);
+  }
+  lastByDay = map;
   return map;
 });
 
@@ -77,5 +89,24 @@ export const useData = () => useStore((s) => s.data);
 export const useNow = () => useStore((s) => s.now);
 export const useSettings = () => useStore((s) => s.settings);
 export const useDayBlocks = (day: LocalDate) => useStore((s) => blocksOn(s.data, day));
+
+/**
+ * The clock as one lane needs it: today's minute, or a fixed value for any past (1440) or
+ * future (-1) day, so a minute tick re-renders only today's lanes.
+ */
+export const useLaneMinute = (day: LocalDate) =>
+  useStore((s) => (s.now.day === day ? s.now.minute : s.now.day > day ? 1440 : -1));
+
+/** The selection key if the selected block or ghost is in this lane, else null. */
+export const useLaneSelection = (day: LocalDate, layer: Block["layer"], showGhosts: boolean) =>
+  useStore((s): string | null => {
+    const sel = s.selection;
+    if (!sel) return null;
+    if (sel.kind === "block") {
+      const b = s.data.blocks[sel.id];
+      return b && b.day === day && b.layer === layer ? `block:${sel.id}` : null;
+    }
+    return showGhosts && s.data.blocks[sel.planBlockId]?.day === day ? `ghost:${sel.planBlockId}` : null;
+  });
 export const useGoals = () => useStore((s) => goalList(s.data.goals));
 export const useGoalMap = () => useStore((s) => s.data.goals);

@@ -46,7 +46,7 @@ Target: Tauri 2 + React + TypeScript + Vite, desktop, local-first. The spec is s
    - default block length (60m)
    - 12/24h (defaults to the locale)
    - theme (System/Light/Dark)
-   - "count unreviewed past plan as actual (hatched)" (on)
+   - ~~"count unreviewed past plan as actual (hatched)" (on)~~ *Superseded: unconfirmed time never counts as actual and there is no such setting (`critique-synthesis.md` decision 3).*
    - "actual lane prevents overlaps / carve" (on)
    - review nudge time (18:00)
    - export/import JSON, open data folder

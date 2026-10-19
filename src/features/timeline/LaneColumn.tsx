@@ -3,8 +3,7 @@ import { layoutLanes } from "@/domain/blocks/layout";
 import { ghostsOf, planStates } from "@/domain/blocks/reconcile";
 import type { Block, Ghost } from "@/domain/types";
 import { cn } from "@/lib/utils";
-import { useDayBlocks, useGoalMap } from "@/state/selectors";
-import { useStore } from "@/state/store";
+import { useDayBlocks, useGoalMap, useLaneMinute, useLaneSelection } from "@/state/selectors";
 import { BlockView } from "./BlockView";
 import { DraftLayer } from "./DraftLayer";
 import { GhostBlock } from "./GhostBlock";
@@ -22,12 +21,15 @@ type Item = { id: string; startMinute: number; endMinute: number } & ({ kind: "b
 export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: Props) {
   const dayBlocks = useDayBlocks(spec.day);
   const goals = useGoalMap();
-  const now = useStore((s) => s.now);
-  const selection = useStore((s) => s.selection);
+  const laneMinute = useLaneMinute(spec.day);
+  const selected = useLaneSelection(spec.day, spec.layer, !!spec.showGhosts);
   const editable = isEditable(spec);
 
-  // Plan states only change when the day's blocks or the clock change.
-  const states = useMemo(() => (spec.layer === "plan" ? planStates(dayBlocks, now) : null), [dayBlocks, now, spec.layer]);
+  // Plan states only change when the day's blocks or (today only) the clock change.
+  const states = useMemo(
+    () => (spec.layer === "plan" ? planStates(dayBlocks, { day: spec.day, minute: laneMinute }) : null),
+    [dayBlocks, laneMinute, spec.day, spec.layer],
+  );
 
   const { items, slots } = useMemo(() => {
     const items: Item[] = dayBlocks
@@ -41,8 +43,9 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
     return { items, slots: layoutLanes(items) };
   }, [dayBlocks, spec.layer, spec.showGhosts]);
 
-  const isToday = spec.day === now.day;
-  const hatchFrom = spec.layer === "actual" ? (spec.day > now.day ? 0 : isToday ? now.minute : null) : null;
+  const isToday = laneMinute >= 0 && laneMinute < 1440;
+  const isFuture = laneMinute < 0;
+  const hatchFrom = spec.layer === "actual" ? (isFuture ? 0 : isToday ? laneMinute : null) : null;
 
   return (
     <div
@@ -77,7 +80,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
               slot={slot}
               pxPerHour={pxPerHour}
               col={index}
-              selected={selection?.kind === "ghost" && selection.planBlockId === g.planBlockId}
+              selected={selected === it.id}
               editable={editable}
             />
           );
@@ -92,7 +95,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
             pxPerHour={pxPerHour}
             col={index}
             planState={states?.get(b.id) ?? null}
-            selected={selection?.kind === "block" && selection.id === b.id}
+            selected={selected === `block:${b.id}`}
             editable={editable}
           />
         );
@@ -101,7 +104,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 z-30 h-0.5 bg-red-500"
-          style={{ top: minutesToPx(now.minute, pxPerHour) - 1 }}
+          style={{ top: minutesToPx(laneMinute, pxPerHour) - 1 }}
         />
       )}
       <DraftLayer col={index} pxPerHour={pxPerHour} />

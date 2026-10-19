@@ -3,7 +3,7 @@ import { del, put } from "@/domain/changes";
 import { parseSettings } from "@/domain/settings";
 import type { Block, ChecklistItem, ExportData, Goal } from "@/domain/types";
 import { createSqlJsDriver, type SqlJsDriver } from "./drivers/sqljsDriver";
-import { migrate, NewerDatabaseError, SCHEMA_VERSION, userVersion } from "./migrate";
+import { MIGRATIONS, migrate, NewerDatabaseError, SCHEMA_VERSION, userVersion } from "./migrate";
 import { SqliteRepository } from "./SqliteRepository";
 
 const goal = (id: string, extra: Partial<Goal> = {}): Goal => ({
@@ -63,6 +63,35 @@ describe("migrations", () => {
     expect(await userVersion(driver)).toBe(SCHEMA_VERSION);
     expect(await migrate(driver)).toEqual({ from: SCHEMA_VERSION, to: SCHEMA_VERSION });
     expect(backups).toEqual([]);
+  });
+
+  it("upgrades a v1 database in place, keeping its data, after a backup", async () => {
+    const old = await createSqlJsDriver();
+    await old.execScript(`${MIGRATIONS[0]}\nPRAGMA user_version = 1;`);
+    const v1 = new SqliteRepository(old);
+    // v1 had no triggers yet, so this goes straight in.
+    await old.batch([
+      { sql: "INSERT INTO goals (id, name, color, kind, sort_order, created_at, updated_at) VALUES ('g', 'G', '#3b82f6', 'min', 0, 1, 1)" },
+      { sql: "INSERT INTO blocks (id, day, layer, start_minute, end_minute, goal_id, created_at, updated_at) VALUES ('b', '2026-10-19', 'plan', 540, 600, 'g', 1, 1)" },
+      { sql: "INSERT INTO week_targets (goal_id, week_start, target_minutes, updated_at) VALUES ('g', '2026-10-19', 60, 1)" },
+    ]);
+    const taken: string[] = [];
+    expect(await migrate(old, { backup: async (r) => taken.push(r) })).toEqual({ from: 1, to: SCHEMA_VERSION });
+    expect(taken).toEqual(["pre-migration"]);
+    expect((await v1.loadBase()).weekTargets).toHaveLength(1);
+    expect((await v1.loadWeek("2026-10-19")).blocks.map((b) => b.goalId)).toEqual(["g"]);
+  });
+
+  it("rejects malformed rows (v2 triggers)", async () => {
+    await expect(repo.applyChanges([put("goals", goal("bad", { color: "blue" }))])).rejects.toThrow(/color/);
+    await expect(repo.applyChanges([put("goals", goal("bad", { archivedOn: "19 Oct" }))])).rejects.toThrow(/archived_on/);
+    await expect(repo.applyChanges([put("blocks", block("bad", { day: "2026/10/19" }))])).rejects.toThrow(/day/);
+    await expect(
+      repo.applyChanges([put("goals", goal("g")), put("checklistItems", item("c", "g", "Oct 19"))]),
+    ).rejects.toThrow(/week_start/);
+    await repo.applyChanges([put("goals", goal("g"))]);
+    await expect(repo.applyChanges([put("goals", goal("g", { color: "#12345" }))])).rejects.toThrow(/color/);
+    expect((await repo.loadBase()).goals.map((g) => g.color)).toEqual(["#3b82f6"]);
   });
 
   it("refuses a newer database", async () => {

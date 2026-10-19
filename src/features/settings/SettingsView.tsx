@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, FolderOpen, HardDriveDownload, Upload } from "lucide-react";
+import { Download, FolderOpen, HardDriveDownload, History, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,8 @@ import { formatMinute } from "@/domain/time/localDate";
 import type { SnapMinutes, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
 import { applyImport, backupNow, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
-import { changeWeekStartDay, useStore } from "@/state/store";
+import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
+import { BackupList } from "./BackupList";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -137,10 +138,18 @@ function ImportDialog({ pending, onClose }: { pending: { name: string; result: I
 export function SettingsView() {
   const settings = useStore((s) => s.settings);
   const [pending, setPending] = useState<{ name: string; result: ImportResult } | null>(null);
-  const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null } | null>(null);
+  const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
+  const [restoreOpen, setRestoreOpen] = useState(false);
 
   useEffect(() => {
-    void getPlatform().then(async (p) => setInfo({ kind: p.kind, version: await p.appVersion(), dir: await p.dataDir() }));
+    void getPlatform().then(async (p) =>
+      setInfo({
+        kind: p.kind,
+        version: await p.appVersion(),
+        dir: await p.dataDir(),
+        lastBackup: (await p.listBackups().catch(() => []))[0]?.createdAt ?? null,
+      }),
+    );
   }, []);
 
   return (
@@ -181,6 +190,7 @@ export function SettingsView() {
           <h2 className="mb-1 text-lg font-semibold">Data</h2>
           <p className="mb-3 text-sm text-muted-foreground">
             Your data stays on this computer{info?.dir ? ` in ${info.dir}` : ""}. A backup is made automatically once a day; the newest 14 are kept.
+            {info?.kind === "tauri" && (info.lastBackup ? ` Last backup: ${new Date(info.lastBackup * 1000).toLocaleString()}.` : " No backup yet.")}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void exportJson()}>
@@ -199,6 +209,11 @@ export function SettingsView() {
               <HardDriveDownload /> Back up now
             </Button>
             {info?.kind === "tauri" && (
+              <Button variant="outline" onClick={() => setRestoreOpen(true)}>
+                <History /> Restore a backup…
+              </Button>
+            )}
+            {info?.kind === "tauri" && (
               <Button variant="outline" onClick={() => void getPlatform().then((p) => p.revealDataDir())}>
                 <FolderOpen /> Open data folder
               </Button>
@@ -211,6 +226,15 @@ export function SettingsView() {
         </p>
       </div>
       <ImportDialog pending={pending} onClose={() => setPending(null)} />
+      <Dialog open={restoreOpen} onOpenChange={setRestoreOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Restore a backup</DialogTitle>
+            <DialogDescription>Restoring replaces all current data. Your current data is backed up first, and the app reloads.</DialogDescription>
+          </DialogHeader>
+          {restoreOpen && <BackupList beforeRestore={flushWrites} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

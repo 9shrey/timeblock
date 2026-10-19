@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, so new advisories surface without a push
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -52,3 +54,46 @@ jobs:
       - name: cargo test
         working-directory: src-tauri
         run: cargo test
+
+  e2e:
+    # Drives the real app (WebKitGTK) through tauri-driver under a virtual display.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libxdo-dev patchelf webkit2gtk-driver xvfb
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: tauri-driver
+      - run: npm ci
+      - run: npm run e2e:build
+      - run: xvfb-run --auto-servernum npm run e2e
+        env:
+          WEBKIT_WEBDRIVER: /usr/bin/WebKitWebDriver
+
+  audit:
+    # Known-vulnerable dependencies. Separate job so an advisory doesn't hide test results.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm audit --omit=dev --audit-level=high
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: cargo audit
+        working-directory: src-tauri
+        run: cargo audit

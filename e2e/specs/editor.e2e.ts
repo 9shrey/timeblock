@@ -105,4 +105,33 @@ describe("Desktop integration (native)", () => {
     });
     await expect($$("li[data-sonner-toast]")[0]!).toHaveText(expect.stringContaining("Backup created"));
   });
+
+  it("restores a backup: the deleted block comes back and the deletion is backed up", async () => {
+    await openSeeded();
+    await gotoView("Settings");
+    await $("button*=Back up now").click();
+    await $("li[data-sonner-toast]").waitForExist();
+    await gotoView("Day");
+    await (await item("Plan, 14:00–16:00")).click();
+    await key("Delete");
+    expect((await itemLabels()).some((l) => l.startsWith("Plan, 14:00–16:00"))).toBe(false);
+
+    await gotoView("Settings");
+    await $("button*=Restore a backup").click();
+    const list = await $('ul[aria-label="Backups"]');
+    await list.waitForExist();
+    // Newest first: the manual backup made above.
+    await expect(list.$("li")).toHaveText(expect.stringContaining("Manual"));
+    await list.$("li").$("button*=Restore").click();
+    await $("button*=Replace current data").click();
+    // The window reloads on the restored file.
+    await $("[data-col-key]").waitForExist({ timeout: 15000 });
+    await gotoView("Day");
+    await browser.waitUntil(async () => (await itemLabels()).some((l) => l.startsWith("Plan, 14:00–16:00")), {
+      timeout: 5000,
+      timeoutMsg: "restored block not shown",
+    });
+    const dir = join(process.env.TIMEBLOCK_E2E_DATA!, "com.shreysingh.timeblock", "backups");
+    expect(readdirSync(dir).some((f) => f.includes("pre-restore"))).toBe(true);
+  });
 });

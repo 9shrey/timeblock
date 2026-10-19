@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const toastFn = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastFn }));
 
-const platform = vi.hoisted(() => ({ backupNow: vi.fn(async () => "/backups/pre-import.sqlite3"), openTextFile: vi.fn() }));
+const platform = vi.hoisted(() => ({
+  backupNow: vi.fn(async () => "/backups/pre-import.sqlite3"),
+  openTextFile: vi.fn(),
+  saveTextFile: vi.fn(async (name: string, _contents: string) => `/exports/${name}`),
+  appVersion: async () => "test",
+}));
 vi.mock("@/platform", () => ({ getPlatform: async () => platform }));
 
 import { put } from "@/domain/changes";
@@ -25,9 +30,20 @@ import {
   select,
   updateBlockFields,
 } from "./commands";
-import { applyImport, pickImportFile } from "./dataCommands";
-import { createGoal, deleteGoal, setTarget } from "./goalCommands";
-import { commit, flushWrites, initStore, useStore } from "./store";
+import { applyImport, exportJson, pickImportFile } from "./dataCommands";
+import {
+  addChecklistItem,
+  carryOverItems,
+  createGoal,
+  deleteGoal,
+  editChecklistItem,
+  moveGoal,
+  setTarget,
+  setWeekNote,
+  toggleChecklistItem,
+} from "./goalCommands";
+import { goalList } from "./selectors";
+import { commit, flushWrites, initStore, sealHistory, useStore } from "./store";
 import { unlockPlanDay, useUi } from "./ui";
 
 const now = { day: "2026-10-21", minute: 840 }; // Wed 14:00
@@ -156,6 +172,54 @@ describe("goal commands", () => {
   });
 });
 
+describe("outcomes, ordering and notes", () => {
+  const items = (week: string) =>
+    Object.values(useStore.getState().data.checklistItems).filter((c) => c.weekStart === week && c.goalId === "seed-goal-thesis");
+
+  it("adds, ticks, edits and deletes-by-clearing an outcome; carry-over is idempotent", () => {
+    const before = items("2026-10-19").length;
+    addChecklistItem("seed-goal-thesis", "2026-10-19", "   ");
+    expect(items("2026-10-19")).toHaveLength(before);
+    addChecklistItem("seed-goal-thesis", "2026-10-19", "  Draft chapter 3 ");
+    const added = items("2026-10-19").find((c) => c.text === "Draft chapter 3")!;
+    toggleChecklistItem(added);
+    expect(useStore.getState().data.checklistItems[added.id]!.done).toBe(true);
+    toggleChecklistItem(useStore.getState().data.checklistItems[added.id]!);
+    editChecklistItem(useStore.getState().data.checklistItems[added.id]!, "Draft chapter 4");
+    expect(useStore.getState().data.checklistItems[added.id]!.text).toBe("Draft chapter 4");
+
+    const open = items("2026-10-19").filter((c) => !c.done).length;
+    expect(carryOverItems("2026-10-19", "2026-10-26", "seed-goal-thesis")).toBeGreaterThan(0);
+    expect(items("2026-10-26").length).toBeGreaterThanOrEqual(open);
+    expect(carryOverItems("2026-10-19", "2026-10-26", "seed-goal-thesis")).toBe(0);
+
+    editChecklistItem(useStore.getState().data.checklistItems[added.id]!, "  ");
+    expect(useStore.getState().data.checklistItems[added.id]).toBeUndefined();
+  });
+
+  it("moves goals up and down, stopping at the ends", () => {
+    const names = () => goalList(useStore.getState().data.goals).map((g) => g.name);
+    const first = names();
+    const second = goalList(useStore.getState().data.goals)[1]!;
+    moveGoal(second, -1);
+    expect(names()).toEqual([first[1], first[0], ...first.slice(2)]);
+    const n = history().length;
+    moveGoal(goalList(useStore.getState().data.goals)[0]!, -1);
+    expect(history()).toHaveLength(n);
+  });
+
+  it("typing a reflection is one undo step until sealed", () => {
+    const n = history().length;
+    setWeekNote("2026-10-19", "W", "note:2026-10-19");
+    setWeekNote("2026-10-19", "Went", "note:2026-10-19");
+    setWeekNote("2026-10-19", "Went well", "note:2026-10-19");
+    expect(history()).toHaveLength(n + 1);
+    sealHistory();
+    setWeekNote("2026-10-19", "Went well!", "note:2026-10-19");
+    expect(history()).toHaveLength(n + 2);
+  });
+});
+
 describe("keyboard shortcuts", () => {
   const press = (key: string, extra: Partial<KeyboardEventInit> = {}, target?: Element) => {
     const e = new KeyboardEvent("keydown", { key, ...extra });
@@ -217,6 +281,24 @@ describe("import", () => {
     const picked = await pickImportFile();
     expect(picked?.result.ok).toBe(false);
     expect(Object.keys(useStore.getState().data.goals)).toHaveLength(3);
+  });
+
+  it("an export imports back to the same data", async () => {
+    await exportJson();
+    const contents = platform.saveTextFile.mock.calls[0]![1];
+    expect(platform.saveTextFile.mock.calls[0]![0]).toMatch(/2026-10-21/);
+    platform.openTextFile.mockResolvedValueOnce({ path: "round.json", contents });
+    const picked = await pickImportFile();
+    expect(picked?.result.ok).toBe(true);
+    if (!picked?.result.ok) return;
+    // exportAll has no ORDER BY, so compare each table as a set of rows.
+    const sorted = async () =>
+      Object.fromEntries(
+        Object.entries(await repo.exportAll()).map(([t, rows]: [string, unknown[]]) => [t, rows.map((r) => JSON.stringify(r)).sort()]),
+      );
+    const before = await sorted();
+    expect(await applyImport(picked.result.data)).toBe(true);
+    expect(await sorted()).toEqual(before);
   });
 
   it("a valid file replaces everything after a pre-import backup", async () => {

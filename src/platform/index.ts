@@ -12,12 +12,23 @@ export interface OpenedFile {
   contents: string;
 }
 
+export interface BackupInfo {
+  name: string;
+  /** Unix seconds. */
+  createdAt: number;
+  sizeBytes: number;
+}
+
 export interface Platform {
   readonly kind: "tauri" | "web";
   createDriver(): Promise<SqlDriver>;
   /** Returns the backup path, or null where backups are unsupported (web). */
   backupNow(reason: string): Promise<string | null>;
   backupIfStale(maxAgeHours: number): Promise<string | null>;
+  /** Newest first; empty where backups are unsupported (web). */
+  listBackups(): Promise<BackupInfo[]>;
+  /** Replaces the live data with a backup (after backing up the current data). Reload afterwards. */
+  restoreBackup(name: string): Promise<void>;
   /** Save dialog; returns the path written, or null if cancelled. */
   saveTextFile(defaultName: string, contents: string): Promise<string | null>;
   /** Open dialog; null if cancelled. */

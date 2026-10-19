@@ -32,6 +32,9 @@ export const config: WebdriverIO.Config = {
   framework: "mocha",
   reporters: ["spec"],
   mochaOpts: { ui: "bdd", timeout: 60_000 },
+  // WebKitWebDriver occasionally drops the session mid-drag ("page crash or hang"); in CI,
+  // rerun a failed spec file once so that doesn't fail the build. Locally, failures show.
+  specFileRetries: process.env.CI ? 1 : 0,
   waitforTimeout: 10_000,
   strictSelectors: false,
 

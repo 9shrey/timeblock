@@ -1,10 +1,11 @@
 //! Schema-agnostic SQLite access. All SQL lives in TypeScript; Rust only runs
 //! statements, converts values, and owns transactions and backups.
 
+use rusqlite::MAIN_DB;
 use rusqlite::limits::Limit;
 use rusqlite::types::{Value, ValueRef};
 use rusqlite::{Connection, params_from_iter};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value as Json};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -21,6 +22,16 @@ pub struct Stmt {
     pub sql: String,
     #[serde(default)]
     pub params: Vec<Json>,
+}
+
+/// One file in `backups/`, for the restore UI.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupInfo {
+    pub name: String,
+    /// Unix seconds, from the file name.
+    pub created_at: u64,
+    pub size_bytes: u64,
 }
 
 pub struct Db {
@@ -158,6 +169,12 @@ impl Db {
 
     /// `VACUUM INTO backups/data-<unix>-<reason>.sqlite3`, keeping the newest 14.
     pub fn backup_now(&self, reason: &str) -> Result<String, String> {
+        let target = self.backup_unpruned(reason)?;
+        self.prune_backups()?;
+        Ok(target)
+    }
+
+    fn backup_unpruned(&self, reason: &str) -> Result<String, String> {
         let reason: String = reason
             .chars()
             .map(|c| {
@@ -192,7 +209,6 @@ impl Db {
                 .map_err(err)?;
             result.map_err(err)?;
         }
-        self.prune_backups()?;
         Ok(target)
     }
 
@@ -232,6 +248,43 @@ impl Db {
         Ok(())
     }
 
+    /// Backups, newest first.
+    pub fn backups(&self) -> Result<Vec<BackupInfo>, String> {
+        let mut out: Vec<BackupInfo> = self
+            .list_backups()?
+            .into_iter()
+            .filter_map(|(ts, path)| {
+                let name = path.file_name()?.to_str()?.to_string();
+                let size_bytes = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+                Some(BackupInfo {
+                    name,
+                    created_at: ts,
+                    size_bytes,
+                })
+            })
+            .collect();
+        out.reverse();
+        Ok(out)
+    }
+
+    /// Replaces the live database with backup `name` (a file name from `backups()`), after
+    /// backing up the current data as "pre-restore". Uses SQLite's online backup API, so the
+    /// connection stays open and valid.
+    pub fn restore_backup(&self, name: &str) -> Result<(), String> {
+        let path = self
+            .list_backups()?
+            .into_iter()
+            .map(|(_, p)| p)
+            .find(|p| p.file_name().and_then(|n| n.to_str()) == Some(name))
+            .ok_or_else(|| format!("No backup named {name}"))?;
+        // Prune only afterwards: pruning first could delete the very backup being restored.
+        self.backup_unpruned("pre-restore")?;
+        self.lock()?
+            .restore(MAIN_DB, &path, None::<fn(rusqlite::backup::Progress)>)
+            .map_err(err)?;
+        self.prune_backups()
+    }
+
     /// Backs up if the newest backup is older than `max_age_hours` (or none exists).
     /// Returns the new backup's path, if one was made.
     pub fn backup_if_stale(&self, max_age_hours: u64) -> Result<Option<String>, String> {
@@ -268,6 +321,27 @@ mod tests {
             sql: sql.into(),
             params,
         }
+    }
+
+    #[test]
+    fn restores_a_backup_in_place() {
+        let (_d, db) = db();
+        db.batch(&[stmt("INSERT INTO t (id, n) VALUES ('kept', 1)", vec![])])
+            .unwrap();
+        let name = std::path::Path::new(&db.backup_now("manual").unwrap())
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        db.batch(&[stmt("DELETE FROM t", vec![])]).unwrap();
+        assert!(db.restore_backup("data-1-../../etc.sqlite3").is_err());
+        db.restore_backup(&name).unwrap();
+        let rows = db.select("SELECT id FROM t", &[]).unwrap();
+        assert_eq!(rows[0]["id"], json!("kept"));
+        // The emptied state was saved first, and the listing is newest first.
+        let list = db.backups().unwrap();
+        assert!(list[0].name.contains("pre-restore"));
+        assert_eq!(list.len(), 2);
     }
 
     #[test]

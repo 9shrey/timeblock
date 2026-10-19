@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Restore a backup** from Settings, or from the error screen when Timeblock can't start.
+  The current data is backed up first. Settings also shows when the last backup was made.
+
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it
   again now retries.
@@ -18,6 +22,9 @@ All notable changes to this project are documented here. The format follows
 - Only one copy of the app runs; a second launch focuses the existing window.
 - The database bridge no longer lets the webview attach other files or run writes
   through `db_select`.
+- Schema v2 validates colours, dates and flags on every write (existing rows are kept
+  as they are).
+- Week view re-renders only the lanes whose blocks, selection or clock changed.
 
 ## [0.1.0] - 2026-10-19
 

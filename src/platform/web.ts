@@ -36,6 +36,10 @@ export const webPlatform: Platform = {
   createDriver: () => createSqlJsDriver({ wasmUrl, data: load(), onPersist: save }),
   backupNow: async () => null,
   backupIfStale: async () => null,
+  listBackups: async () => [],
+  restoreBackup: async () => {
+    throw new Error("Backups are only available in the desktop app.");
+  },
   async saveTextFile(defaultName, contents) {
     const url = URL.createObjectURL(new Blob([contents], { type: "application/json" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: defaultName });

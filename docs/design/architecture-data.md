@@ -340,6 +340,11 @@ export function carryOverChanges(s: Snapshot, fromWeek: LocalDate, toWeek: Local
 // undone items not already carried (matched by carriedFromId) → new items in toWeek
 ```
 
+> **Superseded** (see `critique-synthesis.md` decision 4): there is no scope picker and no
+> `TargetEditScope`. An edit at week W upserts row W only (`setTargetChanges` in
+> `src/domain/goals/targets.ts`); later rows keep their own values. The three bullets below
+> describe the original proposal.
+
 - `this_and_future`: upsert row W, then delete later rows for that goal.
 - `this_week`: upsert row W, and if no row exists at W+1, upsert W+1 with the old effective value.
 - Default scope is `this_and_future` for current and future weeks, and `this_week` for past weeks.

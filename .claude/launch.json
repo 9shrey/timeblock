@@ -4,8 +4,34 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 1420
+    },
+    {
+      "name": "web-alt",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "1430",
+        "--strictPort"
+      ],
+      "port": 1430
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8777",
+        "--directory",
+        "/tmp/claude-1000/-home-shrey-Documents-Codes-calendar-goals-webapp/124c2020-9856-4fb9-8965-af6121f97ba8/scratchpad/www"
+      ],
+      "port": 8777
     }
   ]
 }

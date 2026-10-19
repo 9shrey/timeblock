@@ -2,7 +2,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
-import type { OpenedFile, Platform, SystemTheme } from "./index";
+import type { BackupInfo, OpenedFile, Platform, SystemTheme } from "./index";
 
 const CLOSE_FLUSH_TIMEOUT_MS = 3000;
 
@@ -13,6 +13,8 @@ export const tauriPlatform: Platform = {
   createDriver: async () => createTauriDriver(),
   backupNow: (reason) => invoke<string>("backup_now", { reason }),
   backupIfStale: (maxAgeHours) => invoke<string | null>("backup_if_stale", { maxAgeHours }),
+  listBackups: () => invoke<BackupInfo[]>("list_backups"),
+  restoreBackup: (name) => invoke("restore_backup", { name }),
   saveTextFile: (defaultName, contents) => invoke<string | null>("save_text_file", { defaultName, contents }),
   openTextFile: () => invoke<OpenedFile | null>("open_text_file"),
   dataDir: () => invoke<string>("data_dir"),

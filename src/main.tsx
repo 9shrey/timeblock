@@ -1,7 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
+import { FolderOpen } from "lucide-react";
 import App from "./App";
+import { Button } from "./components/ui/button";
+import { BackupList } from "./features/settings/BackupList";
 import { SqliteRepository } from "./data/SqliteRepository";
 import { CLOCK_TICK_MS, makeClock, parseNowOverride } from "./domain/time/clock";
 import type { Now } from "./domain/types";
@@ -16,10 +19,32 @@ const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 
 function BootError({ error }: { error: unknown }) {
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-3 p-8 text-center">
+    <main className="flex h-screen flex-col items-center justify-center gap-4 p-8 text-center">
       <h1 className="text-xl font-semibold">Timeblock could not start</h1>
       <p className="max-w-lg text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+      <BootRecovery />
     </main>
+  );
+}
+
+/** Restoring a backup or opening the data folder, when the platform itself came up. */
+function BootRecovery() {
+  const [desktop, setDesktop] = React.useState(false);
+  React.useEffect(() => {
+    getPlatform().then(
+      (p) => setDesktop(p.kind === "tauri"),
+      () => {},
+    );
+  }, []);
+  if (!desktop) return null;
+  return (
+    <section className="flex w-full max-w-xl flex-col gap-3 rounded-lg border p-4 text-left">
+      <p className="text-sm">You can restore a backup (your current data is backed up first) or open the data folder.</p>
+      <BackupList />
+      <Button variant="outline" className="self-start" onClick={() => void getPlatform().then((p) => p.revealDataDir())}>
+        <FolderOpen /> Open data folder
+      </Button>
+    </section>
   );
 }
 
