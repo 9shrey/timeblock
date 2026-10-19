@@ -1,0 +1,147 @@
+---
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · Timeblock</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href={base}>Timeblock</a>
+      <nav>
+        <a href={`${base}/docs/`}>Docs</a>
+        <a href={`${base}/download/`}>Download</a>
+        <a class="github" href="https://github.com/9shrey/timeblock">GitHub</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>Timeblock is local-first and open source. <a href="https://github.com/9shrey/timeblock">MIT licensed</a>.</p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #faf9f7;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --accent: #2f5d50;
+    --line: #e4e1dc;
+    --card: #ffffff;
+    font-synthesis: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141414;
+      --ink: #f1f0ee;
+      --muted: #a3a3a3;
+      --accent: #7cc9b6;
+      --line: #2a2a2a;
+      --card: #1c1c1c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+  h1, h2, h3 { line-height: 1.2; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 0.9rem 1rem; overflow-x: auto; }
+  code { background: var(--card); border-radius: 4px; padding: 0.1em 0.35em; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid var(--line); padding: 0.5rem 0.7rem; text-align: left; }
+  th { background: var(--card); }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 2rem;
+  }
+  .brand { font-weight: 700; font-size: 1.1rem; color: var(--ink); }
+  .site-header nav { display: flex; gap: 1.5rem; align-items: center; }
+  .site-header nav a { color: var(--ink); font-size: 0.95rem; }
+  .site-header nav a.github { color: var(--muted); }
+
+  .site-footer {
+    max-width: 860px;
+    margin: 3rem auto 0;
+    padding: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.25rem 1.4rem;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.7rem 1.3rem;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .btn:hover { text-decoration: none; opacity: 0.9; }
+  .btn-secondary {
+    display: inline-block;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 0.7rem 1.3rem;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .btn-secondary:hover { text-decoration: none; background: var(--card); }
+  .kbd {
+    font-family: ui-monospace, monospace;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.1em 0.45em;
+    font-size: 0.85em;
+  }
+  .hero { padding: 2rem 0 1rem; }
+  .hero h1 { font-size: 2.4rem; margin-bottom: 0.5rem; }
+  .hero p.lede { font-size: 1.2rem; color: var(--muted); max-width: 640px; }
+  .hero .ctas { display: flex; gap: 0.8rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .toc a { display: block; padding: 0.15rem 0; }
+  .note {
+    border-left: 3px solid var(--accent);
+    padding: 0.2rem 1rem;
+    margin: 1.2rem 0;
+    color: var(--muted);
+  }
+</style>
