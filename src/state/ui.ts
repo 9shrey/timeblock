@@ -29,6 +29,8 @@ interface UiState {
   quickAdd: { day: LocalDate; layer: Layer } | null;
   commandPaletteOpen: boolean;
   shortcutsOpen: boolean;
+  /** Goal clicked in BudgetPanel: every other goal's blocks are dimmed. Click again to clear. */
+  highlightedGoalId: string | null;
 }
 
 export const useUi = create<UiState>(() => ({
@@ -39,6 +41,7 @@ export const useUi = create<UiState>(() => ({
   quickAdd: null,
   commandPaletteOpen: false,
   shortcutsOpen: false,
+  highlightedGoalId: null,
 }));
 
 let sessionCounter = 0;
@@ -77,4 +80,9 @@ export function setCommandPaletteOpen(open: boolean): void {
 
 export function setShortcutsOpen(open: boolean): void {
   useUi.setState({ shortcutsOpen: open });
+}
+
+/** Toggles highlighting a goal's blocks; clicking the already-highlighted goal clears it. */
+export function toggleHighlightedGoal(goalId: string): void {
+  useUi.setState((s) => ({ highlightedGoalId: s.highlightedGoalId === goalId ? null : goalId }));
 }

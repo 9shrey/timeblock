@@ -27,6 +27,8 @@ All notable changes to this project are documented here. The format follows
   touching the mouse.
 - **Command palette** (`Ctrl+K`): go to a date, apply a template, confirm the rest of the
   day, switch the selected block's goal, or export. `?` opens a keyboard shortcuts sheet.
+- **Highlight a goal**: clicking a goal in the week budget panel dims every other goal's
+  blocks in the timeline. Click it again to clear.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

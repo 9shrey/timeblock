@@ -4,6 +4,7 @@ import { ghostsOf, planStates } from "@/domain/blocks/reconcile";
 import type { Block, Ghost } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { useDayBlocks, useGoalMap, useLaneMinute, useLaneSelection } from "@/state/selectors";
+import { useUi } from "@/state/ui";
 import { BlockView } from "./BlockView";
 import { DraftLayer } from "./DraftLayer";
 import { GhostBlock } from "./GhostBlock";
@@ -24,6 +25,8 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
   const laneMinute = useLaneMinute(spec.day);
   const selected = useLaneSelection(spec.day, spec.layer, !!spec.showGhosts);
   const editable = isEditable(spec);
+  const highlighted = useUi((s) => s.highlightedGoalId);
+  const dim = (goalId: string | null) => highlighted !== null && goalId !== highlighted;
 
   // Plan states only change when the day's blocks or (today only) the clock change.
   const states = useMemo(
@@ -82,6 +85,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
               col={index}
               selected={selected === it.id}
               editable={editable}
+              dimmed={dim(g.goalId)}
             />
           );
         }
@@ -97,6 +101,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
             planState={states?.get(b.id) ?? null}
             selected={selected === `block:${b.id}`}
             editable={editable}
+            dimmed={dim(b.goalId)}
           />
         );
       })}
