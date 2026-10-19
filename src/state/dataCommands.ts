@@ -1,13 +1,17 @@
 /** Export / import / backup. Import replaces everything in one transaction after a forced backup. */
 import { toast } from "sonner";
 import { put } from "@/domain/changes";
-import { systemEnv } from "@/domain/env";
+import { blocksToCsv, csvFileName, weeklyStatsToCsv, type WeeklyGoalRow } from "@/domain/export/csv";
 import { exportFileName, serializeExport, toExportFile } from "@/domain/export/format";
 import { parseImportFile, type ImportResult } from "@/domain/export/schema";
+import { systemEnv } from "@/domain/env";
 import { settingRow } from "@/domain/settings";
+import { computeStats } from "@/domain/stats/stats";
+import { addDays, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { ExportData, Settings } from "@/domain/types";
 import { getPlatform } from "@/platform";
-import { commit, flushWrites, getRepo, reloadAll, useStore } from "./store";
+import { goalList, targetList } from "./selectors";
+import { commit, flushWrites, getRepo, useStore, reloadAll } from "./store";
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -21,6 +25,56 @@ export async function exportJson(): Promise<void> {
     if (path) toast.success("Exported", { description: path });
   } catch (e) {
     toast.error("Export failed", { description: errorText(e) });
+  }
+}
+
+/**
+ * Exports blocks for the last `weeks` weeks (through the current week) as CSV, plus the
+ * same range's weekly per-goal stats, next to the JSON export. Two files (the platform's
+ * save dialog runs twice); each is independent and deterministic.
+ */
+export async function exportCsv(weeks = 12): Promise<void> {
+  try {
+    await flushWrites();
+    const platform = await getPlatform();
+    const repo = getRepo();
+    const s = useStore.getState();
+    const currentWeekStart = weekStartOf(s.now.day, s.settings.weekStartDay);
+    const toExclusive = addDays(currentWeekStart, 7);
+    const fromWeek = addDays(toExclusive, -7 * weeks);
+    const toInclusive = addDays(toExclusive, -1);
+
+    const blocks = await repo.loadBlocksRange(fromWeek, toExclusive);
+    const goalsById = new Map(goalList(s.data.goals).map((g) => [g.id, g] as const));
+    const targets = targetList(s.data.weekTargets);
+    const goals = goalList(s.data.goals);
+
+    const rows: WeeklyGoalRow[] = [];
+    for (let i = 0; i < weeks; i++) {
+      const weekStart = addDays(fromWeek, i * 7);
+      const days = weekDays(weekStart);
+      const daySet = new Set(days);
+      const weekBlocks = blocks.filter((b) => daySet.has(b.day));
+      const stats = computeStats({ days, weekStart, blocks: weekBlocks, goals, targets, checklist: [], now: s.now });
+      for (const g of stats.goals) {
+        rows.push({
+          weekStart,
+          goalName: g.goal?.name ?? "Unassigned",
+          plannedMinutes: g.planned,
+          actualMinutes: g.actual,
+          targetMinutes: g.target,
+          status: g.status,
+        });
+      }
+    }
+
+    const blocksPath = await platform.saveTextFile(csvFileName("blocks", fromWeek, toInclusive), blocksToCsv(blocks, goalsById));
+    const statsPath = await platform.saveTextFile(csvFileName("weekly-stats", fromWeek, toInclusive), weeklyStatsToCsv(rows));
+    if (blocksPath || statsPath) {
+      toast.success("Exported CSV", { description: [blocksPath, statsPath].filter(Boolean).join(", ") });
+    }
+  } catch (e) {
+    toast.error("CSV export failed", { description: errorText(e) });
   }
 }
 
