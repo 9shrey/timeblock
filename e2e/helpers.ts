@@ -1,4 +1,5 @@
 /** Helpers for driving the Timeblock window. Times are wall-clock minutes. */
+import { mkdirSync } from "node:fs";
 import { browser, $, $$ } from "@wdio/globals";
 
 export const DEMO_NOW = "2026-10-21T14:00"; // a Wednesday; the demo seed is built around it
@@ -114,6 +115,7 @@ export async function rowsCount(selector: string): Promise<number> {
 
 /** Saves a screenshot under e2e/screenshots for manual review. */
 export async function snap(name: string): Promise<void> {
+  mkdirSync("./e2e/screenshots", { recursive: true });
   await browser.saveScreenshot(`./e2e/screenshots/${name}.png`);
 }
 
