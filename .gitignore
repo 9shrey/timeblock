@@ -30,3 +30,6 @@ src-tauri/gen/schemas
 # Local agent state
 .claude/settings.local.json
 .planning/
+
+# E2E artifacts
+e2e/screenshots/

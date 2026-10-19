@@ -99,6 +99,16 @@ npm test             # Vitest (domain, data layer, store, components)
 npm run test:tz      # domain tests under UTC and Pacific/Chatham
 ```
 
+End-to-end tests drive the real app window through WebDriver (Linux): install
+[`tauri-driver`](https://crates.io/crates/tauri-driver) and WebKitGTK's `WebKitWebDriver`
+(Fedora: `webkitgtk6.0`, Debian/Ubuntu: `webkit2gtk-driver`), then:
+
+```bash
+cargo install tauri-driver --locked
+npm run e2e:build    # debug app with the test switches enabled
+npm run e2e          # 30 tests; uses a throwaway data folder, never your real data
+```
+
 Browser-mode URL switches (development only):
 
 - `?seed=demo` loads two weeks of demo data.

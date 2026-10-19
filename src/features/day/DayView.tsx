@@ -95,7 +95,7 @@ export function DayView() {
     <div className="flex h-full flex-col">
       <SummaryBar day={day} />
       <div className="min-h-0 flex-1">
-        <div className="mx-auto h-full max-w-4xl">
+        <div className="mx-auto h-full max-w-6xl">
           <Timeline
             columns={columns}
             pxPerHour={DAY_PX_PER_HOUR}

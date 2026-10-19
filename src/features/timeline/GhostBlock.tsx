@@ -5,7 +5,7 @@ import type { Ghost, Goal } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { confirm, select, skip } from "@/state/commands";
 import { useDraft } from "@/state/draft";
-import { displayTitle, NO_GOAL_COLOR, slotStyle, type Slot } from "./BlockView";
+import { displayTitle, NO_GOAL_COLOR, ResizeHandles, slotStyle, type Slot } from "./BlockView";
 import { EDGE_PX, minutesToPx } from "./geometry";
 
 interface Props {
@@ -39,22 +39,23 @@ export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHou
       aria-pressed={selected}
       onFocus={(e) => e.target === e.currentTarget && select({ kind: "ghost", planBlockId: ghost.planBlockId })}
       className={cn(
-        "group absolute flex overflow-hidden rounded-md border-[1.5px] border-dashed px-1.5 text-left text-xs leading-tight text-foreground outline-none select-none",
+        "group absolute rounded-md border-[1.5px] border-dashed text-left text-xs leading-tight text-foreground outline-none select-none",
         "opacity-55 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
-        short ? "items-center gap-1" : "flex-col py-1",
         selected && "z-10 opacity-90 ring-2 ring-ring ring-offset-1 ring-offset-background",
         dragging && "opacity-25",
       )}
       // Ghosts leave the right of their slot free, so unplanned time can be drawn over planned time.
       style={{ ...slotStyle(ghost.startMinute, ghost.endMinute, slot, pxPerHour, GHOST_WIDTH), borderColor: color }}
     >
-      <span className="flex min-w-0 items-center gap-1 font-medium">
-        <span aria-hidden className="text-muted-foreground">
-          ?
+      <span className={cn("flex h-full w-full overflow-hidden px-1.5", short ? "items-center gap-1" : "flex-col py-1")}>
+        <span className="flex min-w-0 items-center gap-1 font-medium">
+          <span aria-hidden className="text-muted-foreground">
+            ?
+          </span>
+          <span className="truncate">{title}</span>
         </span>
-        <span className="truncate">{title}</span>
+        <span className={cn("truncate text-muted-foreground", short ? "text-[10px]" : "text-[11px]")}>{time}</span>
       </span>
-      <span className={cn("truncate text-muted-foreground", short ? "text-[10px]" : "text-[11px]")}>{time}</span>
       {editable && (
         <>
           <span
@@ -83,12 +84,7 @@ export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHou
               <X className="size-3.5" />
             </button>
           </span>
-          {minutesToPx(ghost.endMinute - ghost.startMinute, pxPerHour) >= 3 * EDGE_PX && (
-            <>
-              <span data-edge="start" className="absolute inset-x-0 -top-0.5 h-1.5 cursor-ns-resize" />
-              <span data-edge="end" className="absolute inset-x-0 -bottom-0.5 h-1.5 cursor-ns-resize" />
-            </>
-          )}
+          {minutesToPx(ghost.endMinute - ghost.startMinute, pxPerHour) >= 3 * EDGE_PX && <ResizeHandles />}
         </>
       )}
     </div>

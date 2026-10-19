@@ -9,6 +9,9 @@ import { getPlatform } from "./platform";
 import { initStore, useStore } from "./state/store";
 import "./styles/index.css";
 
+/** Dev and end-to-end test builds accept `?seed`, `?reset` and `?now`; release builds never do. */
+const TEST_SWITCHES = import.meta.env.DEV || import.meta.env.VITE_E2E === "1";
+
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 
 function BootError({ error }: { error: unknown }) {
@@ -49,8 +52,8 @@ async function boot() {
   const repo = new SqliteRepository(driver, (reason) => platform.backupNow(reason));
   await repo.init();
 
-  const clock = makeClock(import.meta.env.DEV ? parseNowOverride(location.search) : null);
-  if (import.meta.env.DEV) await applyDevParams(repo, clock());
+  const clock = makeClock(TEST_SWITCHES ? parseNowOverride(location.search) : null);
+  if (TEST_SWITCHES) await applyDevParams(repo, clock());
 
   await initStore(
     {

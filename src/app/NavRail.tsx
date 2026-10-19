@@ -26,7 +26,7 @@ function RailButton({ view, label, icon: Icon, shortcut, badge }: { view: View; 
       <TooltipTrigger asChild>
         <button
           type="button"
-          aria-label={badge ? `${label} (${badge} days to review)` : label}
+          aria-label={badge ? `${label} (${badge} ${badge === 1 ? "day" : "days"} to review)` : label}
           aria-current={active ? "page" : undefined}
           onClick={() => useStore.setState({ view })}
           className={cn(

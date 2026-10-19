@@ -33,7 +33,7 @@ function ItemRow({ item, editable }: { item: ChecklistItem; editable: boolean })
         <button
           type="button"
           aria-label={`Delete outcome: ${item.text}`}
-          className="invisible rounded p-0.5 text-muted-foreground group-hover:visible hover:text-destructive focus-visible:visible"
+          className="rounded p-0.5 text-muted-foreground/40 group-hover:text-muted-foreground hover:text-destructive focus-visible:text-destructive"
           onClick={() => removeChecklistItem(item)}
         >
           <X className="size-3.5" />

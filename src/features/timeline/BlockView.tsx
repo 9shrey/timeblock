@@ -55,6 +55,16 @@ function PlanBadge({ state }: { state: PlanState }) {
   }
 }
 
+/** 6px hit zones centred on the top and bottom edges (3px inside, 3px outside). */
+export function ResizeHandles() {
+  return (
+    <>
+      <span data-edge="start" className="absolute inset-x-0 -top-[3px] z-10 h-1.5 cursor-ns-resize" />
+      <span data-edge="end" className="absolute inset-x-0 -bottom-[3px] z-10 h-1.5 cursor-ns-resize" />
+    </>
+  );
+}
+
 interface Props {
   block: Block;
   goal: Goal | null;
@@ -93,10 +103,10 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
       aria-pressed={selected}
       onFocus={() => select({ kind: "block", id: block.id })}
       className={cn(
-        "absolute flex overflow-hidden rounded-md px-1.5 text-left text-xs leading-tight outline-none select-none",
+        // No overflow clipping here: the resize handles reach 3px outside the block.
+        "absolute rounded-md text-left text-xs leading-tight outline-none select-none",
         "focus-visible:ring-2 focus-visible:ring-ring",
         isPlan ? "border-[1.5px] text-foreground" : "text-white shadow-sm",
-        short ? "items-center gap-1 py-0" : "flex-col py-1",
         planState === "skipped" && "opacity-50",
         selected && "z-10 ring-2 ring-ring ring-offset-1 ring-offset-background",
         dragging && "opacity-40",
@@ -109,20 +119,17 @@ export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour,
           : (goal?.color ?? NO_GOAL_COLOR),
       }}
     >
-      <span className={cn("flex min-w-0 items-center gap-1 font-medium", short && "flex-1")}>
-        {planState && <PlanBadge state={planState} />}
-        <span className={cn("truncate", planState === "skipped" && "line-through")}>{title}</span>
+      <span className={cn("flex h-full w-full overflow-hidden px-1.5", short ? "items-center gap-1" : "flex-col py-1")}>
+        <span className={cn("flex min-w-0 items-center gap-1 font-medium", short && "flex-1")}>
+          {planState && <PlanBadge state={planState} />}
+          <span className={cn("truncate", planState === "skipped" && "line-through")}>{title}</span>
+        </span>
+        <span className={cn("truncate opacity-75", short ? "shrink-0 text-[10px]" : "text-[11px]")}>
+          {time}
+          {!short && len >= 45 && ` · ${formatDuration(len)}`}
+        </span>
       </span>
-      <span className={cn("truncate opacity-75", short ? "shrink-0 text-[10px]" : "text-[11px]")}>
-        {time}
-        {!short && len >= 45 && ` · ${formatDuration(len)}`}
-      </span>
-      {editable && minutesToPx(len, pxPerHour) >= 3 * EDGE_PX && (
-        <>
-          <span data-edge="start" className="absolute inset-x-0 -top-0.5 h-1.5 cursor-ns-resize" />
-          <span data-edge="end" className="absolute inset-x-0 -bottom-0.5 h-1.5 cursor-ns-resize" />
-        </>
-      )}
+      {editable && minutesToPx(len, pxPerHour) >= 3 * EDGE_PX && <ResizeHandles />}
     </button>
   );
 });
