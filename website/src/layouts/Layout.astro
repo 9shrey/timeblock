@@ -62,22 +62,28 @@ const path = Astro.url.pathname;
 
 <style is:global>
   :root {
-    --bg: #faf9f7;
-    --ink: #1a1a1a;
-    --muted: #6b6b6b;
-    --accent: #2f5d50;
-    --line: #e4e1dc;
-    --card: #ffffff;
+    --bg: #ffffff;
+    --ink: #0a0a0a;
+    --muted: #595959;
+    --accent: #0a0a0a;
+    --accent-ink: #ffffff;
+    --line: #e2e2e2;
+    --card: #fafafa;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
+    --shadow-hover: 0 4px 10px rgba(0, 0, 0, 0.08);
     font-synthesis: none;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #141414;
-      --ink: #f1f0ee;
+      --bg: #0a0a0a;
+      --ink: #f5f5f5;
       --muted: #a3a3a3;
-      --accent: #7cc9b6;
+      --accent: #f5f5f5;
+      --accent-ink: #0a0a0a;
       --line: #2a2a2a;
-      --card: #1c1c1c;
+      --card: #141414;
+      --shadow: none;
+      --shadow-hover: none;
     }
   }
   * { box-sizing: border-box; }
@@ -90,8 +96,10 @@ const path = Astro.url.pathname;
   }
   main { max-width: 860px; margin: 0 auto; padding: 0 1.5rem 4rem; }
   h1, h2, h3 { line-height: 1.2; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  h2 { font-size: 1.5rem; margin-top: 2.5rem; }
+  h3 { font-size: 1.15rem; }
+  a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: currentColor; }
   a:focus-visible, button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -103,7 +111,7 @@ const path = Astro.url.pathname;
     top: -100%;
     left: 1rem;
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
     padding: 0.6rem 1rem;
     border-radius: 0 0 8px 8px;
     z-index: 100;
@@ -138,10 +146,12 @@ const path = Astro.url.pathname;
     font-weight: 700;
     font-size: 1.1rem;
     color: var(--ink);
+    text-decoration: none;
   }
   .brand-mark { width: 1.3rem; height: 1.3rem; color: var(--accent); flex-shrink: 0; }
   .site-header nav { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-  .site-header nav a { color: var(--ink); font-size: 0.95rem; }
+  .site-header nav a { color: var(--ink); font-size: 0.95rem; text-decoration: none; transition: color 0.12s ease; }
+  .site-header nav a:hover { color: var(--accent); }
   .site-header nav a.github { color: var(--muted); }
   .site-header nav a[aria-current="page"] { color: var(--accent); font-weight: 600; }
 
@@ -159,7 +169,10 @@ const path = Astro.url.pathname;
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 1.25rem 1.4rem;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.12s ease, transform 0.12s ease;
   }
+  .card:hover { box-shadow: var(--shadow-hover); }
   .grid-3 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -169,21 +182,26 @@ const path = Astro.url.pathname;
   .btn {
     display: inline-block;
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
+    text-decoration: none;
     padding: 0.7rem 1.3rem;
     border-radius: 8px;
     font-weight: 600;
+    box-shadow: var(--shadow);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
   }
-  .btn:hover { text-decoration: none; opacity: 0.9; }
+  .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--shadow-hover); }
   .btn-secondary {
     display: inline-block;
     border: 1px solid var(--line);
     color: var(--ink);
+    text-decoration: none;
     padding: 0.7rem 1.3rem;
     border-radius: 8px;
     font-weight: 600;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
   }
-  .btn-secondary:hover { text-decoration: none; background: var(--card); }
+  .btn-secondary:hover { background: var(--card); border-color: var(--ink); }
   .kbd {
     font-family: ui-monospace, monospace;
     background: var(--card);
@@ -198,8 +216,9 @@ const path = Astro.url.pathname;
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: var(--accent);
-    border: 1px solid var(--accent);
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--line);
     border-radius: 999px;
     padding: 0.25rem 0.75rem;
     margin-bottom: 1rem;
@@ -209,9 +228,11 @@ const path = Astro.url.pathname;
   .hero .ctas { display: flex; gap: 0.8rem; margin-top: 1.5rem; flex-wrap: wrap; }
   .toc a { display: block; padding: 0.15rem 0; }
   .note {
-    border-left: 3px solid var(--accent);
-    padding: 0.2rem 1rem;
+    border-left: 3px solid var(--ink);
+    background: var(--card);
+    padding: 0.6rem 1rem;
     margin: 1.2rem 0;
     color: var(--muted);
+    border-radius: 0 8px 8px 0;
   }
 </style>
