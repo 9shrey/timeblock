@@ -10,7 +10,7 @@ import type { ChangeSet, DataState, LocalDate, Now, Repository, Settings, WeekDa
 import { createWriteQueue, type WriteQueue } from "@/data/writeQueue";
 import { emptyHistory, popRedo, popUndo, record, type History } from "./history";
 
-export type View = "day" | "week" | "goals" | "review" | "settings";
+export type View = "day" | "week" | "goals" | "review" | "trends" | "settings";
 export type ResolvedTheme = "light" | "dark";
 
 export type Selection = { kind: "block"; id: string } | { kind: "ghost"; planBlockId: string } | null;
