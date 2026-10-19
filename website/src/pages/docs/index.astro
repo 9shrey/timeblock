@@ -1,0 +1,131 @@
+---
+import Layout from "../../layouts/Layout.astro";
+const base = import.meta.env.BASE_URL;
+---
+<Layout
+  title="Docs"
+  description="How Timeblock works: Plan vs. Actual, goals and weekly targets, your data and backups, keyboard shortcuts."
+>
+  <h1>Docs</h1>
+  <p class="toc">
+    <a href="#concepts">Concepts</a>
+    <a href="#goals">Goals &amp; weekly targets</a>
+    <a href="#data">Your data &amp; backups</a>
+    <a href="#shortcuts">Keyboard shortcuts</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+  </p>
+
+  <h2 id="concepts">Concepts: Plan, Actual, and ghosts</h2>
+  <p>
+    Every day has two lanes, side by side:
+  </p>
+  <ul>
+    <li>
+      <strong>Plan</strong> — what you intend to do. Drag to create, move and resize blocks.
+      <span class="kbd">Shift</span> while dragging snaps to 5-minute steps; <span class="kbd">Ctrl</span>
+      copies a block instead of moving it. Overlapping blocks lay out side by side rather than
+      hiding each other.
+    </li>
+    <li>
+      <strong>Actual</strong> — what really happened. You don't re-type this: every plan block
+      appears as a dashed <strong>ghost</strong> in the Actual lane. Press <span class="kbd">a</span>
+      (or click ✓) to confirm it happened as planned, or <span class="kbd">s</span> (✗) to skip it.
+      Drag a ghost to log it at a different time than planned.
+    </li>
+  </ul>
+  <p>
+    <strong>Unconfirmed time never counts as actual.</strong> That's the core honesty mechanic:
+    a day isn't "100% on plan" just because you planned it that way — only confirmed or
+    independently-logged time counts. When you're catching up at the end of the day,
+    <span class="kbd">Shift+A</span> ("confirm rest of day") confirms every remaining past ghost
+    around whatever you've already logged, instead of making you click through each one.
+  </p>
+  <p>
+    The <strong>Week view</strong> shows the same Plan | Actual split across all seven days, with
+    past days editable and blocks draggable across day boundaries.
+  </p>
+
+  <h2 id="goals">Goals &amp; weekly targets</h2>
+  <p>
+    A goal (e.g. "Thesis", "Social") carries a weekly target that's either:
+  </p>
+  <ul>
+    <li><strong>At least</strong> — e.g. Thesis ≥ 15 hours a week.</li>
+    <li><strong>At most</strong> — e.g. Social ≤ 3 hours a week.</li>
+  </ul>
+  <p>
+    Targets carry forward week to week until you change them, and past weeks never change
+    retroactively — so your history reflects what the target actually was at the time, not
+    what it is now. Each goal also has an outcome checklist per week (concrete things you
+    wanted to get done), with carry-over for anything left unchecked.
+  </p>
+  <p>
+    The <strong>week budget panel</strong> (<span class="kbd">Ctrl+B</span>) shows target vs. plan vs.
+    actual per goal as you work through the week. The <strong>weekly review</strong> is the
+    end-of-week version of the same comparison: status per goal, outcomes, and a free-text
+    reflection note.
+  </p>
+  <div class="note">
+    Templates and routines (saving a day/week as a reusable template, recurring plan blocks)
+    are planned but not yet shipped — they'll be documented here once they land.
+  </div>
+
+  <h2 id="data">Your data &amp; backups</h2>
+  <p>
+    Timeblock's desktop app stores everything in a single SQLite file on your machine —
+    no account, no server, no telemetry.
+  </p>
+  <table>
+    <thead><tr><th>OS</th><th>Folder</th></tr></thead>
+    <tbody>
+      <tr><td>Linux</td><td><code>~/.local/share/com.shreysingh.timeblock/</code></td></tr>
+      <tr><td>macOS</td><td><code>~/Library/Application Support/com.shreysingh.timeblock/</code></td></tr>
+      <tr><td>Windows</td><td><code>%APPDATA%\com.shreysingh.timeblock\</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><code>data.sqlite3</code> holds everything. <em>Settings → Open data folder</em> opens it.</li>
+    <li>
+      <code>backups/</code> gets a copy at most once a day, before every import, and before
+      schema upgrades; the newest 14 are kept. To restore one, quit Timeblock and copy it over
+      <code>data.sqlite3</code> — or use <em>Settings → Restore a backup</em>, which backs up the
+      current data first.
+    </li>
+    <li><em>Settings → Export JSON</em> writes a readable file you can keep or import elsewhere.</li>
+  </ul>
+
+  <h2 id="shortcuts">Keyboard shortcuts</h2>
+  <table>
+    <thead><tr><th>Keys</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">d</span> <span class="kbd">w</span> <span class="kbd">g</span> <span class="kbd">r</span></td><td>Day, Week, Goals, Review</td></tr>
+      <tr><td><span class="kbd">t</span>, <span class="kbd">[</span>, <span class="kbd">]</span></td><td>Today, previous, next</td></tr>
+      <tr><td><span class="kbd">Ctrl+Z</span> / <span class="kbd">Ctrl+Shift+Z</span></td><td>Undo / redo</td></tr>
+      <tr><td><span class="kbd">Ctrl+B</span></td><td>Week budget panel</td></tr>
+      <tr><td><span class="kbd">Enter</span></td><td>Edit the selected block</td></tr>
+      <tr><td><span class="kbd">Delete</span></td><td>Delete the selected block (skips a ghost)</td></tr>
+      <tr><td><span class="kbd">↑</span> <span class="kbd">↓</span> / <span class="kbd">Shift+↑</span> <span class="kbd">Shift+↓</span></td><td>Nudge / resize the selected block</td></tr>
+      <tr><td><span class="kbd">1</span>–<span class="kbd">9</span></td><td>Set the selected block's goal</td></tr>
+      <tr><td><span class="kbd">a</span> / <span class="kbd">s</span></td><td>Confirm / skip the selected plan block or ghost</td></tr>
+      <tr><td><span class="kbd">Shift+A</span></td><td>Confirm the rest of the day as planned</td></tr>
+      <tr><td><span class="kbd">Esc</span></td><td>Cancel a drag, close the editor, clear the selection</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <h3>Blank or flickering window on Linux (Wayland, NVIDIA)</h3>
+  <p>
+    WebKitGTK and the proprietary NVIDIA driver don't always get along. Timeblock already
+    sets <code>WEBKIT_DISABLE_DMABUF_RENDERER=1</code> when the NVIDIA kernel module is
+    loaded (unless you set it yourself). If the window is still blank or flickers, try these
+    one at a time:
+  </p>
+  <pre><code>WEBKIT_DISABLE_COMPOSITING_MODE=1 timeblock
+__NV_DISABLE_EXPLICIT_SYNC=1 timeblock
+GDK_BACKEND=x11 timeblock</code></pre>
+
+  <p>
+    More: <a href="https://github.com/9shrey/timeblock">source on GitHub</a> ·
+    <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">changelog</a>
+  </p>
+</Layout>

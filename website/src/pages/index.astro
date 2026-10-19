@@ -1,0 +1,73 @@
+---
+import Layout from "../layouts/Layout.astro";
+const base = import.meta.env.BASE_URL;
+---
+<Layout
+  title="Time-blocking that stays honest"
+  description="Timeblock is a local-first, offline desktop app for time-blocking your day and tracking what actually happened, with weekly goals that carry forward."
+>
+  <section class="hero">
+    <h1>Plan your day. See what really happened.</h1>
+    <p class="lede">
+      Timeblock is a local-first desktop app for time-blocking: drag out a <strong>Plan</strong>,
+      correct it to what actually happened as an <strong>Actual</strong> layer, and see how each
+      week's goal compares against the time you meant to spend and the time you spent.
+    </p>
+    <div class="ctas">
+      <a class="btn" href={`${base}/download/`}>Download for free</a>
+      <a class="btn-secondary" href={`${base}/docs/`}>Read the docs</a>
+    </div>
+  </section>
+
+  <section class="grid-3">
+    <div class="card">
+      <h3>Local-first, for real</h3>
+      <p>
+        Your data is a single SQLite file on your machine. No account, no server, no
+        telemetry — the app simply doesn't talk to the network. Export to JSON any time;
+        daily backups happen automatically.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Plan vs. Actual, not just a to-do list</h3>
+      <p>
+        Every plan block shows up as a dashed <em>ghost</em> in the Actual lane until you
+        confirm or skip it. Unconfirmed time never counts as actual, so your numbers stay
+        honest instead of optimistic.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Goals with weekly targets</h3>
+      <p>
+        Set a goal to <em>at least</em> 15 hours a week or <em>at most</em> 3 — targets carry
+        forward until you change them, and a weekly review shows target vs. plan vs. actual,
+        with outcomes and a reflection note.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why it's different</h2>
+    <p>
+      Most time-blocking tools either assume you'll follow the plan exactly, or they're
+      calendar apps wearing a planner's clothes. Timeblock keeps Plan and Actual as two
+      separate, honest layers — so the question isn't just "what did I schedule," it's
+      "what did I actually do, compared to what I meant to do, against a goal I set for the
+      week." And because it's a local SQLite file instead of an account, it works offline,
+      starts instantly, and is yours to keep.
+    </p>
+  </section>
+
+  <section>
+    <h2>Built for the day-to-day</h2>
+    <ul>
+      <li>Drag to create, move and resize blocks — <span class="kbd">Shift</span> snaps to 5 minutes, <span class="kbd">Ctrl</span> copies.</li>
+      <li>Week view with Plan | Actual split for past days, and drag-across-days.</li>
+      <li>Undo/redo for everything, full keyboard control, daily automatic backups.</li>
+      <li>Cross-platform: macOS, Windows and Linux, all from one codebase (Tauri + React).</li>
+    </ul>
+    <p>
+      <a href={`${base}/docs/`}>See the full feature list and how it works →</a>
+    </p>
+  </section>
+</Layout>

@@ -1,8 +1,10 @@
 name: Deploy to GitHub Pages
 
+# Manual dispatch only: the marketing/docs/download site (site.yml) now owns the
+# automatic deploy to this repo's GitHub Pages slot (9shrey.github.io/timeblock). Run
+# this by hand if you want the in-browser app demo back at that URL temporarily — it
+# will stay until the next site.yml run overwrites it again.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
