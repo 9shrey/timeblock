@@ -407,6 +407,38 @@ export function splitAtMidnight(
   return { continuation, changes: [put("blocks", trimmed), ...createChanges] };
 }
 
+/**
+ * Copies every skipped plan block across `fromDays` onto `toDay` (title, goal, notes,
+ * times; new ids, unlinked, not skipped) — "Reschedule skipped → next week" on the Review
+ * page. `fromDays` is typically a whole week; `toDay` is the day the user chose.
+ */
+export function rescheduleSkipped(
+  fromDays: readonly LocalDate[],
+  toDay: LocalDate,
+  blocks: readonly Block[],
+  env: Env,
+): ChangeSet {
+  const fromSet = new Set(fromDays);
+  return blocks
+    .filter((b) => b.layer === "plan" && b.skipped && fromSet.has(b.day))
+    .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : a.startMinute - b.startMinute))
+    .flatMap(
+      (b) =>
+        createBlock(
+          {
+            day: toDay,
+            layer: "plan",
+            startMinute: b.startMinute,
+            endMinute: b.endMinute,
+            title: b.title,
+            goalId: b.goalId,
+            notes: b.notes,
+          },
+          env,
+        ).changes,
+    );
+}
+
 /** Copies `fromDay`'s plan blocks (title, goal, notes, times) to `toDay` with new ids. */
 export function copyPlan(
   fromDay: LocalDate,
