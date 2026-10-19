@@ -17,8 +17,9 @@ export const tauriPlatform: Platform = {
   backupIfStale: (maxAgeHours) => invoke<string | null>("backup_if_stale", { maxAgeHours }),
   listBackups: () => invoke<BackupInfo[]>("list_backups"),
   restoreBackup: (name) => invoke("restore_backup", { name }),
-  saveTextFile: (defaultName, contents) => invoke<string | null>("save_text_file", { defaultName, contents }),
-  openTextFile: () => invoke<OpenedFile | null>("open_text_file"),
+  saveTextFile: (defaultName, contents, filter) =>
+    invoke<string | null>("save_text_file", { defaultName, contents, filterName: filter.name, filterExtensions: filter.extensions }),
+  openTextFile: (filter) => invoke<OpenedFile | null>("open_text_file", { filterName: filter.name, filterExtensions: filter.extensions }),
   dataDir: () => invoke<string>("data_dir"),
   revealDataDir: () => invoke("reveal_data_dir"),
   // Follows the desktop (KDE/GNOME) theme. Never call setTheme on Linux: it pins GTK's theme.

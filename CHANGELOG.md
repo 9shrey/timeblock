@@ -45,6 +45,10 @@ All notable changes to this project are documented here. The format follows
 - **Tray icon**: shows today's next (or running) plan block, with Start timer, Confirm
   rest of day, Show/Hide and Quit. "Close to tray" in Settings keeps the app running when
   the window is closed; otherwise closing the window quits as before.
+- **Calendar import/export** (Settings → Calendar): import an `.ics` file as a read-only
+  overlay in Day view, with a one-click "copy to plan" per event (recurring events show up
+  once; they aren't expanded). Export your plan and actual blocks for a date range as a
+  `.ics` file.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

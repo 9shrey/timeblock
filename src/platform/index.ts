@@ -12,6 +12,14 @@ export interface OpenedFile {
   contents: string;
 }
 
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
+
+export const JSON_FILTER: FileFilter = { name: "JSON", extensions: ["json"] };
+export const ICS_FILTER: FileFilter = { name: "Calendar", extensions: ["ics"] };
+
 export interface BackupInfo {
   name: string;
   /** Unix seconds. */
@@ -30,9 +38,9 @@ export interface Platform {
   /** Replaces the live data with a backup (after backing up the current data). Reload afterwards. */
   restoreBackup(name: string): Promise<void>;
   /** Save dialog; returns the path written, or null if cancelled. */
-  saveTextFile(defaultName: string, contents: string): Promise<string | null>;
+  saveTextFile(defaultName: string, contents: string, filter: FileFilter): Promise<string | null>;
   /** Open dialog; null if cancelled. */
-  openTextFile(): Promise<OpenedFile | null>;
+  openTextFile(filter: FileFilter): Promise<OpenedFile | null>;
   dataDir(): Promise<string | null>;
   revealDataDir(): Promise<void>;
   systemTheme(): Promise<SystemTheme>;
