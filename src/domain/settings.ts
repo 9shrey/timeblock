@@ -9,6 +9,10 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   trendWindowWeeks: 12,
   heatmapGoalId: null,
+  notifyNextBlock: false,
+  notifyUnconfirmed: false,
+  notifyWeeklyReview: false,
+  closeToTray: false,
 };
 
 /** Per-key schemas. Invalid or missing values fall back to the default. */
@@ -20,6 +24,10 @@ const schemas: { [K in keyof Settings]: z.ZodType<Settings[K]> } = {
   theme: z.enum(["system", "light", "dark"]),
   trendWindowWeeks: z.union([z.literal(4), z.literal(12), z.literal(26)]),
   heatmapGoalId: z.string().nullable(),
+  notifyNextBlock: z.boolean(),
+  notifyUnconfirmed: z.boolean(),
+  notifyWeeklyReview: z.boolean(),
+  closeToTray: z.boolean(),
 };
 
 export const SETTING_KEYS = Object.keys(schemas) as (keyof Settings)[];

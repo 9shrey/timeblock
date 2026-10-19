@@ -9,9 +9,9 @@ import { settingRow } from "@/domain/settings";
 import { computeStats } from "@/domain/stats/stats";
 import { addDays, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { ExportData, Settings } from "@/domain/types";
-import { getPlatform } from "@/platform";
+import { CSV_FILTER, getPlatform, JSON_FILTER } from "@/platform";
 import { goalList, targetList } from "./selectors";
-import { commit, flushWrites, getRepo, useStore, reloadAll } from "./store";
+import { commit, flushWrites, getRepo, reloadAll, useStore } from "./store";
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -21,7 +21,7 @@ export async function exportJson(): Promise<void> {
     const platform = await getPlatform();
     const data = await getRepo().exportAll();
     const file = toExportFile(data, { appVersion: await platform.appVersion(), exportedAt: systemEnv.nowMs() });
-    const path = await platform.saveTextFile(exportFileName(useStore.getState().now.day), serializeExport(file));
+    const path = await platform.saveTextFile(exportFileName(useStore.getState().now.day), serializeExport(file), JSON_FILTER);
     if (path) toast.success("Exported", { description: path });
   } catch (e) {
     toast.error("Export failed", { description: errorText(e) });
@@ -68,8 +68,16 @@ export async function exportCsv(weeks = 12): Promise<void> {
       }
     }
 
-    const blocksPath = await platform.saveTextFile(csvFileName("blocks", fromWeek, toInclusive), blocksToCsv(blocks, goalsById));
-    const statsPath = await platform.saveTextFile(csvFileName("weekly-stats", fromWeek, toInclusive), weeklyStatsToCsv(rows));
+    const blocksPath = await platform.saveTextFile(
+      csvFileName("blocks", fromWeek, toInclusive),
+      blocksToCsv(blocks, goalsById),
+      CSV_FILTER,
+    );
+    const statsPath = await platform.saveTextFile(
+      csvFileName("weekly-stats", fromWeek, toInclusive),
+      weeklyStatsToCsv(rows),
+      CSV_FILTER,
+    );
     if (blocksPath || statsPath) {
       toast.success("Exported CSV", { description: [blocksPath, statsPath].filter(Boolean).join(", ") });
     }
@@ -81,7 +89,7 @@ export async function exportCsv(weeks = 12): Promise<void> {
 /** Opens a file and validates it. Returns null if the user cancelled. */
 export async function pickImportFile(): Promise<{ name: string; result: ImportResult } | null> {
   try {
-    const file = await (await getPlatform()).openTextFile();
+    const file = await (await getPlatform()).openTextFile(JSON_FILTER);
     if (!file) return null;
     return { name: file.path, result: parseImportFile(file.contents) };
   } catch (e) {

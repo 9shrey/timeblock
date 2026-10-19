@@ -135,6 +135,14 @@ export interface Settings {
   trendWindowWeeks: TrendWindowWeeks;
   /** Goal the year heatmap colors by; null = every goal's actual time combined. */
   heatmapGoalId: string | null;
+  /** "Next block in 5 min: …" shortly before a plan block starts. */
+  notifyNextBlock: boolean;
+  /** An evening nudge when today has unconfirmed blocks. */
+  notifyUnconfirmed: boolean;
+  /** On the last day of the week, once Review has something to show. */
+  notifyWeeklyReview: boolean;
+  /** Closing the window hides it to the tray instead of quitting. */
+  closeToTray: boolean;
 }
 
 // ---------------------------------------------------------------------------

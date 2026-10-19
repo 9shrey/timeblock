@@ -1,7 +1,8 @@
 # Roadmap after 0.1.0
 
 Four milestones: M9 hardening, M10 planning features, M11 desktop integration and
-M12 insights. M9 and M10 are done.
+M12 insights. All four are done, except M11's auto-update/signing (see Handoff),
+which is deliberately deferred.
 
 ## Status
 
@@ -17,7 +18,12 @@ M12 insights. M9 and M10 are done.
 | M10.6: drag to reorder | ✅ Done: goals and outcomes |
 | M10.7: running block / timer | ✅ Done |
 | M10.8: split at midnight | ✅ Done |
-| M11 | ⏳ Not started |
+| M11.1: window state | ✅ Done: `tauri-plugin-window-state` |
+| M11.2: notifications | ✅ Done: upcoming block, evening unconfirmed nudge, weekly review |
+| M11.3: tray icon | ✅ Done: next block, start timer, confirm rest of day, show/hide, quit, close-to-tray setting |
+| M11.4: ICS import/export | ✅ Done: read-only overlay import (no RRULE expansion), plan+actual export for a date range |
+| M11.5: auto-update | ⛔ Not implemented — needs signing keys/accounts from the owner |
+| M11.6: signing/notarization | ⛔ Not implemented — needs accounts from the owner |
 | M12.1: trends view, `loadBlocksRange` | ✅ Done |
 | M12.2: plan accuracy stats | ✅ Done |
 | M12.3: delta badges on actual blocks | ✅ Done |
@@ -40,16 +46,49 @@ M12 insights. M9 and M10 are done.
   - in `src-tauri`: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
   - `npm run e2e:build && npm run e2e` (Linux, needs tauri-driver and WebKitWebDriver)
 
-## Handoff (M10 → M11)
+## Handoff (M11 and M12)
 
-M10 is complete (see Status above); `npx tsc --noEmit`, `npm run lint`, `npm test` and
-`npm run test:tz` are all clean as of this commit. Each M10.x item landed as its own
-commit on `claude/affectionate-edison-mxlaal`; see that branch's log for the detail of
-what each one touched.
+Every milestone in this roadmap's main sequence is done except M11.5 (auto-update) and
+M11.6 (signing/notarization), which need keys/accounts from the owner — don't implement
+them without asking. See "Later / optional" below for what's intentionally left beyond
+this roadmap.
 
-`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` in
-`src-tauri` are also clean (no Rust files changed in M10). `npm run e2e` (needs
-`tauri-driver` and WebKitWebDriver) is still unconfirmed in this environment.
+M11 and M12 were implemented independently and in parallel, on their own branches
+(`claude/m11-desktop-integration`, branched from M10's `claude/affectionate-edison-mxlaal`;
+`m12-insights`, branched from `main` before M11 landed there), then merged together.
+`npx tsc --noEmit`, `npm run lint`, `npm test` and `npm run test:tz` are all clean on the
+merged result, as are `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and
+`cargo test` in `src-tauri` (M12 touched no Rust: `loadBlocksRange` reuses the existing
+`blocks_day_layer` index and `db_select` bridge).
+
+**M11** (window state, notifications, tray + close-to-tray + autostart, ICS import/export):
+`npm run e2e:build` (a full `tauri build --debug --no-bundle`) succeeds; `npm run e2e`
+passed, including the tray/notification build and ICS UTC/local conversion exercised under
+both UTC and `Pacific/Chatham`.
+
+**M12** (`repo.loadBlocksRange`, Trends view with 4/12/26-week toggle + streak + year
+heatmap, plan accuracy stats, delta badges on actual blocks, "Biggest gaps" and "Reschedule
+skipped → next week" on Review, CSV export): `npm run e2e` ran cleanly once end to end (26
+of 29 cases passing); the 3 failures were existing `day.e2e.ts` assertions on an actual
+block's exact a11y label, which the new delta badge appends to — fixed in a follow-up
+commit and confirmed against the running app. A second full suite run hit
+`tauri-driver`/WebKitWebDriver getting stuck ("Maximum number of active sessions") across
+repeated launches in that sandbox session, so that fix is verified by inspection and the
+one earlier full run rather than a second green run — worth a final check in an
+environment where the driver restarts cleanly. This is the same flakiness class already
+documented below ("the e2e suite can be flaky locally"), not a new gap.
+
+Product decisions M12 made where the spec left them open:
+- Trend window default: 12 weeks (`trendWindowWeeks` setting, 4/12/26, persisted).
+- Heatmap color scale: 5 buckets by actual hours per day (0, <1h, <3h, <6h, ≥6h), opacity
+  steps on `--primary`; filterable by goal or "All goals" (`heatmapGoalId` setting,
+  persisted).
+- Delta badge goal text shows the actual block's (new) goal name, e.g. `goal: Admin`, not
+  the plan's original goal.
+- CSV export covers a fixed trailing 12-week window (through the current week); no date
+  range picker yet.
+- "Reschedule skipped → next week" lets you pick which day of next week to reschedule onto
+  (defaulting to its first day), rather than always the same weekday.
 
 ### Notes for the next session
 
@@ -61,6 +100,10 @@ what each one touched.
   hang" in the middle of a drag. CI retries each spec file once.
 - The auto-updater and code signing need keys and accounts from the owner. Don't
   implement them without asking.
+- ICS import has no timezone database: a UTC (`Z`) timestamp is converted to the host
+  machine's local wall clock (correct); a floating or `TZID` timestamp is taken at face
+  value, assuming it already matches the viewer's zone. Recurring events (`RRULE`) are
+  not expanded — each `VEVENT` becomes at most one overlay event.
 
 ---
 
@@ -88,45 +131,6 @@ what each one touched.
 6. **Drag to reorder outcomes and goals.** `sort_order` already exists in the schema; today goals can only move with the up/down buttons in `moveGoal`.
 7. **Running block / timer.** "Start now" creates an actual block from now to now+snap. The clock tick in `src/main.tsx` extends it until you stop it. Show the running block in the window title.
 8. **Blocks that cross midnight.** These were deliberately cut. Recommendation: keep them cut, and instead offer "split at midnight" when a drag goes past 24:00, creating two linked blocks. That way the wall-clock model stays as it is.
-
-## Handoff (M12)
-
-M12 (see Status above) was implemented on its own branch (`m12-insights`), branched from
-`main` before M11 landed there — M11 is still "Not started" on `main` as of this commit, so
-this work does not depend on it and should merge cleanly whenever M11 lands separately.
-
-What shipped: `repo.loadBlocksRange`, the Trends view (`i` key, 4/12/26-week toggle, per-goal
-bars + streak, year heatmap), plan accuracy stats (Review page and Trends), delta badges on
-actual blocks, "Biggest gaps" and "Reschedule skipped → next week" on Review, and CSV export
-next to the JSON export in Settings. `npm run lint`, `npm test` and `npm run test:tz` are
-clean; no Rust files changed (`loadBlocksRange` reuses the existing `blocks_day_layer` index
-and the existing `db_select` bridge, so `cargo fmt/clippy/test` are unaffected).
-
-`npm run e2e:build` succeeds. `npm run e2e` ran once cleanly to completion (26 of 29 cases
-passing); the 3 failures were existing `day.e2e.ts` assertions using an actual block's exact
-a11y label, which the new delta badge appends to — fixed in a follow-up commit and confirmed
-against the running app. Re-running the suite afterwards hit `tauri-driver`/WebKitWebDriver
-getting stuck ("Maximum number of active sessions") across repeated launches in this sandbox
-session, so the fix is verified by inspection and the one earlier full run rather than a
-second green run — flag this for a final check in an environment where the driver can be
-restarted cleanly. This is the same flakiness class already documented above ("the e2e suite
-can be flaky locally"), not a new gap.
-
-Product decisions made where the spec left them open:
-- Trend window default: 12 weeks (`trendWindowWeeks` setting, 4/12/26, persisted).
-- Heatmap color scale: 5 buckets by actual hours per day (0, <1h, <3h, <6h, ≥6h), opacity
-  steps on `--primary`; filterable by goal or "All goals" (`heatmapGoalId` setting,
-  persisted).
-- Delta badge goal text shows the actual block's (new) goal name, e.g. `goal: Admin`, not
-  the plan's original goal.
-- CSV export covers a fixed trailing 12-week window (through the current week); no date
-  range picker yet.
-- "Reschedule skipped → next week" lets you pick which day of next week to reschedule onto
-  (defaulting to its first day), rather than always the same weekday.
-
-With M12 landed, every milestone in this roadmap's main sequence is planned except M11
-(desktop integration), which is being worked separately. See "Later / optional" above for
-what's intentionally left beyond this roadmap.
 
 ---
 

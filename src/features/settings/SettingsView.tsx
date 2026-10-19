@@ -1,7 +1,20 @@
 import { useEffect, useState } from "react";
-import { Download, FileSpreadsheet, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import {
+  CalendarArrowDown,
+  CalendarArrowUp,
+  Download,
+  FileSpreadsheet,
+  FolderOpen,
+  HardDriveDownload,
+  History,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +27,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ImportResult } from "@/domain/export/schema";
-import { formatMinute } from "@/domain/time/localDate";
+import { formatMinute, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
 import { applyImport, backupNow, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
+import { exportIcs, importIcsFile } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
@@ -177,6 +191,116 @@ function RoutinesSection() {
   );
 }
 
+function NotifyRow({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b py-3 last:border-0">
+      <div className="flex items-center gap-2">
+        <Checkbox id={`notify-${label}`} checked={checked} onCheckedChange={(c) => onChange(c === true)} />
+        <Label htmlFor={`notify-${label}`} className="text-sm">
+          {label}
+        </Label>
+      </div>
+      <p className="max-w-xs text-right text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function NotificationsSection() {
+  const settings = useStore((s) => s.settings);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Notifications</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Scheduled while Timeblock is running, from the same clock as the rest of the app — no background process.
+      </p>
+      <div className="rounded-lg border px-4">
+        <NotifyRow
+          label="Upcoming block"
+          hint="5 minutes before a plan block starts."
+          checked={settings.notifyNextBlock}
+          onChange={(v) => setSetting("notifyNextBlock", v)}
+        />
+        <NotifyRow
+          label="Unconfirmed blocks"
+          hint="An evening nudge if today has anything unconfirmed."
+          checked={settings.notifyUnconfirmed}
+          onChange={(v) => setSetting("notifyUnconfirmed", v)}
+        />
+        <NotifyRow
+          label="Weekly review"
+          hint="On the last day of the week, once there's something to look back on."
+          checked={settings.notifyWeeklyReview}
+          onChange={(v) => setSetting("notifyWeeklyReview", v)}
+        />
+      </div>
+    </section>
+  );
+}
+
+function DesktopSection() {
+  const settings = useStore((s) => s.settings);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Desktop</h2>
+      <div className="rounded-lg border px-4">
+        <NotifyRow
+          label="Close to tray"
+          hint="Closing the window hides it instead of quitting. Quit from the tray icon."
+          checked={settings.closeToTray}
+          onChange={(v) => setSetting("closeToTray", v)}
+        />
+      </div>
+    </section>
+  );
+}
+
+function IcsExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const cursor = useStore((s) => s.cursor);
+  const weekStartDay = useStore((s) => s.settings.weekStartDay);
+  const week = weekDays(weekStartOf(cursor, weekStartDay));
+  const [from, setFrom] = useState(week[0]!);
+  const [to, setTo] = useState(week[6]!);
+  const [busy, setBusy] = useState(false);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Export calendar</DialogTitle>
+          <DialogDescription>Writes your plan and actual blocks for this range as a .ics file.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-1">
+            <Label htmlFor="ics-from">From</Label>
+            <Input id="ics-from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="ics-to">To</Label>
+            <Input id="ics-to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await exportIcs(from, to);
+              setBusy(false);
+              onClose();
+            }}
+          >
+            Export
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ImportDialog({ pending, onClose }: { pending: { name: string; result: ImportResult } | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const result = pending?.result;
@@ -245,6 +369,7 @@ export function SettingsView() {
   const [pending, setPending] = useState<{ name: string; result: ImportResult } | null>(null);
   const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [icsExportOpen, setIcsExportOpen] = useState(false);
 
   useEffect(() => {
     void getPlatform().then(async (p) =>
@@ -291,6 +416,8 @@ export function SettingsView() {
           </div>
         </section>
 
+        <NotificationsSection />
+        {info?.kind === "tauri" && <DesktopSection />}
         <TemplatesSection />
         <RoutinesSection />
 
@@ -332,11 +459,28 @@ export function SettingsView() {
           </div>
         </section>
 
+        <section>
+          <h2 className="mb-1 text-lg font-semibold">Calendar</h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Import a calendar's events as a read-only overlay in Day view, with a button to copy any of them into your plan. Recurring
+            events aren't expanded — each shows up once. Export writes your plan and actual blocks for a date range as a calendar file.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => void importIcsFile()}>
+              <CalendarArrowDown /> Import .ics…
+            </Button>
+            <Button variant="outline" onClick={() => setIcsExportOpen(true)}>
+              <CalendarArrowUp /> Export .ics…
+            </Button>
+          </div>
+        </section>
+
         <p className="text-xs text-muted-foreground">
           Timeblock {info?.version ?? ""} · MIT licensed{info?.kind === "web" ? " · browser dev mode (data in localStorage)" : ""}
         </p>
       </div>
       <ImportDialog pending={pending} onClose={() => setPending(null)} />
+      <IcsExportDialog open={icsExportOpen} onClose={() => setIcsExportOpen(false)} />
       <Dialog open={restoreOpen} onOpenChange={setRestoreOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>

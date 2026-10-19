@@ -12,6 +12,15 @@ export interface OpenedFile {
   contents: string;
 }
 
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
+
+export const JSON_FILTER: FileFilter = { name: "JSON", extensions: ["json"] };
+export const ICS_FILTER: FileFilter = { name: "Calendar", extensions: ["ics"] };
+export const CSV_FILTER: FileFilter = { name: "CSV", extensions: ["csv"] };
+
 export interface BackupInfo {
   name: string;
   /** Unix seconds. */
@@ -30,9 +39,9 @@ export interface Platform {
   /** Replaces the live data with a backup (after backing up the current data). Reload afterwards. */
   restoreBackup(name: string): Promise<void>;
   /** Save dialog; returns the path written, or null if cancelled. */
-  saveTextFile(defaultName: string, contents: string): Promise<string | null>;
+  saveTextFile(defaultName: string, contents: string, filter: FileFilter): Promise<string | null>;
   /** Open dialog; null if cancelled. */
-  openTextFile(): Promise<OpenedFile | null>;
+  openTextFile(filter: FileFilter): Promise<OpenedFile | null>;
   dataDir(): Promise<string | null>;
   revealDataDir(): Promise<void>;
   systemTheme(): Promise<SystemTheme>;
@@ -40,7 +49,23 @@ export interface Platform {
   appVersion(): Promise<string>;
   /** Keeps the window open until queued writes are saved (desktop) or warns before leaving (web). */
   guardClose(writes: { flush(): Promise<void>; pending(): number }): Promise<void>;
+  /**
+   * Shows a desktop notification tagged with `id`, requesting permission first if it hasn't
+   * been granted or denied yet. A denied permission (or an unsupported platform) makes this
+   * a silent no-op.
+   */
+  notify(id: number, title: string, body: string): Promise<void>;
+  /** Fires with `id` when the user clicks a notification shown by `notify`. */
+  onNotificationClick(cb: (id: number) => void): Promise<() => void>;
+  /** Sets the "Today's next block" line in the tray menu. No-op where there is no tray (web). */
+  setTrayNextBlock(label: string | null): Promise<void>;
+  /** Whether closing the window hides it to the tray instead of quitting. No-op on web. */
+  setCloseToTray(enabled: boolean): Promise<void>;
+  /** Fires when a tray menu action needing app state (not just show/hide/quit) is clicked. */
+  onTrayAction(cb: (action: TrayAction) => void): Promise<() => void>;
 }
+
+export type TrayAction = "startTimer" | "confirmRestOfDay";
 
 export { isTauri };
 
