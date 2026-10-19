@@ -18,13 +18,14 @@ import {
   updateBlock,
   type BlockPatch,
 } from "@/domain/blocks/reconcile";
+import { parseQuickAdd } from "@/domain/blocks/quickAdd";
 import { validateBlock } from "@/domain/blocks/validate";
 import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
 import { weekDays } from "@/domain/time/localDate";
 import type { Block, ChangeSet, Layer, LocalDate } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
-import { activeGoals, allBlocks } from "./selectors";
+import { activeGoals, allBlocks, goalList } from "./selectors";
 import { commit, redo as storeRedo, undo as storeUndo, useStore } from "./store";
 import { closeEditor, openEditor, useUi } from "./ui";
 
@@ -80,6 +81,23 @@ export function createBlockAt(day: LocalDate, layer: Layer, start: number, end: 
   select({ kind: "block", id: block.id });
   if (openPopover) openEditor({ kind: "block", id: block.id }, true);
   return block.id;
+}
+
+/**
+ * Parses `input` as `<start>-<end> <title> [#tag]` and creates a block from it. Returns
+ * an error string on failure (bad syntax, or the lane is locked/read-only).
+ */
+export function quickAddBlock(day: LocalDate, layer: Layer, input: string): string | null {
+  if (!canEditLane(day, layer)) return laneError(layer);
+  const parsed = parseQuickAdd(input, goalList(state().data.goals));
+  if (!parsed) return 'Couldn\'t parse that. Try "9-10:30 Title #tag".';
+  const { block, changes } = createBlock(
+    { day, layer, startMinute: parsed.startMinute, endMinute: parsed.endMinute, title: parsed.title, goalId: parsed.goalId },
+    env,
+  );
+  if (!commitChecked(changes, "Quick add")) return "Couldn't create that block.";
+  select({ kind: "block", id: block.id });
+  return null;
 }
 
 /** Double-click on empty space: a default-length block at the snapped slot. */

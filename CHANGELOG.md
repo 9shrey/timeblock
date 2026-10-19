@@ -22,6 +22,9 @@ All notable changes to this project are documented here. The format follows
   automatically up to two weeks out as you use the app; past days are never touched.
   Editing a routine updates its future occurrences that you haven't customized yourself;
   deleting one keeps the blocks it already created.
+- **Quick add**: press `n` in Day view for a one-line input like `9-10:30 Thesis #thesis`
+  (start-end, title, optional `#tag` to set the goal by name). Creates a plan block without
+  touching the mouse.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

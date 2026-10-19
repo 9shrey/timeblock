@@ -6,6 +6,7 @@ import { BudgetPanel } from "@/features/goals/BudgetPanel";
 import { GoalsView } from "@/features/goals/GoalsView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { SettingsView } from "@/features/settings/SettingsView";
+import { QuickAddDialog } from "@/features/timeline/QuickAddDialog";
 import { TemplateDialog } from "@/features/timeline/TemplateDialog";
 import { WeekView } from "@/features/week/WeekView";
 import { materializeRoutines } from "@/state/routineCommands";
@@ -72,6 +73,7 @@ export function Shell() {
       </div>
       {budgetOpen && <BudgetPanel />}
       <TemplateDialog />
+      <QuickAddDialog />
     </div>
   );
 }

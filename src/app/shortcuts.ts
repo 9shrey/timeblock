@@ -14,7 +14,7 @@ import {
 } from "@/state/commands";
 import { goalList } from "@/state/selectors";
 import { useStore, type View } from "@/state/store";
-import { closeEditor, openEditor, useUi } from "@/state/ui";
+import { closeEditor, openEditor, openQuickAdd, useUi } from "@/state/ui";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { goToday, stepCursor } from "./TopBar";
 
@@ -112,6 +112,10 @@ export function handleKey(e: KeyboardEvent): boolean {
 
   if (key === "A" && e.shiftKey && s.view === "day") {
     confirmRestOfDay(s.cursor);
+    return true;
+  }
+  if (key === "n" && s.view === "day" && !useUi.getState().editing) {
+    openQuickAdd(s.cursor, "plan");
     return true;
   }
   if (VIEW_KEYS[key]) {

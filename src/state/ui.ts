@@ -1,7 +1,7 @@
 /** Transient UI state that is not part of the data model or undo history. */
 import { create } from "zustand";
 import type { ItemRef } from "@/features/timeline/dragMachine";
-import type { LocalDate } from "@/domain/types";
+import type { Layer, LocalDate } from "@/domain/types";
 
 export interface Editing {
   ref: ItemRef;
@@ -25,9 +25,17 @@ interface UiState {
   menu: { kind: "item"; ref: ItemRef; col: number; minute: number } | { kind: "empty"; col: number; minute: number } | null;
   /** Save-as-template or apply-template dialog, opened from a context menu or empty-day prompt. */
   templateDialog: TemplateDialogState | null;
+  /** One-line quick-add input (`n` key), for a day and lane. */
+  quickAdd: { day: LocalDate; layer: Layer } | null;
 }
 
-export const useUi = create<UiState>(() => ({ editing: null, unlockedPlanDays: [], menu: null, templateDialog: null }));
+export const useUi = create<UiState>(() => ({
+  editing: null,
+  unlockedPlanDays: [],
+  menu: null,
+  templateDialog: null,
+  quickAdd: null,
+}));
 
 let sessionCounter = 0;
 
@@ -49,4 +57,12 @@ export function openTemplateDialog(state: TemplateDialogState): void {
 
 export function closeTemplateDialog(): void {
   useUi.setState({ templateDialog: null });
+}
+
+export function openQuickAdd(day: LocalDate, layer: Layer): void {
+  useUi.setState({ quickAdd: { day, layer } });
+}
+
+export function closeQuickAdd(): void {
+  useUi.setState({ quickAdd: null });
 }

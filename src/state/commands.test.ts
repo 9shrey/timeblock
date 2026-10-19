@@ -27,6 +27,7 @@ import {
   createBlockAt,
   materialize,
   moveBlockTo,
+  quickAddBlock,
   removeBlock,
   select,
   updateBlockFields,
@@ -479,5 +480,26 @@ describe("routines", () => {
       expect(useStore.getState().data.blocks[b.id]!.routineId).toBeNull();
     }
     expect(useStore.getState().data.routines[r.id]).toBeUndefined();
+  });
+});
+
+describe("quickAddBlock", () => {
+  it("parses and creates a block, selecting it", () => {
+    const err = quickAddBlock("2026-10-21", "plan", "11-12:30 Reading #thesis");
+    expect(err).toBeNull();
+    const sel = useStore.getState().selection;
+    expect(sel?.kind).toBe("block");
+    const b = useStore.getState().data.blocks[(sel as { kind: "block"; id: string }).id]!;
+    expect(b).toMatchObject({ day: "2026-10-21", layer: "plan", startMinute: 660, endMinute: 750, title: "Reading", goalId: "seed-goal-thesis" });
+  });
+
+  it("returns an error for unparseable input, leaving the store untouched", () => {
+    const before = useStore.getState().data.blocks;
+    expect(quickAddBlock("2026-10-21", "plan", "not a time range")).toMatch(/Couldn't parse/);
+    expect(useStore.getState().data.blocks).toBe(before);
+  });
+
+  it("refuses a locked lane", () => {
+    expect(quickAddBlock("2026-10-20", "plan", "9-10 Thing")).toMatch(/locked/);
   });
 });
