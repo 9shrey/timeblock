@@ -6,6 +6,7 @@ import { BudgetPanel } from "@/features/goals/BudgetPanel";
 import { GoalsView } from "@/features/goals/GoalsView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { SettingsView } from "@/features/settings/SettingsView";
+import { TemplateDialog } from "@/features/timeline/TemplateDialog";
 import { WeekView } from "@/features/week/WeekView";
 import { ensureWeeksAround, useStore } from "@/state/store";
 import { closeEditor, useUi } from "@/state/ui";
@@ -63,6 +64,7 @@ export function Shell() {
         </main>
       </div>
       {budgetOpen && <BudgetPanel />}
+      <TemplateDialog />
     </div>
   );
 }

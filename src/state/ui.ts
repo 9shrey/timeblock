@@ -13,15 +13,21 @@ export interface Editing {
   focus: boolean;
 }
 
+export type TemplateDialogState =
+  | { kind: "save"; scope: "day" | "week"; day: LocalDate }
+  | { kind: "apply"; scope: "day" | "week"; day: LocalDate };
+
 interface UiState {
   editing: Editing | null;
   /** Past days whose Plan lane was unlocked for this session. */
   unlockedPlanDays: LocalDate[];
   /** Right-clicked thing for the shared context menu. */
   menu: { kind: "item"; ref: ItemRef; col: number; minute: number } | { kind: "empty"; col: number; minute: number } | null;
+  /** Save-as-template or apply-template dialog, opened from a context menu or empty-day prompt. */
+  templateDialog: TemplateDialogState | null;
 }
 
-export const useUi = create<UiState>(() => ({ editing: null, unlockedPlanDays: [], menu: null }));
+export const useUi = create<UiState>(() => ({ editing: null, unlockedPlanDays: [], menu: null, templateDialog: null }));
 
 let sessionCounter = 0;
 
@@ -35,4 +41,12 @@ export function closeEditor(): void {
 
 export function unlockPlanDay(day: LocalDate): void {
   useUi.setState((s) => (s.unlockedPlanDays.includes(day) ? s : { unlockedPlanDays: [...s.unlockedPlanDays, day] }));
+}
+
+export function openTemplateDialog(state: TemplateDialogState): void {
+  useUi.setState({ templateDialog: state });
+}
+
+export function closeTemplateDialog(): void {
+  useUi.setState({ templateDialog: null });
 }

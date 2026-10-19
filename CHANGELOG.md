@@ -14,6 +14,10 @@ All notable changes to this project are documented here. The format follows
   the target week loses its goal link instead of blocking the copy.
 - Export format v2: templates, routines and `blocks.routineId`. Importing a v1 file still
   works.
+- **Templates**: save a day or week's plan as a named template from the block/empty-space
+  menu, then apply it to another day or week. Templates never link back to the blocks
+  they created, so applying one is an ordinary, undoable edit. Manage saved templates
+  (rename, delete) from Settings.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

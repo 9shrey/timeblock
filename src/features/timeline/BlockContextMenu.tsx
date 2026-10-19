@@ -24,7 +24,7 @@ import {
 } from "@/state/commands";
 import { activeGoals, weekOf } from "@/state/selectors";
 import { useStore } from "@/state/store";
-import { openEditor, useUi } from "@/state/ui";
+import { openEditor, openTemplateDialog, useUi } from "@/state/ui";
 import type { ItemRef } from "./dragMachine";
 import type { ColumnSpec } from "./geometry";
 import { NO_GOAL_COLOR } from "./BlockView";
@@ -64,14 +64,16 @@ export function BlockContextMenu({ columns }: { columns: readonly ColumnSpec[] }
   const menu = useUi((s) => s.menu);
   const data = useStore((s) => s.data);
   const nowDay = useStore((s) => s.now.day);
+  const view = useStore((s) => s.view);
   if (!menu) return <ContextMenuContent className="hidden" />;
   const col = columns[menu.col];
   if (!col) return <ContextMenuContent className="hidden" />;
 
   if (menu.kind === "empty") {
     const lastWeek = addDays(col.day, -7);
+    const planEditable = canEditLane(col.day, "plan");
     return (
-      <ContextMenuContent className="w-60">
+      <ContextMenuContent className="w-64">
         <ContextMenuItem disabled={!canEditLane(col.day, col.layer)} onSelect={() => createDefaultAt(col.day, col.layer, menu.minute)}>
           New block at {formatMinute(Math.floor(menu.minute / 15) * 15)}
         </ContextMenuItem>
@@ -80,12 +82,33 @@ export function BlockContextMenu({ columns }: { columns: readonly ColumnSpec[] }
           <ContextMenuShortcut>⇧A</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem disabled={!canEditLane(col.day, "plan")} onSelect={() => copyPlanFrom(addDays(col.day, -1), col.day)}>
+        <ContextMenuItem disabled={!planEditable} onSelect={() => copyPlanFrom(addDays(col.day, -1), col.day)}>
           Copy yesterday's plan
         </ContextMenuItem>
-        <ContextMenuItem disabled={!canEditLane(col.day, "plan")} onSelect={() => copyPlanFrom(lastWeek, col.day)}>
+        <ContextMenuItem disabled={!planEditable} onSelect={() => copyPlanFrom(lastWeek, col.day)}>
           Copy last {weekdayLong(lastWeek)}'s plan
         </ContextMenuItem>
+        <ContextMenuSeparator />
+        {col.layer === "plan" && (
+          <>
+            <ContextMenuItem disabled={!planEditable} onSelect={() => openTemplateDialog({ kind: "save", scope: "day", day: col.day })}>
+              Save this day as template…
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!planEditable} onSelect={() => openTemplateDialog({ kind: "apply", scope: "day", day: col.day })}>
+              Apply day template…
+            </ContextMenuItem>
+            {view === "week" && (
+              <>
+                <ContextMenuItem onSelect={() => openTemplateDialog({ kind: "save", scope: "week", day: col.day })}>
+                  Save this week as template…
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => openTemplateDialog({ kind: "apply", scope: "week", day: col.day })}>
+                  Apply week template…
+                </ContextMenuItem>
+              </>
+            )}
+          </>
+        )}
       </ContextMenuContent>
     );
   }

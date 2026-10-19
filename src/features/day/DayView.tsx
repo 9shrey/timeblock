@@ -8,7 +8,7 @@ import type { LocalDate } from "@/domain/types";
 import { confirmRestOfDay, copyPlanFrom, copyWeekPlan } from "@/state/commands";
 import { useDayBlocks } from "@/state/selectors";
 import { useStore } from "@/state/store";
-import { unlockPlanDay, useUi } from "@/state/ui";
+import { openTemplateDialog, unlockPlanDay, useUi } from "@/state/ui";
 import { DAY_PX_PER_HOUR, type ColumnSpec } from "../timeline/geometry";
 import { Timeline } from "../timeline/Timeline";
 import { SummaryBar } from "./SummaryBar";
@@ -50,6 +50,9 @@ function PlanHeader({ col }: { col: ColumnSpec }) {
           </Button>
           <Button variant="outline" size="xs" onClick={() => copyWeekPlan(addDays(weekStart, -7), weekStart)}>
             Copy last week's plan
+          </Button>
+          <Button variant="outline" size="xs" onClick={() => openTemplateDialog({ kind: "apply", scope: "day", day: col.day })}>
+            Apply template…
           </Button>
         </>
       )}

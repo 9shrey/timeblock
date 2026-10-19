@@ -45,6 +45,7 @@ import {
 } from "./goalCommands";
 import { goalList } from "./selectors";
 import { commit, flushWrites, initStore, sealHistory, useStore } from "./store";
+import { applyTemplateToDay, applyTemplateToWeek, deleteTemplate, renameTemplate, saveDayAsTemplate, saveWeekAsTemplate } from "./templateCommands";
 import { unlockPlanDay, useUi } from "./ui";
 
 const now = { day: "2026-10-21", minute: 840 }; // Wed 14:00
@@ -356,5 +357,67 @@ describe("import", () => {
     expect(blocks()).toHaveLength(0);
     expect(history()).toHaveLength(0);
     expect((await repo.exportAll()).goals).toHaveLength(1);
+  });
+});
+
+describe("templates", () => {
+  const templateList = () => Object.values(useStore.getState().data.templates);
+
+  it("saves a day as a template and reports an empty day", () => {
+    expect(saveDayAsTemplate("2026-10-21", "My Wednesday")).toMatchObject({ name: "My Wednesday", spanDays: 1 });
+    expect(templateList()).toHaveLength(1);
+    expect(templateList()[0]!.blocks.length).toBeGreaterThan(0);
+
+    expect(saveDayAsTemplate("2026-10-26", "Future, empty")).toBeNull();
+    expect(toastFn).toHaveBeenCalledWith("That day has no plan to save.");
+    expect(templateList()).toHaveLength(1);
+  });
+
+  it("saves a week as a template", () => {
+    const t = saveWeekAsTemplate("2026-10-19", "My week")!;
+    expect(t.spanDays).toBe(7);
+    expect(t.blocks.length).toBeGreaterThan(0);
+    expect(new Set(t.blocks.map((b) => b.dayOffset)).size).toBeGreaterThan(1);
+  });
+
+  it("rejects an invalid name", () => {
+    expect(saveDayAsTemplate("2026-10-21", "")).toBeNull();
+    expect(toastFn.error).toHaveBeenCalledWith(expect.stringContaining("1–80 characters"));
+  });
+
+  it("applies a day template, dropping an archived goal", () => {
+    const t = saveDayAsTemplate("2026-10-21", "Wed")!; // includes a Thesis block
+    const social = useStore.getState().data.goals["seed-goal-social"]!;
+    commit([put("goals", { ...social, archivedOn: "2026-10-19" })]);
+
+    const before = new Set(Object.keys(useStore.getState().data.blocks));
+    expect(applyTemplateToDay(t, "2026-10-26")).toBe(true);
+    const added = Object.values(useStore.getState().data.blocks).filter((b) => !before.has(b.id));
+    expect(added.every((b) => b.day === "2026-10-26" && b.layer === "plan" && b.goalId !== "seed-goal-social")).toBe(true);
+  });
+
+  it("refuses to apply a day template to a locked day", () => {
+    const t = saveDayAsTemplate("2026-10-21", "Wed")!;
+    expect(applyTemplateToDay(t, "2026-10-20")).toBe(false);
+  });
+
+  it("applies a week template, skipping past days", () => {
+    const t = saveWeekAsTemplate("2026-10-19", "Week")!;
+    const before = new Set(Object.keys(useStore.getState().data.blocks));
+    expect(applyTemplateToWeek(t, "2026-11-02")).toBe(true);
+    const added = Object.values(useStore.getState().data.blocks).filter((b) => !before.has(b.id));
+    expect(added.every((b) => b.day >= "2026-11-02" && b.day <= "2026-11-08")).toBe(true);
+
+    // Entirely past week: nothing eligible.
+    expect(applyTemplateToWeek(t, "2026-10-05")).toBe(false);
+    expect(toastFn).toHaveBeenCalledWith("No unlocked, upcoming days to apply the template to.");
+  });
+
+  it("renames and deletes a template", () => {
+    const t = saveDayAsTemplate("2026-10-21", "Original")!;
+    renameTemplate(t, "Renamed");
+    expect(useStore.getState().data.templates[t.id]!.name).toBe("Renamed");
+    deleteTemplate(t);
+    expect(useStore.getState().data.templates[t.id]).toBeUndefined();
   });
 });
