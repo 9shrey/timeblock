@@ -15,6 +15,7 @@ import {
   moveBlock,
   restorePlan,
   skipPlan,
+  splitAtMidnight,
   updateBlock,
   type BlockPatch,
 } from "@/domain/blocks/reconcile";
@@ -22,7 +23,7 @@ import { parseQuickAdd } from "@/domain/blocks/quickAdd";
 import { validateBlock } from "@/domain/blocks/validate";
 import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
-import { weekDays } from "@/domain/time/localDate";
+import { addDays, weekDays } from "@/domain/time/localDate";
 import type { Block, ChangeSet, Layer, LocalDate, Now } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { activeGoals, allBlocks, goalList } from "./selectors";
@@ -120,6 +121,35 @@ export function updateBlockFields(id: string, patch: BlockPatch, coalesceKey?: s
 
 export function resizeBlock(id: string, start: number, end: number): void {
   updateBlockFields(id, { startMinute: start, endMinute: end });
+}
+
+/**
+ * A resize whose pointer went past 24:00 offers a continuation on the next day instead of
+ * clamping silently: `overflowMinutes` (minutes past midnight) comes from the drag. Falls
+ * back to an ordinary (clamped) resize if there's no overflow, or the next day's lane isn't
+ * editable (locked, or a future Actual lane).
+ */
+export function resizeOrSplitAtMidnight(id: string, start: number, end: number, overflowMinutes?: number): void {
+  const b = blockById(id);
+  if (!b || !overflowMinutes || overflowMinutes < 1) {
+    resizeBlock(id, start, end);
+    return;
+  }
+  const nextDay = addDays(b.day, 1);
+  if (!canEditLane(nextDay, b.layer)) {
+    resizeBlock(id, start, end);
+    toast("Can't split a block into tomorrow there; resized to end at midnight instead.");
+    return;
+  }
+  if (!canEditLane(b.day, b.layer)) {
+    toast(laneError(b.layer));
+    return;
+  }
+  const { continuation, changes } = splitAtMidnight(b, start, overflowMinutes, env);
+  if (commitChecked(changes, "Split at midnight")) {
+    toast(`Split at midnight: the rest continues on ${nextDay}.`);
+    select({ kind: "block", id: continuation.id });
+  }
 }
 
 export function moveBlockTo(id: string, day: LocalDate, start: number, end: number, copy: boolean): void {

@@ -31,6 +31,7 @@ import {
   moveBlockTo,
   quickAddBlock,
   removeBlock,
+  resizeOrSplitAtMidnight,
   select,
   startTimer,
   stopTimer,
@@ -548,5 +549,33 @@ describe("running timer", () => {
     extendRunningTimer({ day: "2026-10-21", minute: 900 });
     expect(history()).toHaveLength(n);
     expect(useStore.getState().data.blocks[id]!.endMinute).toBe(900);
+  });
+});
+
+describe("resizeOrSplitAtMidnight", () => {
+  it("resizes normally when there's no overflow", () => {
+    const id = createBlockAt("2026-10-22", "plan", 1380, 1440, false)!;
+    resizeOrSplitAtMidnight(id, 1380, 1430);
+    expect(useStore.getState().data.blocks[id]).toMatchObject({ day: "2026-10-22", endMinute: 1430 });
+  });
+
+  it("trims to midnight and creates an unlinked continuation on the next day", () => {
+    const id = createBlockAt("2026-10-22", "plan", 1380, 1440, false)!;
+    const before = new Set(Object.keys(useStore.getState().data.blocks));
+    resizeOrSplitAtMidnight(id, 1380, 1440, 45);
+    expect(useStore.getState().data.blocks[id]).toMatchObject({ day: "2026-10-22", endMinute: 1440 });
+    const added = Object.values(useStore.getState().data.blocks).find((b) => !before.has(b.id));
+    expect(added).toMatchObject({ day: "2026-10-23", startMinute: 0, endMinute: 45, planBlockId: null });
+    expect(useStore.getState().selection).toEqual({ kind: "block", id: added!.id });
+  });
+
+  it("falls back to a clamped resize when the next day's lane isn't editable", () => {
+    // Today's Actual block resized past midnight: tomorrow's Actual lane is read-only.
+    const id = createBlockAt("2026-10-21", "actual", 1380, 1440, false)!;
+    const before = new Set(Object.keys(useStore.getState().data.blocks));
+    resizeOrSplitAtMidnight(id, 1380, 1440, 30);
+    expect(useStore.getState().data.blocks[id]).toMatchObject({ endMinute: 1440 });
+    expect(Object.keys(useStore.getState().data.blocks)).toEqual([...before]); // nothing added
+    expect(toastFn).toHaveBeenCalledWith(expect.stringContaining("resized to end at midnight"));
   });
 });

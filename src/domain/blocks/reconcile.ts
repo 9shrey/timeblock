@@ -3,6 +3,7 @@
  * confirmed (linked actual blocks are created) or skipped.
  */
 import { del, put } from "../changes";
+import { addDays } from "../time/localDate";
 import type {
   Block,
   ChangeSet,
@@ -376,6 +377,34 @@ export function confirmRestOfDay(
     occupied.push(...r.created.map(toInterval));
   }
   return changes;
+}
+
+/**
+ * Splits a block at midnight: `block` is resized to end at 24:00, and a new block (same
+ * layer, title, goal and notes; unlinked) is created on the next day from 00:00 for
+ * `overflowMinutes`. Blocks never cross midnight, so this is how a resize that goes past
+ * 24:00 is offered to continue onto the next day instead of being silently clamped.
+ */
+export function splitAtMidnight(
+  block: Block,
+  trimmedStart: number,
+  overflowMinutes: number,
+  env: Env,
+): { continuation: Block; changes: ChangeSet } {
+  const trimmed = touched(block, { startMinute: trimmedStart, endMinute: 1440 }, env);
+  const { block: continuation, changes: createChanges } = createBlock(
+    {
+      day: addDays(block.day, 1),
+      layer: block.layer,
+      startMinute: 0,
+      endMinute: Math.min(1440, Math.max(1, Math.round(overflowMinutes))),
+      title: block.title,
+      goalId: block.goalId,
+      notes: block.notes,
+    },
+    env,
+  );
+  return { continuation, changes: [put("blocks", trimmed), ...createChanges] };
 }
 
 /** Copies `fromDay`'s plan blocks (title, goal, notes, times) to `toDay` with new ids. */

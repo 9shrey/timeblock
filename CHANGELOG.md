@@ -34,6 +34,9 @@ All notable changes to this project are documented here. The format follows
 - **Running block / timer**: "Start now" in Day view's Actual header creates a block from
   now to now+snap; the clock tick extends it until "Stop timer", never past midnight. The
   running block's title shows in the window title.
+- **Split at midnight**: dragging a block's end past 24:00 trims it to midnight and creates
+  an unlinked continuation on the next day, instead of silently clamping. Blocks still never
+  cross midnight.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

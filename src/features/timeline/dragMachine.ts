@@ -57,7 +57,7 @@ export type DragEffect =
   | { type: "blocked"; col: number }
   | { type: "create"; col: number; start: number; end: number }
   | { type: "move"; id: string; col: number; start: number; end: number; copy: boolean }
-  | { type: "resize"; id: string; start: number; end: number }
+  | { type: "resize"; id: string; start: number; end: number; edge: "start" | "end"; overflowMinutes?: number }
   | { type: "materialize"; planBlockId: string; start: number; end: number };
 
 export interface Step {
@@ -125,7 +125,7 @@ function commitEffect(s: Extract<DragState, { kind: "active" }>, ctrl: boolean, 
   if (target.ref.kind === "ghost") {
     return { type: "materialize", planBlockId: target.ref.planBlockId, start: draft.start, end: draft.end };
   }
-  if (target.type === "edge") return { type: "resize", id: target.ref.id, start: draft.start, end: draft.end };
+  if (target.type === "edge") return { type: "resize", id: target.ref.id, start: draft.start, end: draft.end, edge: target.edge };
   return { type: "move", id: target.ref.id, col: draft.col, start: draft.start, end: draft.end, copy };
 }
 
