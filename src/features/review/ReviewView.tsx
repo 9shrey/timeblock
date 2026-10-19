@@ -3,11 +3,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { carryableCount } from "@/domain/goals/checklist";
+import { computeAccuracy } from "@/domain/stats/accuracy";
 import { addDays, formatDateLong, formatDayLabel, formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
 import { confirmRestOfDay } from "@/state/commands";
 import { carryOverItems, setWeekNote } from "@/state/goalCommands";
-import { checklistList, statsFor, weekOf } from "@/state/selectors";
+import { allBlocks, checklistList, statsFor, weekOf } from "@/state/selectors";
 import { sealHistory, useStore } from "@/state/store";
 import { Checklist } from "../goals/Checklist";
 import { GoalTable } from "./GoalTable";
@@ -34,6 +35,37 @@ function UnconfirmedBanner({ days }: { days: readonly LocalDate[] }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+const pct = (n: number | null) => (n === null ? "—" : `${Math.round(n)}%`);
+
+function AccuracyRow({ days, weekStart }: { days: readonly LocalDate[]; weekStart: LocalDate }) {
+  const now = useStore((s) => s.now);
+  const blocks = useStore((s) => allBlocks(s.data.blocks));
+  const a = computeAccuracy(blocks, days, now);
+  if (a.decidedPlanCount === 0) return null;
+  return (
+    <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground" aria-label={`Plan accuracy for week ${weekStart}`}>
+      <span>
+        Confirmed as planned <b className="tabular-nums text-foreground">{pct(a.confirmedAsPlannedPct)}</b>
+      </span>
+      <span>
+        Skipped <b className="tabular-nums text-foreground">{pct(a.skippedPct)}</b>
+      </span>
+      <span>
+        Unplanned <b className="tabular-nums text-foreground">{pct(a.unplannedPct)}</b>
+      </span>
+      {a.avgStartDriftMinutes !== null && (
+        <span>
+          Avg. start drift{" "}
+          <b className="tabular-nums text-foreground">
+            {a.avgStartDriftMinutes >= 0 ? "+" : ""}
+            {Math.round(a.avgStartDriftMinutes)} min
+          </b>
+        </span>
+      )}
+    </p>
   );
 }
 
@@ -103,6 +135,8 @@ export function ReviewView() {
             Outcomes <b className="tabular-nums">{done}/{items.length}</b>
           </span>
         </p>
+
+        <AccuracyRow days={weekDays(weekStart)} weekStart={weekStart} />
 
         <section className="rounded-lg border px-4 py-2">
           {stats.goals.length === 0 && !stats.unassigned ? (

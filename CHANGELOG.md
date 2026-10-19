@@ -49,6 +49,8 @@ All notable changes to this project are documented here. The format follows
   overlay in Day view, with a one-click "copy to plan" per event (recurring events show up
   once; they aren't expanded). Export your plan and actual blocks for a date range as a
   `.ics` file.
+- **Plan accuracy** on the Review page: confirmed-as-planned %, skipped %, unplanned %,
+  and the average start drift of confirmed blocks.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it
