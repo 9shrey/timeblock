@@ -9,7 +9,10 @@ import pkg from "./package.json" with { type: "json" };
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
+// GitHub Pages serves the site from /<repo>/, so the Pages workflow builds with
+// GITHUB_PAGES=1 to get paths right. The Tauri build keeps the default root base.
 export default defineConfig(() => ({
+  base: process.env.GITHUB_PAGES ? "/timeblock/" : "/",
   plugins: [react(), tailwindcss()],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: {
