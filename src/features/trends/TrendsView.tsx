@@ -5,6 +5,7 @@ import { addDays, weekStartOf } from "@/domain/time/localDate";
 import type { Block, Goal } from "@/domain/types";
 import { goalList, targetList } from "@/state/selectors";
 import { getRepo, useStore } from "@/state/store";
+import { Heatmap } from "./Heatmap";
 
 const RANGES = [4, 12, 26] as const;
 type Range = (typeof RANGES)[number];
@@ -114,6 +115,8 @@ export function TrendsView() {
             ))}
           </div>
         )}
+
+        <Heatmap goals={goals} />
       </div>
     </div>
   );
