@@ -24,6 +24,7 @@ const block = (over: Partial<Block> = {}): Block => ({
   notes: "",
   planBlockId: null,
   skipped: false,
+  routineId: null,
   createdAt: 0,
   updatedAt: 0,
   ...over,

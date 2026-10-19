@@ -14,6 +14,7 @@ const block = (id: string, day: string, start = 540): Block => ({
   notes: "",
   planBlockId: null,
   skipped: false,
+  routineId: null,
   createdAt: 1,
   updatedAt: 1,
 });

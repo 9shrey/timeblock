@@ -49,6 +49,7 @@ export function demoSeed(now: Now): ExportData {
       notes: "",
       planBlockId: null,
       skipped: false,
+      routineId: null,
       createdAt: T0,
       updatedAt: T0,
     };
@@ -67,6 +68,7 @@ export function demoSeed(now: Now): ExportData {
       notes: "",
       planBlockId: p?.id ?? null,
       skipped: false,
+      routineId: null,
       createdAt: T0,
       updatedAt: T0,
       ...patch,
@@ -156,6 +158,8 @@ export function demoSeed(now: Now): ExportData {
     goals: [thesis, exercise, social],
     weekTargets: targets,
     checklistItems,
+    templates: [],
+    routines: [],
     blocks,
     weekNotes: [{ weekStart: lastWeek, text: "Good focus week; gym slipped midweek.", updatedAt: T0 }],
   };
@@ -166,6 +170,8 @@ export const EMPTY_DATA: ExportData = {
   goals: [],
   weekTargets: [],
   checklistItems: [],
+  templates: [],
+  routines: [],
   blocks: [],
   weekNotes: [],
 };

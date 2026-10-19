@@ -118,6 +118,7 @@ describe("deleteGoalChanges", () => {
       notes: "",
       planBlockId: null,
       skipped: false,
+      routineId: null,
       createdAt: 0,
       updatedAt: 0,
     });

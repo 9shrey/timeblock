@@ -113,7 +113,7 @@ export function isActualReadOnly(day: LocalDate, now: Now): boolean {
 /** New block row; plan blocks never carry a link, actual blocks are never skipped. */
 export function createBlock(
   fields: Pick<Block, "day" | "layer" | "startMinute" | "endMinute"> &
-    Partial<Pick<Block, "title" | "goalId" | "notes" | "planBlockId">>,
+    Partial<Pick<Block, "title" | "goalId" | "notes" | "planBlockId" | "routineId">>,
   env: Env,
 ): { block: Block; changes: ChangeSet } {
   const t = env.nowMs();
@@ -129,6 +129,7 @@ export function createBlock(
     planBlockId:
       fields.layer === "actual" ? (fields.planBlockId ?? null) : null,
     skipped: false,
+    routineId: fields.layer === "plan" ? (fields.routineId ?? null) : null,
     createdAt: t,
     updatedAt: t,
   };

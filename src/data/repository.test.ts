@@ -29,6 +29,7 @@ const block = (id: string, extra: Partial<Block> = {}): Block => ({
   notes: "",
   planBlockId: null,
   skipped: false,
+  routineId: null,
   createdAt: 1,
   updatedAt: 1,
   ...extra,
@@ -221,8 +222,8 @@ describe("SqliteRepository", () => {
       put("blocks", block("b2", { goalId: "g1", layer: "actual" })),
       put("checklistItems", item("c1", "g1", "2026-10-19")),
     ]);
-    expect(await repo.goalUsage("g1")).toEqual({ blocks: 2, checklistItems: 1 });
-    expect(await repo.goalUsage("nope")).toEqual({ blocks: 0, checklistItems: 0 });
+    expect(await repo.goalUsage("g1")).toEqual({ blocks: 2, checklistItems: 1, routines: 0 });
+    expect(await repo.goalUsage("nope")).toEqual({ blocks: 0, checklistItems: 0, routines: 0 });
   });
 
   it("export → replaceAll round-trips", async () => {
@@ -231,6 +232,8 @@ describe("SqliteRepository", () => {
       goals: [goal("g1"), goal("g2", { kind: "max", archivedOn: "2026-10-01" })],
       weekTargets: [{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, updatedAt: 2 }],
       checklistItems: [item("c1", "g1", "2026-10-19", { carriedFromId: "x" })],
+      templates: [],
+      routines: [],
       blocks: [block("p1", { goalId: "g1" }), block("a1", { layer: "actual", planBlockId: "p1" })],
       weekNotes: [{ weekStart: "2026-10-19", text: "reflection", updatedAt: 3 }],
     };

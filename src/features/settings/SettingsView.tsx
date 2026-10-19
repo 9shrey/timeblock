@@ -67,6 +67,8 @@ const COUNT_LABELS: Record<string, string> = {
   goals: "goals",
   weekTargets: "weekly targets",
   checklistItems: "outcomes",
+  templates: "templates",
+  routines: "routines",
   blocks: "blocks",
   weekNotes: "reflections",
   settings: "settings",

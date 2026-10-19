@@ -7,7 +7,7 @@ import { z } from "zod";
 import { keyOf, targetKey } from "../changes";
 import { parseSettings } from "../settings";
 import { isLocalDate, weekStartOf } from "../time/localDate";
-import type { Block, ExportData, Table } from "../types";
+import type { Block, ExportData, Routine, Table, Template } from "../types";
 import { EXPORT_FORMAT, EXPORT_VERSION, normalizeExportData } from "./format";
 
 export type ImportResult =
@@ -67,21 +67,27 @@ export const checklistItemSchema = z.object({
  * Layer/field mismatches (planBlockId on a plan block, skipped on an actual block) are
  * accepted here and repaired by `parseImportFile`.
  */
+const blockFieldsV1 = {
+  id,
+  day: localDate,
+  layer: z.enum(["plan", "actual"]),
+  startMinute: z.number().int().min(0).max(1439),
+  endMinute: z.number().int().min(1).max(1440),
+  title: z.string(),
+  goalId: z.string().nullable(),
+  notes: z.string(),
+  planBlockId: z.string().nullable(),
+  skipped: z.boolean(),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+};
+
+export const blockSchemaV1 = z
+  .object(blockFieldsV1)
+  .refine((b) => b.endMinute > b.startMinute, { message: "Must be after startMinute", path: ["endMinute"] });
+
 export const blockSchema = z
-  .object({
-    id,
-    day: localDate,
-    layer: z.enum(["plan", "actual"]),
-    startMinute: z.number().int().min(0).max(1439),
-    endMinute: z.number().int().min(1).max(1440),
-    title: z.string(),
-    goalId: z.string().nullable(),
-    notes: z.string(),
-    planBlockId: z.string().nullable(),
-    skipped: z.boolean(),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  })
+  .object({ ...blockFieldsV1, routineId: z.string().nullable() })
   .refine((b) => b.endMinute > b.startMinute, { message: "Must be after startMinute", path: ["endMinute"] });
 
 export const weekNoteSchema = z.object({
@@ -90,7 +96,53 @@ export const weekNoteSchema = z.object({
   updatedAt: timestamp,
 });
 
-export const exportFileSchema = z.object({
+const templateBlockSchema = z.object({
+  dayOffset: z.number().int().min(0).max(6),
+  startMinute: z.number().int().min(0).max(1439),
+  endMinute: z.number().int().min(1).max(1440),
+  title: z.string(),
+  goalId: z.string().nullable(),
+  notes: z.string(),
+});
+
+export const templateSchema = z.object({
+  id,
+  name: text(1, 80),
+  spanDays: z.union([z.literal(1), z.literal(7)]),
+  blocks: z.array(templateBlockSchema),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
+
+export const routineSchema = z.object({
+  id,
+  title: z.string(),
+  goalId: z.string().nullable(),
+  notes: z.string(),
+  startMinute: z.number().int().min(0).max(1439),
+  endMinute: z.number().int().min(1).max(1440),
+  weekdays: z.number().int().min(1).max(127),
+  startsOn: localDate,
+  endsOn: localDate.nullable(),
+  materializedThrough: localDate.nullable(),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
+
+const exportFileSchemaV1 = z.object({
+  format: z.literal(EXPORT_FORMAT),
+  version: z.literal(1),
+  exportedAt: timestamp,
+  appVersion: z.string(),
+  settings: z.array(settingRowSchema),
+  goals: z.array(goalSchema),
+  weekTargets: z.array(weekTargetSchema),
+  checklistItems: z.array(checklistItemSchema),
+  blocks: z.array(blockSchemaV1),
+  weekNotes: z.array(weekNoteSchema),
+});
+
+const exportFileSchemaV2 = z.object({
   format: z.literal(EXPORT_FORMAT),
   version: z.literal(EXPORT_VERSION),
   exportedAt: timestamp,
@@ -99,6 +151,8 @@ export const exportFileSchema = z.object({
   goals: z.array(goalSchema),
   weekTargets: z.array(weekTargetSchema),
   checklistItems: z.array(checklistItemSchema),
+  templates: z.array(templateSchema),
+  routines: z.array(routineSchema),
   blocks: z.array(blockSchema),
   weekNotes: z.array(weekNoteSchema),
 });
@@ -133,6 +187,8 @@ function duplicateKeys(data: ExportData): string[] {
   check("goals", data.goals);
   check("weekTargets", data.weekTargets);
   check("checklistItems", data.checklistItems);
+  check("templates", data.templates);
+  check("routines", data.routines);
   check("blocks", data.blocks);
   check("weekNotes", data.weekNotes);
   return errors;
@@ -156,16 +212,48 @@ function repair(input: ExportData): { data: ExportData; warnings: string[] } {
   const { weekStartDay } = parseSettings(input.settings);
   const norm = (d: string) => weekStartOf(d, weekStartDay);
 
+  // Templates.
+  let danglingTemplateGoal = 0;
+  const templates = input.templates.map((t): Template => {
+    let changed = false;
+    const blocks = t.blocks.map((b) => {
+      if (b.goalId !== null && !goalIds.has(b.goalId)) {
+        danglingTemplateGoal++;
+        changed = true;
+        return { ...b, goalId: null };
+      }
+      return b;
+    });
+    return changed ? { ...t, blocks } : t;
+  });
+  if (danglingTemplateGoal)
+    warnings.push(`${plural(danglingTemplateGoal, "template block")} referenced a missing goal; the goal was cleared.`);
+
+  // Routines.
+  const routineIds = new Set(input.routines.map((r) => r.id));
+  let danglingRoutineGoal = 0;
+  const routines = input.routines.map((r): Routine => {
+    if (r.goalId !== null && !goalIds.has(r.goalId)) {
+      danglingRoutineGoal++;
+      return { ...r, goalId: null };
+    }
+    return r;
+  });
+  if (danglingRoutineGoal)
+    warnings.push(`${plural(danglingRoutineGoal, "routine")} referenced a missing goal; the goal was cleared.`);
+
   // Blocks.
   const byId = new Map(input.blocks.map((b) => [b.id, b]));
   let danglingGoal = 0;
   let planLinked = 0;
   let badLink = 0;
   let actualSkipped = 0;
+  let danglingRoutine = 0;
   const blocks = input.blocks.map((b): Block => {
     let goalId = b.goalId;
     let planBlockId = b.planBlockId;
     let skipped = b.skipped;
+    let routineId = b.routineId;
     if (goalId !== null && !goalIds.has(goalId)) {
       goalId = null;
       danglingGoal++;
@@ -186,9 +274,16 @@ function repair(input: ExportData): { data: ExportData; warnings: string[] } {
       skipped = false;
       actualSkipped++;
     }
-    return goalId === b.goalId && planBlockId === b.planBlockId && skipped === b.skipped
+    if (routineId !== null && (b.layer !== "plan" || !routineIds.has(routineId))) {
+      routineId = null;
+      danglingRoutine++;
+    }
+    return goalId === b.goalId &&
+      planBlockId === b.planBlockId &&
+      skipped === b.skipped &&
+      routineId === b.routineId
       ? b
-      : { ...b, goalId, planBlockId, skipped };
+      : { ...b, goalId, planBlockId, skipped, routineId };
   });
   if (danglingGoal)
     warnings.push(`${plural(danglingGoal, "block")} referenced a missing goal; the goal was cleared.`);
@@ -199,6 +294,8 @@ function repair(input: ExportData): { data: ExportData; warnings: string[] } {
   if (planLinked) warnings.push(`${plural(planLinked, "plan block")} had a plan link; the link was cleared.`);
   if (actualSkipped)
     warnings.push(`${plural(actualSkipped, "actual block")} had the skipped flag set; it was cleared.`);
+  if (danglingRoutine)
+    warnings.push(`${plural(danglingRoutine, "block")} referenced a missing routine or was not a plan block; the routine link was cleared.`);
 
   // Week targets.
   const keptTargets = input.weekTargets.filter((t) => goalIds.has(t.goalId));
@@ -250,7 +347,7 @@ function repair(input: ExportData): { data: ExportData; warnings: string[] } {
     warnings.push(`${plural(moved, "week entry", "week entries")} did not start on the configured week start day and ${moved === 1 ? "was" : "were"} realigned.`);
 
   return {
-    data: { settings: input.settings, goals: input.goals, weekTargets, checklistItems, blocks, weekNotes },
+    data: { settings: input.settings, goals: input.goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes },
     warnings,
   };
 }
@@ -276,18 +373,38 @@ export function parseImportFile(text: string): ImportResult {
       ok: false,
       errors: [`This file was made by a newer version of Timeblock (export version ${version}). Update the app to import it.`],
     };
-  if (version !== EXPORT_VERSION)
+  if (version !== 1 && version !== EXPORT_VERSION)
     return { ok: false, errors: [`Unsupported export version: ${JSON.stringify(version) ?? "missing"}.`] };
 
-  const parsed = exportFileSchema.safeParse(raw);
-  if (!parsed.success)
-    return {
-      ok: false,
-      errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
+  let valid: ExportData;
+  if (version === 1) {
+    const parsed = exportFileSchemaV1.safeParse(raw);
+    if (!parsed.success)
+      return {
+        ok: false,
+        errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
+      };
+    const { settings, goals, weekTargets, checklistItems, blocks, weekNotes } = parsed.data;
+    valid = {
+      settings,
+      goals,
+      weekTargets,
+      checklistItems,
+      templates: [],
+      routines: [],
+      blocks: blocks.map((b) => ({ ...b, routineId: null })),
+      weekNotes,
     };
-
-  const { settings, goals, weekTargets, checklistItems, blocks, weekNotes } = parsed.data;
-  const valid: ExportData = { settings, goals, weekTargets, checklistItems, blocks, weekNotes };
+  } else {
+    const parsed = exportFileSchemaV2.safeParse(raw);
+    if (!parsed.success)
+      return {
+        ok: false,
+        errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
+      };
+    const { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes } = parsed.data;
+    valid = { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes };
+  }
   const dupes = duplicateKeys(valid);
   if (dupes.length) return { ok: false, errors: capErrors(dupes) };
 
@@ -302,6 +419,8 @@ export function parseImportFile(text: string): ImportResult {
       goals: data.goals.length,
       weekTargets: data.weekTargets.length,
       checklistItems: data.checklistItems.length,
+      templates: data.templates.length,
+      routines: data.routines.length,
       blocks: data.blocks.length,
       weekNotes: data.weekNotes.length,
     },

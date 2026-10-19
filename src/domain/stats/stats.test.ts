@@ -21,6 +21,7 @@ function block(p: Partial<Block> & Pick<Block, "day" | "startMinute" | "endMinut
     notes: "",
     planBlockId: null,
     skipped: false,
+    routineId: null,
     createdAt: 0,
     updatedAt: 0,
     ...p,

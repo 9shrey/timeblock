@@ -43,6 +43,7 @@ function blk(
     notes: "",
     planBlockId: null,
     skipped: false,
+    routineId: null,
     createdAt: T0,
     updatedAt: T0,
     ...extra,
@@ -96,6 +97,7 @@ describe("createBlock / updateBlock", () => {
       notes: "",
       planBlockId: null,
       skipped: false,
+      routineId: null,
     });
     expect(block.createdAt).toBe(5_000);
     expect(changes).toEqual([{ op: "put", table: "blocks", row: block }]);
