@@ -40,6 +40,29 @@ export interface Platform {
   appVersion(): Promise<string>;
   /** Keeps the window open until queued writes are saved (desktop) or warns before leaving (web). */
   guardClose(writes: { flush(): Promise<void>; pending(): number }): Promise<void>;
+
+  /** Save dialog filtered to `.ics`; returns the path written, or null if cancelled (web: browser download). */
+  saveIcsFile(defaultName: string, contents: string): Promise<string | null>;
+  /** Open dialog filtered to `.ics`; null if cancelled. */
+  openIcsFile(): Promise<OpenedFile | null>;
+
+  /** Whether OS notification permission is granted (web: always false, notifications aren't wired up). */
+  notificationsEnabled(): Promise<boolean>;
+  /** Requests OS notification permission if not already decided. Returns the resulting state. */
+  requestNotificationPermission(): Promise<boolean>;
+  /** Shows a notification. `onAction`, if given, fires if the user clicks it (desktop only). */
+  showNotification(opts: { title: string; body: string; onAction?: () => void }): Promise<void>;
+
+  /** Mirrors the `closeToTray` setting into the native close handler (no-op on web). */
+  setCloseToTray(enabled: boolean): Promise<void>;
+  /** Updates the tray's "next block" label (no-op on web). */
+  setTrayNextBlock(title: string | null): Promise<void>;
+  /** Tray "Start timer" / "Confirm rest of day" clicks (web: never fires). */
+  onTrayAction(cb: (action: "start-timer" | "confirm-rest-of-day") => void): Promise<() => void>;
+
+  /** Whether autostart-on-login is currently enabled (web: always false). */
+  autostartEnabled(): Promise<boolean>;
+  setAutostart(enabled: boolean): Promise<void>;
 }
 
 export { isTauri };

@@ -130,6 +130,16 @@ export interface Settings {
   snapMinutes: SnapMinutes;
   defaultBlockMinutes: number;
   theme: ThemePref;
+  /** Closing the window hides it to the tray instead of quitting (desktop only). */
+  closeToTray: boolean;
+  /** Launch Timeblock automatically on login (desktop only). */
+  autostart: boolean;
+  /** "Next block in 5 min: <title>" notifications. */
+  notifyNextBlock: boolean;
+  /** Evening nudge when today has unconfirmed blocks. */
+  notifyEveningNudge: boolean;
+  /** "Weekly review is ready" on the last day of the week. */
+  notifyWeeklyReview: boolean;
 }
 
 // ---------------------------------------------------------------------------

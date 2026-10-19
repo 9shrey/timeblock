@@ -1,10 +1,16 @@
 mod db;
 mod files;
+mod tray;
 
 use db::{BackupInfo, Db, Row, Stmt};
 use serde_json::Value as Json;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
+
+/// Whether closing the main window should hide it to the tray instead of quitting.
+/// Set from the frontend (`set_close_to_tray`) to mirror the `closeToTray` setting.
+pub struct CloseToTray(pub AtomicBool);
 
 #[tauri::command]
 async fn db_select(db: State<'_, Db>, sql: String, params: Vec<Json>) -> Result<Vec<Row>, String> {
@@ -53,6 +59,20 @@ fn reveal_data_dir(app: tauri::AppHandle, db: State<'_, Db>) -> Result<(), Strin
         .map_err(|e| e.to_string())
 }
 
+/// Mirrors the `closeToTray` setting: when true, closing the main window hides it
+/// instead of quitting the app (the tray's Quit item still exits for real).
+#[tauri::command]
+fn set_close_to_tray(close_to_tray: State<'_, CloseToTray>, value: bool) {
+    close_to_tray.0.store(value, Ordering::Relaxed);
+}
+
+/// Updates the tray menu's "next block" label, or clears it to "No upcoming block today"
+/// when `title` is `None`. Called from the frontend's clock tick.
+#[tauri::command]
+fn set_tray_next_block(app: tauri::AppHandle, title: Option<String>) -> Result<(), String> {
+    tray::set_next_block_label(&app, title.as_deref())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
@@ -71,12 +91,29 @@ pub fn run() {
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .manage(CloseToTray(AtomicBool::new(false)))
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             let db = Db::open(&dir)
                 .map_err(|e| format!("Could not open database in {}: {e}", dir.display()))?;
             app.manage(db);
+            tray::build(app.handle())?;
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event
+                && window.label() == "main"
+                && window.state::<CloseToTray>().0.load(Ordering::Relaxed)
+            {
+                api.prevent_close();
+                let _ = window.hide();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             db_select,
@@ -88,8 +125,12 @@ pub fn run() {
             restore_backup,
             data_dir,
             reveal_data_dir,
+            set_close_to_tray,
+            set_tray_next_block,
             files::save_text_file,
             files::open_text_file,
+            files::save_ics_file,
+            files::open_ics_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

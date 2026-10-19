@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Download, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { CalendarCheck, CalendarPlus, Download, FolderOpen, HardDriveDownload, History, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ImportResult } from "@/domain/export/schema";
-import { formatMinute } from "@/domain/time/localDate";
+import { addDays, formatMinute, weekStartOf } from "@/domain/time/localDate";
 import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
-import { applyImport, backupNow, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
+import { applyImport, backupNow, exportIcs, exportJson, importIcsFile, pickImportFile, setSetting } from "@/state/dataCommands";
+import { copyIcsEventToPlan } from "@/state/commands";
+import { clearImportedIcs, removeImportedIcsEvent, useIcs } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
@@ -240,6 +243,151 @@ function ImportDialog({ pending, onClose }: { pending: { name: string; result: I
   );
 }
 
+function DesktopSection({ kind }: { kind: string }) {
+  const settings = useStore((s) => s.settings);
+  if (kind !== "tauri") return null;
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Desktop</h2>
+      <div className="rounded-lg border px-4">
+        <Row label="Close to tray" hint="Closing the window hides it instead of quitting. Quit from the tray icon.">
+          <Checkbox checked={settings.closeToTray} onCheckedChange={(c) => setSetting("closeToTray", c === true)} aria-label="Close to tray" />
+        </Row>
+        <Row label="Launch on login">
+          <Checkbox checked={settings.autostart} onCheckedChange={(c) => setSetting("autostart", c === true)} aria-label="Launch on login" />
+        </Row>
+        <Row label="Next block" hint="Notify 5 minutes before a plan block starts.">
+          <Checkbox checked={settings.notifyNextBlock} onCheckedChange={(c) => setSetting("notifyNextBlock", c === true)} aria-label="Notify before the next block" />
+        </Row>
+        <Row label="Evening nudge" hint="Notify in the evening if today has unconfirmed blocks.">
+          <Checkbox checked={settings.notifyEveningNudge} onCheckedChange={(c) => setSetting("notifyEveningNudge", c === true)} aria-label="Notify with an evening nudge" />
+        </Row>
+        <Row label="Weekly review" hint="Notify when the weekly review is ready, on the week's last day.">
+          <Checkbox checked={settings.notifyWeeklyReview} onCheckedChange={(c) => setSetting("notifyWeeklyReview", c === true)} aria-label="Notify when the weekly review is ready" />
+        </Row>
+      </div>
+    </section>
+  );
+}
+
+function ImportIcsDialog() {
+  const imported = useIcs((s) => s.imported);
+  return (
+    <Dialog open={!!imported} onOpenChange={(o) => !o && clearImportedIcs()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Imported calendar</DialogTitle>
+          <DialogDescription className="break-all">{imported?.fileName}</DialogDescription>
+        </DialogHeader>
+        {imported && (
+          <div className="grid max-h-96 gap-3 overflow-y-auto text-sm">
+            {imported.events.length === 0 && imported.skipped.length === 0 && <p className="text-muted-foreground">No events found.</p>}
+            {imported.events.map((e) => (
+              <div key={e.uid} className="flex items-center gap-3 border-b pb-2 last:border-0">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{e.summary}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {e.day} · {formatMinute(e.startMinute)}–{formatMinute(e.endMinute)}
+                    {e.clipped ? " (clipped to midnight)" : ""}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (copyIcsEventToPlan({ day: e.day, startMinute: e.startMinute, endMinute: e.endMinute, summary: e.summary }))
+                      removeImportedIcsEvent(e.uid);
+                  }}
+                >
+                  Copy to plan
+                </Button>
+              </div>
+            ))}
+            {imported.skipped.length > 0 && (
+              <div>
+                <p className="font-medium">Not imported:</p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {imported.skipped.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={clearImportedIcs}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ExportIcsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const today = useStore((s) => s.now.day);
+  const weekStartDay = useStore((s) => s.settings.weekStartDay);
+  const defaultFrom = weekStartOf(today, weekStartDay);
+  const [from, setFrom] = useState(defaultFrom);
+  const [to, setTo] = useState(addDays(defaultFrom, 6));
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Export to .ics</DialogTitle>
+          <DialogDescription>Exports plan and actual blocks in this date range.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="ics-from">From</Label>
+            <Input id="ics-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="ics-to">To</Label>
+            <Input id="ics-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              void exportIcs(from, to);
+              onClose();
+            }}
+          >
+            Export
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CalendarSection() {
+  const [exportOpen, setExportOpen] = useState(false);
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Calendar</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Import a <code>.ics</code> file as a read-only overlay you can copy events from into your plan, or export your blocks to <code>.ics</code>.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => void importIcsFile()}>
+          <CalendarPlus /> Import .ics…
+        </Button>
+        <Button variant="outline" onClick={() => setExportOpen(true)}>
+          <CalendarCheck /> Export .ics…
+        </Button>
+      </div>
+      <ImportIcsDialog />
+      <ExportIcsDialog open={exportOpen} onClose={() => setExportOpen(false)} />
+    </section>
+  );
+}
+
 export function SettingsView() {
   const settings = useStore((s) => s.settings);
   const [pending, setPending] = useState<{ name: string; result: ImportResult } | null>(null);
@@ -293,6 +441,8 @@ export function SettingsView() {
 
         <TemplatesSection />
         <RoutinesSection />
+        <DesktopSection kind={info?.kind ?? "web"} />
+        <CalendarSection />
 
         <section>
           <h2 className="mb-1 text-lg font-semibold">Data</h2>

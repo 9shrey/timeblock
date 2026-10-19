@@ -9,7 +9,8 @@ import { SqliteRepository } from "./data/SqliteRepository";
 import { CLOCK_TICK_MS, makeClock, parseNowOverride } from "./domain/time/clock";
 import type { Now } from "./domain/types";
 import { getPlatform } from "./platform";
-import { extendRunningTimer } from "./state/commands";
+import { confirmRestOfDay, extendRunningTimer, startTimer } from "./state/commands";
+import { checkNotifications } from "./state/notifications";
 import { flushWrites, initStore, pendingWrites, useStore } from "./state/store";
 import { useUi } from "./state/ui";
 import "./styles/index.css";
@@ -96,6 +97,27 @@ async function boot() {
   useStore.setState({ systemTheme: await platform.systemTheme() });
   void platform.onSystemThemeChange((systemTheme) => useStore.setState({ systemTheme }));
 
+  // Desktop integration (M11): close-to-tray, autostart and notification permission mirror
+  // the matching settings, and stay in sync if they're changed in Settings afterwards.
+  const applyDesktopSettings = () => {
+    const s = useStore.getState().settings;
+    void platform.setCloseToTray(s.closeToTray);
+    void platform.setAutostart(s.autostart);
+    if (s.notifyNextBlock || s.notifyEveningNudge || s.notifyWeeklyReview) {
+      void platform.notificationsEnabled().then((granted) => {
+        if (!granted) void platform.requestNotificationPermission();
+      });
+    }
+  };
+  applyDesktopSettings();
+  useStore.subscribe((s, prev) => {
+    if (s.settings !== prev.settings) applyDesktopSettings();
+  });
+  void platform.onTrayAction((action) => {
+    if (action === "start-timer") startTimer();
+    else confirmRestOfDay(useStore.getState().now.day);
+  });
+
   setInterval(() => {
     const next = clock();
     const cur = useStore.getState().now;
@@ -103,6 +125,7 @@ async function boot() {
       useStore.setState({ now: next });
       extendRunningTimer(next);
     }
+    void checkNotifications(next);
   }, CLOCK_TICK_MS);
 
   // The running block's title in the window title, so you can tell at a glance.

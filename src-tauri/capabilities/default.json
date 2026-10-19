@@ -3,5 +3,16 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": ["main"],
-  "permissions": ["core:default", "core:window:allow-theme", "core:window:allow-destroy", "opener:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-theme",
+    "core:window:allow-destroy",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "core:window:allow-is-visible",
+    "opener:default",
+    "notification:default",
+    "autostart:default"
+  ]
 }

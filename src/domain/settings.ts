@@ -7,6 +7,11 @@ export const DEFAULT_SETTINGS: Settings = {
   snapMinutes: 15,
   defaultBlockMinutes: 60,
   theme: "system",
+  closeToTray: false,
+  autostart: false,
+  notifyNextBlock: true,
+  notifyEveningNudge: true,
+  notifyWeeklyReview: true,
 };
 
 /** Per-key schemas. Invalid or missing values fall back to the default. */
@@ -16,6 +21,11 @@ const schemas: { [K in keyof Settings]: z.ZodType<Settings[K]> } = {
   snapMinutes: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)]),
   defaultBlockMinutes: z.number().int().min(5).max(480),
   theme: z.enum(["system", "light", "dark"]),
+  closeToTray: z.boolean(),
+  autostart: z.boolean(),
+  notifyNextBlock: z.boolean(),
+  notifyEveningNudge: z.boolean(),
+  notifyWeeklyReview: z.boolean(),
 };
 
 export const SETTING_KEYS = Object.keys(schemas) as (keyof Settings)[];

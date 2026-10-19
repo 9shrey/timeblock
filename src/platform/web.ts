@@ -73,4 +73,33 @@ export const webPlatform: Platform = {
       if (writes.pending() > 0) e.preventDefault();
     });
   },
+
+  async saveIcsFile(defaultName, contents) {
+    const url = URL.createObjectURL(new Blob([contents], { type: "text/calendar" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: defaultName });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return defaultName;
+  },
+  openIcsFile() {
+    return new Promise((resolve) => {
+      const input = Object.assign(document.createElement("input"), { type: "file", accept: ".ics,text/calendar" });
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        resolve(file ? { path: file.name, contents: await file.text() } : null);
+      };
+      input.oncancel = () => resolve(null);
+      input.click();
+    });
+  },
+
+  // The dev/browser build never wires up OS notifications, the tray or autostart.
+  notificationsEnabled: async () => false,
+  requestNotificationPermission: async () => false,
+  showNotification: async () => {},
+  setCloseToTray: async () => {},
+  setTrayNextBlock: async () => {},
+  onTrayAction: async () => () => {},
+  autostartEnabled: async () => false,
+  setAutostart: async () => {},
 };
