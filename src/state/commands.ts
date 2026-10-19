@@ -19,11 +19,12 @@ import {
   type BlockPatch,
 } from "@/domain/blocks/reconcile";
 import { validateBlock } from "@/domain/blocks/validate";
-import { applyChanges } from "@/domain/changes";
+import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
+import { weekDays } from "@/domain/time/localDate";
 import type { Block, ChangeSet, Layer, LocalDate } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
-import { allBlocks } from "./selectors";
+import { activeGoals, allBlocks } from "./selectors";
 import { commit, redo as storeRedo, undo as storeUndo, useStore } from "./store";
 import { closeEditor, openEditor, useUi } from "./ui";
 
@@ -188,6 +189,40 @@ export function copyPlanFrom(fromDay: LocalDate, toDay: LocalDate): void {
   const changes = copyPlan(fromDay, toDay, blocks(), env);
   if (changes.length === 0) toast("That day has no plan to copy.");
   else commitChecked(changes, "Copy plan");
+}
+
+/**
+ * Copies every day of `fromWeek` onto the same weekday of `toWeek`, in one undo step.
+ * Locked and past target days are skipped (even if manually unlocked); a copied block
+ * whose goal is archived as of `toWeek` has its goal cleared so `validateBlock` doesn't
+ * reject the whole change.
+ */
+export function copyWeekPlan(fromWeek: LocalDate, toWeek: LocalDate): void {
+  const now = state().now;
+  const fromDays = weekDays(fromWeek);
+  const toDays = weekDays(toWeek);
+  const activeGoalIds = new Set(activeGoals(state().data, toWeek).map((g) => g.id));
+  const all = blocks();
+  const changes: ChangeSet = [];
+  let eligibleDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const toDay = toDays[i]!;
+    if (toDay < now.day || isPlanLocked(toDay)) continue;
+    eligibleDays++;
+    for (const c of copyPlan(fromDays[i]!, toDay, all, env)) {
+      if (c.op === "put" && c.table === "blocks" && c.row.goalId !== null && !activeGoalIds.has(c.row.goalId)) {
+        changes.push(put("blocks", { ...c.row, goalId: null }));
+      } else {
+        changes.push(c);
+      }
+    }
+  }
+  if (eligibleDays === 0) {
+    toast("No unlocked, upcoming days to copy into.");
+    return;
+  }
+  if (changes.length === 0) toast("Last week has no plan to copy.");
+  else commitChecked(changes, "Copy last week's plan");
 }
 
 // --- item-level helpers used by keyboard and menus -------------------------

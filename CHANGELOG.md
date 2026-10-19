@@ -9,6 +9,11 @@ All notable changes to this project are documented here. The format follows
 ### Added
 - **Restore a backup** from Settings, or from the error screen when Timeblock can't start.
   The current data is backed up first. Settings also shows when the last backup was made.
+- **Copy last week's plan**, from the Week view header and the empty-day prompt in Day
+  view. Locked and past target days are skipped, and a block whose goal is archived by
+  the target week loses its goal link instead of blocking the copy.
+- Export format v2: templates, routines and `blocks.routineId`. Importing a v1 file still
+  works.
 
 ### Fixed
 - A week that failed to load stayed empty for the rest of the session; navigating to it

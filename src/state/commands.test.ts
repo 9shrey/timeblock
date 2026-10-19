@@ -23,6 +23,7 @@ import {
   canEditLane,
   confirm,
   confirmRestOfDay,
+  copyWeekPlan,
   createBlockAt,
   materialize,
   moveBlockTo,
@@ -143,6 +144,45 @@ describe("block commands", () => {
     expect(useStore.getState().data.blocks[id]).toBeUndefined();
     expect(useStore.getState().selection).toBeNull();
     expect(useUi.getState().editing).toBeNull();
+  });
+});
+
+describe("copyWeekPlan", () => {
+  const lastWeek = "2026-10-12";
+  const thisWeek = "2026-10-19";
+
+  it("skips past target days (even if unlocked) and clears goals archived as of the target week", () => {
+    // Monday/Tuesday of this week are in the past relative to `now` (Wed 2026-10-21).
+    unlockPlanDay("2026-10-19");
+    // Archive the Social goal before copying: a copied block referencing it must drop the link.
+    const social = useStore.getState().data.goals["seed-goal-social"]!;
+    commit([put("goals", { ...social, archivedOn: thisWeek })]);
+
+    const before = new Set(Object.keys(useStore.getState().data.blocks));
+    copyWeekPlan(lastWeek, thisWeek);
+    const added = Object.values(useStore.getState().data.blocks).filter((b) => !before.has(b.id));
+
+    expect(added.length).toBeGreaterThan(0);
+    expect(added.every((b) => b.layer === "plan")).toBe(true);
+    // Last week's Friday (2026-10-16) has a Social block; this week's Friday is 2026-10-23.
+    expect(added.some((b) => b.day === "2026-10-19")).toBe(false);
+    expect(added.some((b) => b.day === "2026-10-20")).toBe(false);
+    const friday = added.find((b) => b.day === "2026-10-23" && b.title === "Dinner with friends");
+    expect(friday).toBeDefined();
+    expect(friday!.goalId).toBeNull();
+  });
+
+  it("says so when there are no eligible target days", () => {
+    unlockPlanDay("2026-10-19");
+    unlockPlanDay("2026-10-20");
+    copyWeekPlan(lastWeek, "2026-10-05"); // every day of that week is in the past
+    expect(toastFn).toHaveBeenCalledWith("No unlocked, upcoming days to copy into.");
+  });
+
+  it("is a single undo step", () => {
+    const n = history().length;
+    copyWeekPlan(lastWeek, thisWeek);
+    expect(history()).toHaveLength(n + 1);
   });
 });
 

@@ -1,8 +1,8 @@
-import { ChevronLeft, ChevronRight, PanelRight, Redo2, Undo2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CopyPlus, PanelRight, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { addDays, formatDateLong, isoWeek, weekdayLong } from "@/domain/time/localDate";
-import { redo, undo } from "@/state/commands";
+import { addDays, formatDateLong, isoWeek, weekdayLong, weekStartOf } from "@/domain/time/localDate";
+import { copyWeekPlan, redo, undo } from "@/state/commands";
 import { useStore } from "@/state/store";
 
 /** Step size for ‹ › in the current view: a day in Day view, a week elsewhere. */
@@ -35,11 +35,13 @@ export function TopBar() {
   const cursor = useStore((s) => s.cursor);
   const today = useStore((s) => s.now.day);
   const view = useStore((s) => s.view);
+  const weekStartDay = useStore((s) => s.settings.weekStartDay);
   const canUndo = useStore((s) => s.history.undo.length > 0);
   const canRedo = useStore((s) => s.history.redo.length > 0);
   const budgetOpen = useStore((s) => s.budgetOpen);
   const { week } = isoWeek(cursor);
   const unit = view === "day" ? "day" : "week";
+  const weekStart = weekStartOf(cursor, weekStartDay);
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b px-3">
@@ -56,6 +58,16 @@ export function TopBar() {
         {view === "day" ? `${weekdayLong(cursor)}, ${formatDateLong(cursor)}` : formatDateLong(cursor)}
         <span className="ml-2 font-normal text-muted-foreground">W{week}</span>
       </h1>
+      {view === "week" && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-2" onClick={() => copyWeekPlan(addDays(weekStart, -7), weekStart)}>
+              <CopyPlus /> Copy last week's plan
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copies every day of last week onto this week. Locked and past days are skipped.</TooltipContent>
+        </Tooltip>
+      )}
       <div className="flex-1" />
       <IconButton label="Undo" shortcut="Ctrl+Z" onClick={undo} disabled={!canUndo}>
         <Undo2 />
