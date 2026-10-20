@@ -40,7 +40,14 @@ describe("dueNotifications: next block", () => {
   it("fires exactly 5 minutes before an unskipped plan block starts", () => {
     const b = block({ startMinute: 545 });
     const events = dueNotifications({ blocks: [b], goals: {}, settings, now: { day: DAY, minute: 540 }, weekStartDay: 1 });
-    expect(events).toEqual([{ key: "next-block:b", title: "Next block in 5 min", body: "Write", action: "openDay" }]);
+    expect(events).toEqual([{ key: "next-block:b", title: "Next block in 5 min", body: "Write · 09:05", action: "openDay" }]);
+  });
+
+  it("shows the start time in the 12-hour format when set", () => {
+    const b = block({ startMinute: 545 });
+    const twelve = { ...settings, timeFormat: "12h" as const };
+    const events = dueNotifications({ blocks: [b], goals: {}, settings: twelve, now: { day: DAY, minute: 540 }, weekStartDay: 1 });
+    expect(events[0]?.body).toBe("Write · 9:05 AM");
   });
 
   it("includes the goal name when the title is blank", () => {
@@ -52,7 +59,7 @@ describe("dueNotifications: next block", () => {
       now: { day: DAY, minute: 540 },
       weekStartDay: 1,
     });
-    expect(events[0]?.body).toBe("Thesis");
+    expect(events[0]?.body).toBe("Thesis · 09:05");
   });
 
   it("does not fire at other offsets, for skipped blocks, or for actual blocks", () => {

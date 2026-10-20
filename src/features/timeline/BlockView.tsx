@@ -1,12 +1,13 @@
 import { memo } from "react";
 import { Check, Circle, X } from "lucide-react";
 import { formatBlockDelta, type BlockDelta } from "@/domain/blocks/delta";
-import { formatDuration, formatMinute } from "@/domain/time/localDate";
+import { formatDuration, formatMinuteRange } from "@/domain/time/localDate";
 import type { Block, Goal, PlanState } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { select } from "@/state/commands";
 import { useDraft } from "@/state/draft";
 import { EDGE_PX, minutesToPx } from "./geometry";
+import { useTimeFormat } from "@/state/selectors";
 
 export const NO_GOAL_COLOR = "#94a3b8";
 
@@ -81,12 +82,13 @@ interface Props {
 }
 
 export const BlockView = memo(function BlockView({ block, goal, slot, pxPerHour, col, planState, delta, selected, editable, dimmed }: Props) {
+  const tf = useTimeFormat();
   const dragging = useDraft((s) => s.draft?.ref?.kind === "block" && s.draft.ref.id === block.id && !s.draft.copy);
   const len = block.endMinute - block.startMinute;
   const short = minutesToPx(len, pxPerHour) < 34;
   const isPlan = block.layer === "plan";
   const title = displayTitle(block.title, goal);
-  const time = `${formatMinute(block.startMinute)}–${formatMinute(block.endMinute)}`;
+  const time = formatMinuteRange(block.startMinute, block.endMinute, tf);
   const deltaText = delta ? formatBlockDelta(delta, goal) : null;
   const label = [
     isPlan ? "Plan" : "Actual",

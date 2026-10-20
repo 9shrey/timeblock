@@ -57,4 +57,34 @@ describe("parseQuickAdd", () => {
     expect(parseQuickAdd("9-10 ", goals)).toEqual({ startMinute: 540, endMinute: 600, title: "", goalId: null });
     expect(parseQuickAdd("9-10", goals)).toEqual({ startMinute: 540, endMinute: 600, title: "", goalId: null });
   });
+
+  it("accepts 12-hour times on either side of the range", () => {
+    expect(parseQuickAdd("9am-10:30am Thesis", goals)).toMatchObject({ startMinute: 540, endMinute: 630, title: "Thesis" });
+    expect(parseQuickAdd("9:30pm-11pm Read", goals)).toMatchObject({ startMinute: 1290, endMinute: 1380 });
+    expect(parseQuickAdd("11:30am-1pm Lunch #exer", goals)).toMatchObject({ startMinute: 690, endMinute: 780, goalId: "g2" });
+    expect(parseQuickAdd("9AM-5PM Work", goals)).toMatchObject({ startMinute: 540, endMinute: 1020 });
+  });
+
+  it("gives a bare start the end's am/pm, unless that would reverse the range", () => {
+    expect(parseQuickAdd("9-10:30pm Thesis", goals)).toMatchObject({ startMinute: 1260, endMinute: 1350 });
+    expect(parseQuickAdd("9:15-10am Thesis", goals)).toMatchObject({ startMinute: 555, endMinute: 600 });
+    expect(parseQuickAdd("11-1pm Lunch", goals)).toMatchObject({ startMinute: 660, endMinute: 780 });
+    expect(parseQuickAdd("12-1pm Lunch", goals)).toMatchObject({ startMinute: 720, endMinute: 780 });
+  });
+
+  it("mixes 24-hour and 12-hour sides", () => {
+    expect(parseQuickAdd("9am-13:00 Thesis", goals)).toMatchObject({ startMinute: 540, endMinute: 780 });
+    expect(parseQuickAdd("13:00-2pm Thesis", goals)).toMatchObject({ startMinute: 780, endMinute: 840 });
+  });
+
+  it("reads a range ending at midnight as the end of the day", () => {
+    expect(parseQuickAdd("11pm-12am Wind down", goals)).toMatchObject({ startMinute: 1380, endMinute: 1440 });
+    expect(parseQuickAdd("23-24 Wind down", goals)).toMatchObject({ startMinute: 1380, endMinute: 1440 });
+  });
+
+  it("rejects invalid or reversed 12-hour input", () => {
+    expect(parseQuickAdd("10pm-9pm Thesis", goals)).toBeNull();
+    expect(parseQuickAdd("13pm-14pm Thesis", goals)).toBeNull();
+    expect(parseQuickAdd("9-10xm Thesis", goals)).toBeNull();
+  });
 });

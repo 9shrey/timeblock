@@ -7,11 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { carryableCount } from "@/domain/goals/checklist";
 import { computeAccuracy } from "@/domain/stats/accuracy";
 import { biggestGaps } from "@/domain/stats/gaps";
-import { addDays, formatDateLong, formatDayLabel, formatDuration, formatMinute, isoWeek, weekDays } from "@/domain/time/localDate";
+import { addDays, formatDateLong, formatDayLabel, formatDuration, formatMinuteRange, isoWeek, weekDays } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
 import { confirmRestOfDay, rescheduleSkippedTo } from "@/state/commands";
 import { carryOverItems, setWeekNote } from "@/state/goalCommands";
-import { allBlocks, checklistList, statsFor, weekOf } from "@/state/selectors";
+import { allBlocks, checklistList, statsFor, useTimeFormat, weekOf } from "@/state/selectors";
 import { sealHistory, useStore } from "@/state/store";
 import { Checklist } from "../goals/Checklist";
 import { GoalTable } from "./GoalTable";
@@ -96,6 +96,7 @@ function AccuracySection({ weekStart }: { weekStart: LocalDate }) {
 }
 
 function BiggestGapsSection({ weekStart }: { weekStart: LocalDate }) {
+  const tf = useTimeFormat();
   const now = useStore((s) => s.now);
   const weekBlocks = useWeekBlocks(weekStart);
   const gaps = useMemo(() => biggestGaps(weekBlocks, now), [weekBlocks, now]);
@@ -108,7 +109,7 @@ function BiggestGapsSection({ weekStart }: { weekStart: LocalDate }) {
           <li key={i} className="flex items-center gap-2">
             <span className="w-24 shrink-0 text-muted-foreground">{formatDayLabel(g.day)}</span>
             <span className="w-28 shrink-0 tabular-nums text-muted-foreground">
-              {formatMinute(g.startMinute)}–{formatMinute(g.endMinute)}
+              {formatMinuteRange(g.startMinute, g.endMinute, tf)}
             </span>
             <span className="min-w-0 flex-1 truncate">{g.title || "Untitled"}</span>
             <span className="shrink-0 text-xs text-muted-foreground">{g.kind === "unplanned" ? "unplanned" : "unconfirmed"}</span>

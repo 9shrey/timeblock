@@ -1,10 +1,12 @@
-import { formatDuration, formatMinute } from "@/domain/time/localDate";
+import { formatDuration, formatMinuteRange } from "@/domain/time/localDate";
 import { useDraft } from "@/state/draft";
 import { cn } from "@/lib/utils";
 import { minutesToPx } from "./geometry";
+import { useTimeFormat } from "@/state/selectors";
 
 /** The live drag preview for one column. Only this component re-renders while dragging. */
 export function DraftLayer({ col, pxPerHour }: { col: number; pxPerHour: number }) {
+  const tf = useTimeFormat();
   const draft = useDraft((s) => (s.draft?.col === col ? s.draft : null));
   if (!draft) return null;
   const len = draft.end - draft.start;
@@ -17,7 +19,7 @@ export function DraftLayer({ col, pxPerHour }: { col: number; pxPerHour: number 
       )}
       style={{ top: minutesToPx(draft.start, pxPerHour), height: Math.max(minutesToPx(len, pxPerHour), 6) }}
     >
-      {formatMinute(draft.start)}–{formatMinute(draft.end)} · {formatDuration(len)}
+      {formatMinuteRange(draft.start, draft.end, tf)} · {formatDuration(len)}
       {draft.copy && " · copy"}
     </div>
   );

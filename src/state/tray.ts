@@ -13,8 +13,8 @@ let lastLabel: string | null | undefined;
 
 /** Call on every clock tick (and once at boot). Skips the IPC call when the label hasn't changed. */
 export function scheduleTray(platform: Platform, now: Now): void {
-  const { data } = useStore.getState();
-  const label = nextUpcomingBlock(allBlocks(data.blocks), data.goals, now);
+  const { data, settings } = useStore.getState();
+  const label = nextUpcomingBlock(allBlocks(data.blocks), data.goals, now, settings.timeFormat);
   if (label === lastLabel) return;
   lastLabel = label;
   void platform.setTrayNextBlock(label);

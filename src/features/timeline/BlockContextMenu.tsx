@@ -22,7 +22,7 @@ import {
   setGoal,
   skip,
 } from "@/state/commands";
-import { activeGoals, weekOf } from "@/state/selectors";
+import { activeGoals, useTimeFormat, weekOf } from "@/state/selectors";
 import { useStore } from "@/state/store";
 import { openEditor, openTemplateDialog, useUi } from "@/state/ui";
 import type { ItemRef } from "./dragMachine";
@@ -61,6 +61,7 @@ function GoalSubmenu({ itemRef, day }: { itemRef: ItemRef; day: string }) {
 
 /** Menu content for whatever was right-clicked (stored in `useUi().menu`). */
 export function BlockContextMenu({ columns }: { columns: readonly ColumnSpec[] }) {
+  const tf = useTimeFormat();
   const menu = useUi((s) => s.menu);
   const data = useStore((s) => s.data);
   const nowDay = useStore((s) => s.now.day);
@@ -75,7 +76,7 @@ export function BlockContextMenu({ columns }: { columns: readonly ColumnSpec[] }
     return (
       <ContextMenuContent className="w-64">
         <ContextMenuItem disabled={!canEditLane(col.day, col.layer)} onSelect={() => createDefaultAt(col.day, col.layer, menu.minute)}>
-          New block at {formatMinute(Math.floor(menu.minute / 15) * 15)}
+          New block at {formatMinute(Math.floor(menu.minute / 15) * 15, tf)}
         </ContextMenuItem>
         <ContextMenuItem disabled={col.day > nowDay} onSelect={() => confirmRestOfDay(col.day)}>
           Confirm rest of day as planned

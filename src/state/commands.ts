@@ -92,7 +92,7 @@ export function createBlockAt(day: LocalDate, layer: Layer, start: number, end: 
 export function quickAddBlock(day: LocalDate, layer: Layer, input: string): string | null {
   if (!canEditLane(day, layer)) return laneError(layer);
   const parsed = parseQuickAdd(input, goalList(state().data.goals));
-  if (!parsed) return 'Couldn\'t parse that. Try "9-10:30 Title #tag".';
+  if (!parsed) return `Couldn't parse that. Try "${state().settings.timeFormat === "12h" ? "9am-10:30am" : "9-10:30"} Title #tag".`;
   const { block, changes } = createBlock(
     { day, layer, startMinute: parsed.startMinute, endMinute: parsed.endMinute, title: parsed.title, goalId: parsed.goalId },
     env,
