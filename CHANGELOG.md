@@ -23,6 +23,12 @@ All notable changes to this project are documented here. The format follows
   Outlook's Windows zone names) or, failing that, the platform's IANA zone data, so a 9:00
   New York meeting shows at the right local time, DST changes included. A multi-day
   all-day event shows on each of its days.
+- **12-hour time**: Settings → Time format switches every displayed time (timeline hour
+  labels, block labels, the editor's time slots, the tray's next-block line, Review, routines)
+  between `13:00` and `1:00 PM`. A new `timeFormat` setting, default `24h`. Time inputs and
+  quick-add accept `9am`, `9:30pm`, `9am-10:30am` and `9-10:30pm` in either mode, alongside
+  the existing 24-hour forms; a quick-add range ending at `12am` (or `0`) means midnight.
+  The next-block notification now also shows the block's start time.
 - **Task-based goals**: a goal can now be measured by outcomes done each week instead of
   minutes logged. Set "Measure by" to Tasks when creating or editing a goal, then set a
   weekly outcome-count target instead of an hours target; status (met/missed/behind/...)

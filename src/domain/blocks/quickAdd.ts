@@ -1,8 +1,9 @@
 /**
- * Parses a one-line quick-add string like `9-10:30 Thesis #thesis` into a block's time
- * range, title and goal. Pure; reuses `parseTimeInput` for each side of the time range.
+ * Parses a one-line quick-add string like `9-10:30 Thesis #thesis` (or `9am-10:30am …`,
+ * `9-10:30pm …`) into a block's time range, title and goal. Pure; reuses `parseTimeInput`
+ * for each side of the time range.
  */
-import { parseTimeInput } from "../time/localDate";
+import { meridiemOf, parseTimeInput } from "../time/localDate";
 import type { Goal } from "../types";
 
 export interface QuickAddResult {
@@ -23,6 +24,27 @@ function matchGoal(tag: string, goals: readonly Goal[]): Goal | null {
   );
 }
 
+/** A range ending at midnight ("11pm-12am", "23-0") means the end of the day. */
+function parseEnd(text: string): number | null {
+  const m = parseTimeInput(text);
+  return m === 0 ? 1440 : m;
+}
+
+/**
+ * The start side. A bare start before a suffixed end ("9-10:30pm") takes the end's am/pm,
+ * unless that would put it after the end ("11-1pm" is 11am–1pm, not 11pm).
+ */
+function parseStart(text: string, endText: string, endMinute: number | null): number | null {
+  const endMeridiem = meridiemOf(endText);
+  if (endMeridiem && !meridiemOf(text) && endMinute !== null && /^\d{1,2}([:.]?\d{2})?$/.test(text)) {
+    const same = parseTimeInput(text + endMeridiem);
+    if (same !== null && same < endMinute) return same;
+    const other = parseTimeInput(text + (endMeridiem === "pm" ? "am" : "pm"));
+    if (other !== null && other < endMinute) return other;
+  }
+  return parseTimeInput(text);
+}
+
 /**
  * `null` means the input couldn't be parsed as `<start>-<end> <title>`, or the range is
  * empty/reversed. A `#tag` that matches no goal is left in the title as typed.
@@ -32,8 +54,8 @@ export function parseQuickAdd(input: string, goals: readonly Goal[]): QuickAddRe
   const match = RANGE_RE.exec(trimmed);
   if (!match) return null;
   const [, startText, endText, restMatch] = match;
-  const startMinute = parseTimeInput(startText!);
-  const endMinute = parseTimeInput(endText!);
+  const endMinute = parseEnd(endText!);
+  const startMinute = parseStart(startText!, endText!, endMinute);
   if (startMinute === null || endMinute === null || endMinute <= startMinute) return null;
 
   const rest = restMatch ?? "";

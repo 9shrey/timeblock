@@ -62,4 +62,26 @@ describe("BlockPopover time fields", () => {
     expect(end.getAttribute("aria-invalid")).toBe("true");
     expect(useStore.getState().data.blocks[b.id]!.endMinute).toBe(960);
   });
+
+  it("shows and accepts 12-hour times when that format is set", async () => {
+    useStore.setState((s) => ({ settings: { ...s.settings, timeFormat: "12h" } }));
+    const b = planAt(840);
+    openEditor({ kind: "block", id: b.id });
+    render(<BlockPopover />);
+    const end = await screen.findByRole("combobox", { name: "End time" });
+    expect((end as HTMLInputElement).value).toBe("4:00 PM");
+    fireEvent.focus(end);
+    const list = screen.getByRole("listbox", { name: "End time options" });
+    expect(list.querySelector('[role="option"]')!.textContent).toBe("2:15 PM15m");
+    fireEvent.change(end, { target: { value: "5:30pm" } });
+    fireEvent.keyDown(end, { key: "Enter" });
+    expect(useStore.getState().data.blocks[b.id]).toMatchObject({ startMinute: 840, endMinute: 1050 });
+
+    // 24-hour input still works in 12-hour mode.
+    const again = screen.getByRole("combobox", { name: "End time" }) as HTMLInputElement;
+    expect(again.value).toBe("5:30 PM");
+    fireEvent.change(again, { target: { value: "18:00" } });
+    fireEvent.keyDown(again, { key: "Enter" });
+    expect(useStore.getState().data.blocks[b.id]!.endMinute).toBe(1080);
+  });
 });

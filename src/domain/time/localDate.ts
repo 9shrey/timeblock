@@ -2,7 +2,7 @@
  * Calendar arithmetic on `YYYY-MM-DD` wall-clock dates. All maths goes through
  * `Date.UTC`, so it is independent of the machine's time zone and DST.
  */
-import type { LocalDate, Minute, WeekStartDay } from "../types";
+import type { LocalDate, Minute, TimeFormat, WeekStartDay } from "../types";
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DAY_MS = 86_400_000;
@@ -93,9 +93,33 @@ export function compareDates(a: LocalDate, b: LocalDate): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** "09:05"; 1440 renders as "24:00". */
-export function formatMinute(min: Minute): string {
-  return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
+/** 0–1440 → 12-hour clock parts; midnight (either end of the day) is 12 AM. */
+function to12h(min: Minute): { h: number; m: number; suffix: "AM" | "PM" } {
+  const h24 = Math.floor(min / 60) % 24;
+  return { h: h24 % 12 === 0 ? 12 : h24 % 12, m: min % 60, suffix: h24 < 12 ? "AM" : "PM" };
+}
+
+/** "09:05" (1440 renders as "24:00"), or in 12h mode "9:05 AM" (1440 renders as "12:00 AM"). */
+export function formatMinute(min: Minute, format: TimeFormat = "24h"): string {
+  if (format === "24h") return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
+  const { h, m, suffix } = to12h(min);
+  return `${h}:${pad2(m)} ${suffix}`;
+}
+
+/** "09:00–10:30"; in 12h mode the shared AM/PM is written once: "9:00–10:30 AM", "11:00 AM–1:00 PM". */
+export function formatMinuteRange(start: Minute, end: Minute, format: TimeFormat = "24h"): string {
+  if (format === "12h" && to12h(start).suffix === to12h(end).suffix) {
+    const { h, m } = to12h(start);
+    return `${h}:${pad2(m)}–${formatMinute(end, "12h")}`;
+  }
+  return `${formatMinute(start, format)}–${formatMinute(end, format)}`;
+}
+
+/** Compact label for the whole hour `h` (0–24) on the timeline: "09:00" or "9 AM". */
+export function formatHourLabel(h: number, format: TimeFormat = "24h"): string {
+  if (format === "24h") return `${pad2(h)}:00`;
+  const t = to12h(h * 60);
+  return `${t.h} ${t.suffix}`;
 }
 
 /** "2h 30m", "45m", "3h", "0m". Negative values get a leading "−". */
@@ -113,12 +137,23 @@ export function formatHours(min: number): string {
   return String(Math.round((min / 60) * 100) / 100);
 }
 
+const MERIDIEM_RE = /^(.*?)\s*([ap])\.?(?:m\.?)?$/i;
+
+/** "am"/"pm" if `input` ends in a 12-hour suffix ("9pm", "9:30 a.m."), else null. */
+export function meridiemOf(input: string): "am" | "pm" | null {
+  const match = MERIDIEM_RE.exec(input.trim());
+  return match ? (match[2]!.toLowerCase() === "a" ? "am" : "pm") : null;
+}
+
 /**
- * Parses user time input: "9", "915", "0915", "9:15", "9.15", "24:00".
- * Returns minutes or null when invalid.
+ * Parses user time input: "9", "915", "0915", "9:15", "9.15", "24:00", or the same with
+ * a 12-hour suffix: "9am", "9:15 PM", "915p", "12a.m.". Accepted whatever the display
+ * format is; without a suffix the hour is read as 24-hour. Returns minutes or null when invalid.
  */
 export function parseTimeInput(input: string): Minute | null {
-  const s = input.trim();
+  let s = input.trim();
+  const meridiem = meridiemOf(s);
+  if (meridiem) s = MERIDIEM_RE.exec(s)![1]!;
   let h: number;
   let m: number;
   let match: RegExpExecArray | null;
@@ -135,6 +170,10 @@ export function parseTimeInput(input: string): Minute | null {
     return null;
   }
   if (m > 59) return null;
+  if (meridiem) {
+    if (h < 1 || h > 12) return null;
+    h = (h % 12) + (meridiem === "pm" ? 12 : 0);
+  }
   const total = h * 60 + m;
   return total >= 0 && total <= 1440 ? total : null;
 }

@@ -48,6 +48,7 @@ describe("nextUpcomingBlock", () => {
   it("picks the earliest upcoming block and shows its start time", () => {
     const blocks = [block({ id: "later", startMinute: 700, endMinute: 760, title: "Later" }), block({ id: "soon", startMinute: 600, endMinute: 660, title: "Soon" })];
     expect(nextUpcomingBlock(blocks, {}, now)).toBe("Soon · 10:00");
+    expect(nextUpcomingBlock(blocks, {}, now, "12h")).toBe("Soon · 10:00 AM");
   });
 
   it("shows \"now\" for a block already running, and falls back to the goal's name", () => {
