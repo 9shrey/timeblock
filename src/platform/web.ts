@@ -94,6 +94,8 @@ export const webPlatform: Platform = {
   async onTrayAction() {
     return () => {};
   },
+  checkForUpdate: async () => null,
+  installUpdate: async () => {},
 };
 
 const notificationClickListeners = new Set<(id: number) => void>();

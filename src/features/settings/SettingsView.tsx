@@ -254,6 +254,62 @@ function DesktopSection() {
   );
 }
 
+function UpdatesSection({ version }: { version: string }) {
+  const [state, setState] = useState<
+    { kind: "idle" } | { kind: "busy" } | { kind: "current" } | { kind: "available"; version: string } | { kind: "error" }
+  >({ kind: "idle" });
+  const run = async (fn: () => Promise<void>, onError: () => void) => {
+    setState({ kind: "busy" });
+    try {
+      await fn();
+    } catch {
+      onError();
+    }
+  };
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Updates</h2>
+      <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
+        <p className="text-sm text-muted-foreground" role="status">
+          {state.kind === "current" && `Timeblock ${version} is up to date.`}
+          {state.kind === "available" && `Version ${state.version} is available.`}
+          {state.kind === "busy" && "Working…"}
+          {state.kind === "error" && "Couldn't reach the update server. Check your connection and try again."}
+          {state.kind === "idle" && `You have ${version}.`}
+        </p>
+        {state.kind === "available" ? (
+          <Button
+            onClick={() =>
+              void run(async () => {
+                await flushWrites();
+                await (await getPlatform()).installUpdate();
+              }, () => {
+                setState({ kind: "error" });
+                toast.error("The update failed to install. Your data is unchanged. On Linux, only the AppImage updates itself; for .deb or .rpm, download the new version from Releases.");
+              })
+            }
+          >
+            Install and restart
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            disabled={state.kind === "busy"}
+            onClick={() =>
+              void run(async () => {
+                const u = await (await getPlatform()).checkForUpdate();
+                setState(u ? { kind: "available", version: u.version } : { kind: "current" });
+              }, () => setState({ kind: "error" }))
+            }
+          >
+            Check for updates
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function IcsExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const cursor = useStore((s) => s.cursor);
   const weekStartDay = useStore((s) => s.settings.weekStartDay);
@@ -418,6 +474,7 @@ export function SettingsView() {
 
         <NotificationsSection />
         {info?.kind === "tauri" && <DesktopSection />}
+        {info?.kind === "tauri" && <UpdatesSection version={info.version} />}
         <TemplatesSection />
         <RoutinesSection />
 

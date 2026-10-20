@@ -23,7 +23,9 @@
     ],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src ipc: http://ipc.localhost",
-      "dangerousDisableAssetCspModification": ["style-src"]
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
@@ -38,6 +40,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgzODE1NjUwNDU3MjMyNkQKUldSdE1uSkZVRmFCZzJpemFNNWZwY2RkeWdZUUJXN1dxZndEd29Jb3dvNzdvMnhyVEZFaGRGWEUK",
+      "endpoints": [
+        "https://github.com/9shrey/timeblock/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

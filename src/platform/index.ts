@@ -63,6 +63,15 @@ export interface Platform {
   setCloseToTray(enabled: boolean): Promise<void>;
   /** Fires when a tray menu action needing app state (not just show/hide/quit) is clicked. */
   onTrayAction(cb: (action: TrayAction) => void): Promise<() => void>;
+  /** The newer release, or null if up to date. Always null on web. Rejects if the check fails. */
+  checkForUpdate(): Promise<UpdateInfo | null>;
+  /** Downloads and installs the update found by the last `checkForUpdate`, then restarts. */
+  installUpdate(): Promise<void>;
+}
+
+export interface UpdateInfo {
+  version: string;
+  notes: string | null;
 }
 
 export type TrayAction = "startTimer" | "confirmRestOfDay";

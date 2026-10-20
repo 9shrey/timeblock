@@ -27,6 +27,16 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Check the updater signing key is configured
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "Secret TAURI_SIGNING_PRIVATE_KEY is not set; the release would have no signed update bundles." >&2
+            exit 1
+          fi
+
       - name: Check tag matches package.json version
         shell: bash
         run: |
@@ -63,6 +73,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update bundles and publishes latest.json for the in-app updater.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # Unsigned builds; macOS gets an ad-hoc signature so it can run after "Open Anyway".
           APPLE_SIGNING_IDENTITY: "-"
         with:

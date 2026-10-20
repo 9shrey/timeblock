@@ -3,10 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isPermissionGranted, onAction, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { check, type Update } from "@tauri-apps/plugin-updater";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
 import type { BackupInfo, OpenedFile, Platform, SystemTheme, TrayAction } from "./index";
 
 const CLOSE_FLUSH_TIMEOUT_MS = 3000;
+
+let pendingUpdate: Update | null = null;
 
 const toTheme = (t: string | null): SystemTheme => (t === "dark" ? "dark" : "light");
 
@@ -48,4 +52,15 @@ export const tauriPlatform: Platform = {
   setTrayNextBlock: (label) => invoke("set_tray_next_block", { label }),
   setCloseToTray: (enabled) => invoke("set_close_to_tray", { enabled }),
   onTrayAction: (cb) => listen<TrayAction>("tray-action", (event) => cb(event.payload)),
+  async checkForUpdate() {
+    pendingUpdate = await check();
+    return pendingUpdate ? { version: pendingUpdate.version, notes: pendingUpdate.body ?? null } : null;
+  },
+  async installUpdate() {
+    if (!pendingUpdate) return;
+    // A backup first keeps data recoverable if a release misbehaves.
+    await invoke("backup_now", { reason: "pre-update" });
+    await pendingUpdate.downloadAndInstall();
+    await relaunch();
+  },
 };
