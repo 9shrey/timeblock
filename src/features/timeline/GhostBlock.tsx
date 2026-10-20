@@ -1,12 +1,13 @@
 import { memo } from "react";
 import { Check, X } from "lucide-react";
-import { formatMinute } from "@/domain/time/localDate";
+import { formatMinuteRange } from "@/domain/time/localDate";
 import type { Ghost, Goal } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { confirm, select, skip } from "@/state/commands";
 import { useDraft } from "@/state/draft";
 import { displayTitle, NO_GOAL_COLOR, ResizeHandles, slotStyle, type Slot } from "./BlockView";
 import { EDGE_PX, minutesToPx } from "./geometry";
+import { useTimeFormat } from "@/state/selectors";
 
 interface Props {
   ghost: Ghost;
@@ -23,9 +24,10 @@ const GHOST_WIDTH = 0.7;
 
 /** A plan block mirrored into the Actual lane until it is confirmed (✓) or skipped (✗). */
 export const GhostBlock = memo(function GhostBlock({ ghost, goal, slot, pxPerHour, col, selected, editable, dimmed }: Props) {
+  const tf = useTimeFormat();
   const dragging = useDraft((s) => s.draft?.ref?.kind === "ghost" && s.draft.ref.planBlockId === ghost.planBlockId);
   const title = displayTitle(ghost.title, goal);
-  const time = `${formatMinute(ghost.startMinute)}–${formatMinute(ghost.endMinute)}`;
+  const time = formatMinuteRange(ghost.startMinute, ghost.endMinute, tf);
   const short = minutesToPx(ghost.endMinute - ghost.startMinute, pxPerHour) < 34;
   const color = goal?.color ?? NO_GOAL_COLOR;
 

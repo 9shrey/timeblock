@@ -130,6 +130,7 @@ export interface SettingRow {
 export type ThemePref = "system" | "light" | "dark";
 export type SnapMinutes = 5 | 10 | 15 | 30;
 export type TrendWindowWeeks = 4 | 12 | 26;
+export type TimeFormat = "24h" | "12h";
 
 export interface Settings {
   weekStartDay: WeekStartDay;
@@ -149,6 +150,8 @@ export interface Settings {
   notifyWeeklyReview: boolean;
   /** Closing the window hides it to the tray instead of quitting. */
   closeToTray: boolean;
+  /** How clock times are shown: "09:30" or "9:30 AM". Input accepts either in both modes. */
+  timeFormat: TimeFormat;
 }
 
 // ---------------------------------------------------------------------------

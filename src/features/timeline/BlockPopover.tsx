@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ghostOf, isActualReadOnly, linksByPlan, planState } from "@/domain/blocks/reconcile";
-import { formatDuration, formatMinute, parseTimeInput, weekStartOf } from "@/domain/time/localDate";
+import { formatDuration, formatMinute, formatMinuteRange, parseTimeInput, weekStartOf } from "@/domain/time/localDate";
 import type { Ghost, Goal } from "@/domain/types";
 import { canEditLane, confirm, deleteItem, patchItem, restore, skip } from "@/state/commands";
-import { activeGoals, allBlocks } from "@/state/selectors";
+import { activeGoals, allBlocks, useTimeFormat } from "@/state/selectors";
 import { sealHistory, undo as storeUndo, useStore } from "@/state/store";
 import { closeEditor, useUi, type Editing } from "@/state/ui";
 import type { ItemRef } from "./dragMachine";
@@ -57,7 +57,8 @@ function TimeField({
   from?: number;
   onCommit: (m: number) => boolean;
 }) {
-  const [text, setText] = useState(formatMinute(value));
+  const tf = useTimeFormat();
+  const [text, setText] = useState(formatMinute(value, tf));
   const [invalid, setInvalid] = useState(false);
   const [open, setOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -80,7 +81,7 @@ function TimeField({
   const commit = (m: number | null = parseTimeInput(text)) => {
     if (m === value) {
       setInvalid(false);
-      setText(formatMinute(m));
+      setText(formatMinute(m, tf));
       return;
     }
     if (m === null || !onCommit(m)) {
@@ -88,7 +89,7 @@ function TimeField({
       return;
     }
     setInvalid(false);
-    setText(formatMinute(m));
+    setText(formatMinute(m, tf));
   };
 
   return (
@@ -101,7 +102,7 @@ function TimeField({
         aria-controls={listId}
         aria-autocomplete="none"
         disabled={disabled}
-        className="h-8 w-[4.5rem] text-center tabular-nums"
+        className={cn("h-8 text-center tabular-nums", tf === "12h" ? "w-[5.75rem]" : "w-[4.5rem]")}
         value={text}
         onChange={(e) => {
           setText(e.target.value);
@@ -131,7 +132,7 @@ function TimeField({
             let i = active < 0 ? 0 : active + dir;
             // Typed off-grid: the first ↓ lands on the slot just after it, not the one after that.
             if (dir === 1 && typed !== null && active >= 0 && slots[active] !== typed) i = active;
-            setText(formatMinute(slots[Math.max(0, Math.min(slots.length - 1, i))]!));
+            setText(formatMinute(slots[Math.max(0, Math.min(slots.length - 1, i))]!, tf));
           }
         }}
       />
@@ -141,7 +142,7 @@ function TimeField({
           id={listId}
           role="listbox"
           aria-label={`${label} options`}
-          className="absolute top-full left-0 z-50 mt-1 max-h-52 min-w-full overflow-y-auto rounded-md bg-popover p-1 shadow-md ring-1 ring-foreground/10"
+          className="absolute top-full left-0 z-50 mt-1 max-h-52 w-max min-w-full overflow-y-auto rounded-md bg-popover p-1 shadow-md ring-1 ring-foreground/10"
           // Keep focus in the input so blur doesn't commit before the click lands.
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -159,7 +160,7 @@ function TimeField({
                 commit(m);
               }}
             >
-              {formatMinute(m)}
+              {formatMinute(m, tf)}
               {from !== undefined && <span className="text-xs text-muted-foreground">{formatDuration(m - from)}</span>}
             </div>
           ))}
@@ -170,6 +171,7 @@ function TimeField({
 }
 
 function Editor({ editing }: { editing: Editing }) {
+  const tf = useTimeFormat();
   const { ref, session } = editing;
   const data = useStore((s) => s.data);
   const now = useStore((s) => s.now);
@@ -218,7 +220,7 @@ function Editor({ editing }: { editing: Editing }) {
         {state && <span>· {state}</span>}
         {linkedPlan && (
           <span>
-            · planned {formatMinute(linkedPlan.startMinute)}–{formatMinute(linkedPlan.endMinute)}
+            · planned {formatMinuteRange(linkedPlan.startMinute, linkedPlan.endMinute, tf)}
           </span>
         )}
         {block && !isPlan && !block.planBlockId && <span>· unplanned</span>}

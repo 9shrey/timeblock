@@ -6,7 +6,7 @@
  * keyed by week start and so survives exactly as long as it needs to).
  */
 import { ghostsOf, isPast } from "./blocks/reconcile";
-import { addDays, weekStartOf } from "./time/localDate";
+import { addDays, formatMinute, weekStartOf } from "./time/localDate";
 import type { Block, Goal, Now, Settings, WeekStartDay } from "./types";
 
 const displayTitle = (title: string, goal: Goal | null) => title.trim() || goal?.name || "Untitled";
@@ -49,7 +49,7 @@ export function dueNotifications(input: NotificationInput): NotificationEvent[] 
         events.push({
           key: `next-block:${b.id}`,
           title: `Next block in ${NEXT_BLOCK_LEAD_MINUTES} min`,
-          body: displayTitle(b.title, b.goalId ? goals[b.goalId] ?? null : null),
+          body: `${displayTitle(b.title, b.goalId ? goals[b.goalId] ?? null : null)} · ${formatMinute(b.startMinute, settings.timeFormat)}`,
           action: "openDay",
         });
       }

@@ -3,11 +3,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { formatDayLabel } from "@/domain/time/localDate";
 import { quickAddBlock } from "@/state/commands";
+import { useTimeFormat } from "@/state/selectors";
 import { closeQuickAdd, useUi } from "@/state/ui";
 
 function Form({ day, layer, onDone }: { day: string; layer: "plan" | "actual"; onDone: () => void }) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const tf = useTimeFormat();
 
   const submit = () => {
     const err = quickAddBlock(day, layer, text);
@@ -29,7 +31,7 @@ function Form({ day, layer, onDone }: { day: string; layer: "plan" | "actual"; o
           setText(e.target.value);
           setError(null);
         }}
-        placeholder="9-10:30 Thesis #thesis"
+        placeholder={tf === "12h" ? "9am-10:30am Thesis #thesis" : "9-10:30 Thesis #thesis"}
       />
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       <p className="mt-2 text-xs text-muted-foreground">
