@@ -7,6 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Task-based goals**: a goal can now be measured by outcomes done each week instead of
+  minutes logged. Set "Measure by" to Tasks when creating or editing a goal, then set a
+  weekly outcome-count target instead of an hours target; status (met/missed/behind/...)
+  is computed from the goal's existing outcomes checklist instead of blocks. Export format
+  v3 adds `goals.trackBy` and `weekTargets.targetCount`; importing a v1 or v2 file still
+  works, defaulting both goals to time-tracked.
 - **Trends view** (`i` key): per goal, planned vs actual bars against the target for the
   last 4/12/26 weeks, plus a streak of weeks the target was met. A new `repo.loadBlocksRange`
   reads any date range in one indexed query, reusing `computeStats` week by week.

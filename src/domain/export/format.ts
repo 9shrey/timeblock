@@ -20,7 +20,7 @@ import type {
 } from "../types";
 
 export const EXPORT_FORMAT = "timeblock.export";
-export const EXPORT_VERSION = 2;
+export const EXPORT_VERSION = 3;
 
 /** Code-unit order, independent of locale. */
 function cmp(a: string, b: string): number {
@@ -43,6 +43,7 @@ const goalOut = (g: Goal): Goal => ({
   name: g.name,
   color: g.color,
   kind: g.kind,
+  trackBy: g.trackBy,
   sortOrder: g.sortOrder,
   archivedOn: g.archivedOn,
   createdAt: g.createdAt,
@@ -53,6 +54,7 @@ const targetOut = (t: WeekTarget): WeekTarget => ({
   goalId: t.goalId,
   weekStart: t.weekStart,
   targetMinutes: t.targetMinutes,
+  targetCount: t.targetCount,
   updatedAt: t.updatedAt,
 });
 
@@ -131,7 +133,7 @@ export function normalizeExportData(data: ExportData): ExportData {
   };
 }
 
-/** Wraps all data in a v2 export envelope with deterministic ordering. */
+/** Wraps all data in a v3 export envelope with deterministic ordering. */
 export function toExportFile(data: ExportData, meta: { appVersion: string; exportedAt: number }): ExportFile {
   return {
     format: EXPORT_FORMAT,

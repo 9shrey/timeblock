@@ -17,12 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { nextColor, PALETTE } from "@/domain/goals/palette";
-import type { Goal, GoalKind, LocalDate } from "@/domain/types";
+import type { Goal, GoalKind, GoalTrackBy, LocalDate } from "@/domain/types";
 import { createGoal, deleteGoal, editGoal } from "@/state/goalCommands";
 import { goalList } from "@/state/selectors";
 import { useStore } from "@/state/store";
 import { cn } from "@/lib/utils";
-import { hoursToMinutes } from "./TargetInput";
+import { hoursToMinutes, parseCount } from "./TargetInput";
 
 interface Props {
   open: boolean;
@@ -37,16 +37,22 @@ function Form({ goal, weekStart, onDone }: { goal: Goal | null; weekStart: Local
   const [name, setName] = useState(goal?.name ?? "");
   const [color, setColor] = useState(goal?.color ?? nextColor(goals.map((g) => g.color)));
   const [kind, setKind] = useState<GoalKind>(goal?.kind ?? "min");
+  const [trackBy, setTrackBy] = useState<GoalTrackBy>(goal?.trackBy ?? "time");
   const [target, setTarget] = useState("");
   const valid = name.trim().length >= 1 && name.trim().length <= 80;
 
   const save = () => {
     if (!valid) return;
     if (goal) {
-      editGoal(goal, { name, color, kind });
-    } else {
+      editGoal(goal, { name, color, kind, trackBy });
+    } else if (trackBy === "time") {
       const minutes = target.trim() === "" ? null : hoursToMinutes(target);
-      if (createGoal({ name, color, kind, targetMinutes: minutes === undefined ? null : minutes }, weekStart) === null) return;
+      if (createGoal({ name, color, kind, trackBy, targetMinutes: minutes === undefined ? null : minutes, targetCount: null }, weekStart) === null)
+        return;
+    } else {
+      const count = target.trim() === "" ? null : parseCount(target);
+      if (createGoal({ name, color, kind, trackBy, targetMinutes: null, targetCount: count === undefined ? null : count }, weekStart) === null)
+        return;
     }
     onDone();
   };
@@ -93,18 +99,40 @@ function Form({ goal, weekStart, onDone }: { goal: Goal | null; weekStart: Local
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
+      <div className="grid gap-1.5">
+        <Label>Measure by</Label>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={trackBy}
+          onValueChange={(v) => v && setTrackBy(v as GoalTrackBy)}
+          className="justify-start"
+        >
+          <ToggleGroupItem value="time" className="px-3">
+            Time
+          </ToggleGroupItem>
+          <ToggleGroupItem value="tasks" className="px-3">
+            Tasks
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <p className="text-xs text-muted-foreground">
+          {trackBy === "time" ? "Target and status track minutes logged against this goal." : "Target and status track outcomes done each week."}
+        </p>
+      </div>
       {!goal && (
         <div className="grid gap-1.5">
-          <Label htmlFor="goal-target">Target this week (hours)</Label>
+          <Label htmlFor="goal-target">Target this week ({trackBy === "time" ? "hours" : "outcomes"})</Label>
           <Input
             id="goal-target"
-            inputMode="decimal"
+            inputMode={trackBy === "time" ? "decimal" : "numeric"}
             className="w-32"
             placeholder="none"
             value={target}
             onChange={(e) => setTarget(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">Leave empty to only track time. Targets carry forward to later weeks.</p>
+          <p className="text-xs text-muted-foreground">
+            Leave empty to only track {trackBy === "time" ? "time" : "outcomes"}. Targets carry forward to later weeks.
+          </p>
         </div>
       )}
       <DialogFooter className="items-center sm:justify-between">

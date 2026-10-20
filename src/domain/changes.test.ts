@@ -25,6 +25,7 @@ const goal = (id: string): Goal => ({
   name: id,
   color: "#000000",
   kind: "min",
+  trackBy: "time",
   sortOrder: 0,
   archivedOn: null,
   createdAt: 0,
@@ -42,7 +43,7 @@ describe("applyChanges", () => {
 
   it("keys week targets by goal and week", () => {
     const s = applyChanges(emptyState(), [
-      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: 60, updatedAt: 0 }),
+      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: 60, targetCount: null, updatedAt: 0 }),
     ]);
     expect(Object.keys(s.weekTargets)).toEqual(["g|2026-10-19"]);
   });

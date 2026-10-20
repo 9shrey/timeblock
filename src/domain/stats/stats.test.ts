@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { weekDays } from "../time/localDate";
 import type { Block, ChecklistItem, Goal, GoalKind, Now, WeekTarget } from "../types";
-import { computeStats, UNASSIGNED, type GoalStatus, type StatsInput, type WeekPhase } from "./stats";
+import { computeStats, taskGoalStatus, UNASSIGNED, type GoalStatus, type StatsInput, type WeekPhase } from "./stats";
 
 const WEEK = "2026-10-19";
 const DAYS = weekDays(WEEK);
@@ -33,12 +33,13 @@ const actual = (day: string, s: number, e: number, p: Partial<Block> = {}) =>
   block({ day, startMinute: s, endMinute: e, layer: "actual", ...p });
 
 function goal(id: string, p: Partial<Goal> = {}): Goal {
-  return { id, name: id, color: "#336699", kind: "min", sortOrder: 0, archivedOn: null, createdAt: 0, updatedAt: 0, ...p };
+  return { id, name: id, color: "#336699", kind: "min", trackBy: "time", sortOrder: 0, archivedOn: null, createdAt: 0, updatedAt: 0, ...p };
 }
 const target = (goalId: string, weekStart: string, targetMinutes: number | null): WeekTarget => ({
   goalId,
   weekStart,
   targetMinutes,
+  targetCount: null,
   updatedAt: 0,
 });
 
@@ -276,5 +277,67 @@ describe("computeStats goals list, checklist, uncorrected days", () => {
     expect(st.uncorrectedDays).toEqual([MON, WED]);
     const st2 = computeStats(input({ now: { day: WED, minute: 719 }, blocks: [plan(WED, 600, 720)] }));
     expect(st2.uncorrectedDays).toEqual([]);
+  });
+});
+
+describe("taskGoalStatus", () => {
+  const cases: [WeekPhase, GoalKind, GoalStatus, number, number][] = [
+    ["past", "min", "met", 3, 3],
+    ["past", "min", "missed", 2, 3],
+    ["current", "min", "met", 3, 3],
+    ["current", "min", "behind", 2, 3],
+    ["future", "min", "behind", 0, 3],
+    ["past", "max", "over", 4, 3],
+    ["past", "max", "within", 3, 3],
+    ["current", "max", "over", 4, 3],
+    ["current", "max", "within", 2, 3],
+  ];
+
+  it.each(cases)("%s %s → %s (done %i, target %i)", (phase, kind, status, done, target) => {
+    expect(taskGoalStatus(kind, phase, target, done)).toBe(status);
+  });
+
+  it("no target → no_target", () => {
+    expect(taskGoalStatus("min", "current", null, 5)).toBe("no_target");
+  });
+});
+
+describe("computeStats for a task-tracked goal", () => {
+  const item = (id: string, goalId: string, weekStart: string, done: boolean): ChecklistItem => ({
+    id,
+    goalId,
+    weekStart,
+    text: id,
+    done,
+    sortOrder: 0,
+    carriedFromId: null,
+    createdAt: 0,
+    updatedAt: 0,
+  });
+  const taskTarget = (goalId: string, weekStart: string, targetCount: number | null): WeekTarget => ({
+    goalId,
+    weekStart,
+    targetMinutes: null,
+    targetCount,
+    updatedAt: 0,
+  });
+
+  it("status and target come from outcomes done, not minutes logged", () => {
+    const s = statsOf({
+      goals: [goal("g", { trackBy: "tasks" })],
+      targets: [taskTarget("g", "2026-10-05", 2)],
+      checklist: [item("1", "g", WEEK, true), item("2", "g", WEEK, true), item("3", "g", WEEK, false)],
+      // Minutes logged would say "missed" if read as a time target; outcomes done (2) meets it.
+      blocks: [actual(MON, 0, 30)],
+    });
+    expect(s).toMatchObject({ trackBy: "tasks", target: 2, checklist: { done: 2, total: 3 }, status: "met" });
+  });
+
+  it("no task target → no_target even with outcomes done", () => {
+    const s = statsOf({
+      goals: [goal("g", { trackBy: "tasks" })],
+      checklist: [item("1", "g", WEEK, true)],
+    });
+    expect(s).toMatchObject({ trackBy: "tasks", target: null, status: "no_target" });
   });
 });

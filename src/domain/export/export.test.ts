@@ -12,6 +12,7 @@ const goal = (id: string, over: Partial<Goal> = {}): Goal => ({
   name: `Goal ${id}`,
   color: "#3366cc",
   kind: "min",
+  trackBy: "time",
   sortOrder: 0,
   archivedOn: null,
   createdAt: 1,
@@ -40,6 +41,7 @@ const target = (goalId: string, weekStart: string, over: Partial<WeekTarget> = {
   goalId,
   weekStart,
   targetMinutes: 600,
+  targetCount: null,
   updatedAt: 2,
   ...over,
 });
@@ -134,10 +136,10 @@ const rawFile = (data: unknown, over: Record<string, unknown> = {}) =>
   JSON.stringify({ format: "timeblock.export", version: 1, exportedAt: 1, appVersion: "x", ...(data as object), ...over });
 
 describe("toExportFile / serializeExport", () => {
-  it("builds a v2 envelope with sorted arrays", () => {
+  it("builds a v3 envelope with sorted arrays", () => {
     const f = toExportFile(sample(), meta);
     expect(f.format).toBe("timeblock.export");
-    expect(f.version).toBe(2);
+    expect(f.version).toBe(3);
     expect(f.exportedAt).toBe(meta.exportedAt);
     expect(f.appVersion).toBe("0.1.0");
     expect(f.goals.map((g) => g.id)).toEqual(["g1", "g2"]);
@@ -231,7 +233,7 @@ describe("parseImportFile", () => {
   });
 
   it("rejects files from a newer version", () => {
-    const errors = expectErr(parseImportFile(rawFile(empty(), { version: 3 })));
+    const errors = expectErr(parseImportFile(rawFile(empty(), { version: 4 })));
     expect(errors).toHaveLength(1);
     expect(errors[0]).toMatch(/newer version of Timeblock/);
   });
@@ -454,7 +456,7 @@ describe("parseImportFile", () => {
         appVersion: "0.1.0",
         settings: [],
         goals: [{ id: "g1", name: "Thesis", color: "#2563eb", kind: "min", sortOrder: 0, archivedOn: null, createdAt: 1, updatedAt: 1 }],
-        weekTargets: [],
+        weekTargets: [{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, updatedAt: 1 }],
         checklistItems: [],
         blocks: [
           {
@@ -478,15 +480,56 @@ describe("parseImportFile", () => {
       expect(r.data.templates).toEqual([]);
       expect(r.data.routines).toEqual([]);
       expect(r.data.blocks).toEqual([block("b1", { goalId: "g1", title: "Write", createdAt: 1, updatedAt: 1 })]);
+      expect(r.data.goals[0]?.trackBy).toBe("time");
+      expect(r.data.weekTargets[0]?.targetCount).toBeNull();
       expect(r.warnings).toEqual([]);
       expect(r.counts.templates).toBe(0);
       expect(r.counts.routines).toBe(0);
     });
 
-    it("round-trips a v2 export with templates, routines and routineId", () => {
+    it("imports a genuine v2 file (no trackBy/targetCount), defaulting them", () => {
+      // A hand-built v2 envelope: templates/routines/routineId exist, but goals/weekTargets
+      // predate trackBy/targetCount.
+      const v2 = {
+        format: "timeblock.export",
+        version: 2,
+        exportedAt: 1,
+        appVersion: "0.1.0",
+        settings: [],
+        goals: [{ id: "g1", name: "Thesis", color: "#2563eb", kind: "min", sortOrder: 0, archivedOn: null, createdAt: 1, updatedAt: 1 }],
+        weekTargets: [{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, updatedAt: 1 }],
+        checklistItems: [],
+        templates: [],
+        routines: [],
+        blocks: [
+          {
+            id: "b1",
+            day: "2026-10-19",
+            layer: "plan",
+            startMinute: 540,
+            endMinute: 600,
+            title: "Write",
+            goalId: "g1",
+            notes: "",
+            planBlockId: null,
+            skipped: false,
+            routineId: null,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+        weekNotes: [],
+      };
+      const r = expectOk(parseImportFile(JSON.stringify(v2)));
+      expect(r.data.goals[0]?.trackBy).toBe("time");
+      expect(r.data.weekTargets[0]?.targetCount).toBeNull();
+      expect(r.warnings).toEqual([]);
+    });
+
+    it("round-trips a v3 export with templates, routines and routineId", () => {
       const data = sample();
       const file = toExportFile(data, meta);
-      expect(file.version).toBe(2);
+      expect(file.version).toBe(3);
       const r = expectOk(parseImportFile(serializeExport(file)));
       const { format: _f, version: _v, exportedAt: _e, appVersion: _a, ...expected } = file;
       expect(r.data).toEqual(expected);

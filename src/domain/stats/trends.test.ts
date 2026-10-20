@@ -9,6 +9,7 @@ const goal = (id: string, extra: Partial<Goal> = {}): Goal => ({
   name: id,
   color: "#3b82f6",
   kind: "min",
+  trackBy: "time",
   sortOrder: 0,
   archivedOn: null,
   createdAt: 1,
@@ -37,6 +38,7 @@ const target = (weekStart: string, minutes: number | null): WeekTarget => ({
   goalId: "g1",
   weekStart,
   targetMinutes: minutes,
+  targetCount: null,
   updatedAt: 1,
 });
 

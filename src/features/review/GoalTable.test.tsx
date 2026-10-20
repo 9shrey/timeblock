@@ -32,7 +32,7 @@ afterEach(cleanup);
 
 describe("GoalTable", () => {
   it("shows met / missed / over for the finished week", () => {
-    expect(renderWeek("2026-10-12")).toMatchObject({ Thesis: "Met", Exercise: "Missed", Social: "Over" });
+    expect(renderWeek("2026-10-12")).toMatchObject({ Thesis: "Met", Exercise: "Missed", Social: "Over", Errands: "Missed" });
   });
 
   it("shows at risk for an over-planned max goal in the current week", () => {

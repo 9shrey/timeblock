@@ -7,6 +7,7 @@ const goal = (id: string, archivedOn: string | null = null): Goal => ({
   name: id,
   color: "#2563eb",
   kind: "min",
+  trackBy: "time",
   sortOrder: 0,
   archivedOn,
   createdAt: 0,

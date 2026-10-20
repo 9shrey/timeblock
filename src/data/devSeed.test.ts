@@ -38,7 +38,7 @@ describe("demoSeed", () => {
         now,
       });
     const status = (weekStart: string) => Object.fromEntries(stats(weekStart).goals.map((g) => [g.goal?.name, g.status]));
-    expect(status("2026-10-12")).toEqual({ Thesis: "met", Exercise: "missed", Social: "over" });
+    expect(status("2026-10-12")).toEqual({ Thesis: "met", Exercise: "missed", Social: "over", Errands: "missed" });
     expect(status("2026-10-19").Social).toBe("at_risk");
     // Today's 9–11 thesis block is an unconfirmed ghost (used by the confirm-rest-of-day demo).
     expect(stats("2026-10-19").uncorrectedDays).toEqual(["2026-10-20", "2026-10-21"]);

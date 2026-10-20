@@ -40,7 +40,17 @@ describe("blocksOn", () => {
 
 describe("activeGoals", () => {
   it("hides goals archived on or before the week", () => {
-    const goal = (id: string, archivedOn: string | null) => ({ id, name: id, color: "#000000", kind: "min" as const, sortOrder: 0, archivedOn, createdAt: 1, updatedAt: 1 });
+    const goal = (id: string, archivedOn: string | null) => ({
+      id,
+      name: id,
+      color: "#000000",
+      kind: "min" as const,
+      trackBy: "time" as const,
+      sortOrder: 0,
+      archivedOn,
+      createdAt: 1,
+      updatedAt: 1,
+    });
     const data = applyChanges(emptyState(), [put("goals", goal("live", null)), put("goals", goal("old", "2026-10-19")), put("goals", goal("later", "2026-10-26"))]);
     expect(activeGoals(data, "2026-10-19").map((g) => g.id)).toEqual(["live", "later"]);
   });

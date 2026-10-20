@@ -11,6 +11,12 @@ import { BulletBar, bulletScale } from "./BulletBar";
 import { Checklist } from "./Checklist";
 
 function remainingText(g: GoalStats): string {
+  if (g.trackBy === "tasks") {
+    if (g.target === null) return `${g.checklist.done} outcome${g.checklist.done === 1 ? "" : "s"} done`;
+    const left = g.target - g.checklist.done;
+    if (g.kind === "min") return left <= 0 ? `target met (+${-left})` : `${left} outcome${left === 1 ? "" : "s"} to go`;
+    return left < 0 ? `${-left} over` : `${left} outcome${left === 1 ? "" : "s"} left`;
+  }
   if (g.target === null) return `${formatDuration(g.actual)} logged`;
   const left = g.target - g.actual;
   if (g.kind === "min") {
@@ -31,7 +37,10 @@ export function BudgetPanel() {
   const now = useStore((s) => s.now);
   const { weekStart } = weekOf(cursor, settings);
   const stats = useMemo(() => statsFor(data, weekDays(weekStart), weekStart, now), [data, weekStart, now]);
-  const scale = bulletScale(stats.goals);
+  const timeScale = bulletScale(stats.goals.filter((g) => g.trackBy === "time"));
+  const taskScale = bulletScale(
+    stats.goals.filter((g) => g.trackBy === "tasks").map((g) => ({ target: g.target, planned: 0, actual: g.checklist.done, unconfirmed: 0 })),
+  );
   const items = checklistList(data.checklistItems).filter((c) => c.weekStart === weekStart);
   const highlighted = useUi((s) => s.highlightedGoalId);
 
@@ -57,11 +66,24 @@ export function BudgetPanel() {
               <span className="size-2.5 self-center rounded-full" style={{ background: g.goal?.color }} />
               <span className="font-medium">{g.goal?.name}</span>
               <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                {formatDuration(g.actual)}
-                {g.target !== null && ` / ${g.kind === "min" ? "≥" : "≤"}${formatDuration(g.target)}`}
+                {g.trackBy === "tasks" ? (
+                  <>
+                    {g.checklist.done}
+                    {g.target !== null && ` / ${g.kind === "min" ? "≥" : "≤"}${g.target}`}
+                  </>
+                ) : (
+                  <>
+                    {formatDuration(g.actual)}
+                    {g.target !== null && ` / ${g.kind === "min" ? "≥" : "≤"}${formatDuration(g.target)}`}
+                  </>
+                )}
               </span>
             </button>
-            <BulletBar target={g.target} planned={g.planned} actual={g.actual} unconfirmed={g.unconfirmed} kind={g.kind} color={g.goal?.color} scaleMax={scale} />
+            {g.trackBy === "tasks" ? (
+              <BulletBar target={g.target} planned={0} actual={g.checklist.done} unconfirmed={0} kind={g.kind} color={g.goal?.color} scaleMax={taskScale} />
+            ) : (
+              <BulletBar target={g.target} planned={g.planned} actual={g.actual} unconfirmed={g.unconfirmed} kind={g.kind} color={g.goal?.color} scaleMax={timeScale} />
+            )}
             <p className="text-xs text-muted-foreground">
               {remainingText(g)}
               {g.unconfirmed > 0 && ` · ${formatDuration(g.unconfirmed)} unconfirmed`}
