@@ -115,6 +115,16 @@ export interface Routine {
   updatedAt: number;
 }
 
+/** An `.ics` URL shown as a read-only overlay, re-fetched periodically. Fetched events are never stored. */
+export interface CalendarSubscription {
+  id: string;
+  name: string; // 1..80 chars
+  /** An `https://` URL, at most 2048 chars; `webcal://` links are stored as `https://`. */
+  url: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface WeekNote {
   weekStart: LocalDate;
   text: string;
@@ -191,6 +201,7 @@ export interface EntityMap {
   checklistItems: ChecklistItem;
   weekNotes: WeekNote;
   settings: SettingRow;
+  calendarSubscriptions: CalendarSubscription;
 }
 
 export type Table = keyof EntityMap;
@@ -223,12 +234,13 @@ export interface ExportData {
   routines: Routine[];
   blocks: Block[];
   weekNotes: WeekNote[];
+  calendarSubscriptions: CalendarSubscription[];
 }
 
 export interface ExportFile extends ExportData {
   format: "timeblock.export";
-  /** 1: original tables. 2: adds templates, routines and blocks.routineId. 3: adds goals.trackBy and weekTargets.targetCount. */
-  version: 3;
+  /** 1: original tables. 2: adds templates, routines and blocks.routineId. 3: adds goals.trackBy and weekTargets.targetCount. 4: adds calendarSubscriptions. */
+  version: 4;
   exportedAt: number;
   appVersion: string;
 }
@@ -243,6 +255,7 @@ export interface BaseData {
   settings: SettingRow[];
   templates: Template[];
   routines: Routine[];
+  calendarSubscriptions: CalendarSubscription[];
 }
 
 export interface WeekData {

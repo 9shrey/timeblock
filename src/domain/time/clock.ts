@@ -1,8 +1,8 @@
 /**
  * The only place in the app that reads local wall-clock time.
  */
-import type { Now } from "../types";
-import { formatYMD, isLocalDate } from "./localDate";
+import type { LocalDate, Minute, Now } from "../types";
+import { formatYMD, isLocalDate, parseLocalDate } from "./localDate";
 
 /** Converts an instant to the user's local day and minute. */
 export function nowFrom(date: Date): Now {
@@ -10,6 +10,14 @@ export function nowFrom(date: Date): Now {
     day: formatYMD({ y: date.getFullYear(), m: date.getMonth() + 1, d: date.getDate() }),
     minute: date.getHours() * 60 + date.getMinutes(),
   };
+}
+
+/** The inverse of `nowFrom`: the instant (ms) at which the user's wall clock reads `day` `minute`. */
+export function instantOf(day: LocalDate, minute: Minute = 0): number {
+  const { y, m, d } = parseLocalDate(day);
+  const date = new Date(2000, 0, 1, 0, minute);
+  date.setFullYear(y, m - 1, d); // unlike `new Date(y, …)`, keeps years below 100 as given
+  return date.getTime();
 }
 
 /** Parses a dev-only `?now=YYYY-MM-DDTHH:mm` override. Returns null when absent or invalid. */

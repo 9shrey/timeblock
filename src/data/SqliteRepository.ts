@@ -30,12 +30,13 @@ export class SqliteRepository implements Repository {
   }
 
   async loadBase(): Promise<BaseData> {
-    const [goals, weekTargets, settings, templates, routines] = await Promise.all([
+    const [goals, weekTargets, settings, templates, routines, calendarSubscriptions] = await Promise.all([
       this.driver.select("SELECT * FROM goals ORDER BY sort_order, created_at"),
       this.driver.select("SELECT * FROM week_targets ORDER BY goal_id, week_start"),
       this.driver.select("SELECT * FROM settings ORDER BY key"),
       this.driver.select("SELECT * FROM templates ORDER BY name, id"),
       this.driver.select("SELECT * FROM routines ORDER BY start_minute, id"),
+      this.driver.select("SELECT * FROM calendar_subscriptions ORDER BY created_at, id"),
     ]);
     return {
       goals: fromRows("goals", goals),
@@ -43,6 +44,7 @@ export class SqliteRepository implements Repository {
       settings: fromRows("settings", settings),
       templates: fromRows("templates", templates),
       routines: fromRows("routines", routines),
+      calendarSubscriptions: fromRows("calendarSubscriptions", calendarSubscriptions),
     };
   }
 

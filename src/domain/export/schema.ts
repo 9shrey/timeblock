@@ -142,6 +142,17 @@ export const routineSchema = z.object({
   updatedAt: timestamp,
 });
 
+export const calendarSubscriptionSchema = z.object({
+  id,
+  name: text(1, 80),
+  url: z
+    .string()
+    .max(2048, "Must be at most 2048 characters")
+    .regex(/^https:\/\/./, "Must be an https:// URL"),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
+
 const exportFileSchemaV1 = z.object({
   format: z.literal(EXPORT_FORMAT),
   version: z.literal(1),
@@ -172,7 +183,7 @@ const exportFileSchemaV2 = z.object({
 
 const exportFileSchemaV3 = z.object({
   format: z.literal(EXPORT_FORMAT),
-  version: z.literal(EXPORT_VERSION),
+  version: z.literal(3),
   exportedAt: timestamp,
   appVersion: z.string(),
   settings: z.array(settingRowSchema),
@@ -183,6 +194,11 @@ const exportFileSchemaV3 = z.object({
   routines: z.array(routineSchema),
   blocks: z.array(blockSchema),
   weekNotes: z.array(weekNoteSchema),
+});
+
+const exportFileSchemaV4 = exportFileSchemaV3.extend({
+  version: z.literal(EXPORT_VERSION),
+  calendarSubscriptions: z.array(calendarSubscriptionSchema),
 });
 
 function formatPath(path: readonly PropertyKey[]): string {
@@ -219,6 +235,7 @@ function duplicateKeys(data: ExportData): string[] {
   check("routines", data.routines);
   check("blocks", data.blocks);
   check("weekNotes", data.weekNotes);
+  check("calendarSubscriptions", data.calendarSubscriptions);
   return errors;
 }
 
@@ -375,7 +392,17 @@ function repair(input: ExportData): { data: ExportData; warnings: string[] } {
     warnings.push(`${plural(moved, "week entry", "week entries")} did not start on the configured week start day and ${moved === 1 ? "was" : "were"} realigned.`);
 
   return {
-    data: { settings: input.settings, goals: input.goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes },
+    data: {
+      settings: input.settings,
+      goals: input.goals,
+      weekTargets,
+      checklistItems,
+      templates,
+      routines,
+      blocks,
+      weekNotes,
+      calendarSubscriptions: input.calendarSubscriptions,
+    },
     warnings,
   };
 }
@@ -401,7 +428,7 @@ export function parseImportFile(text: string): ImportResult {
       ok: false,
       errors: [`This file was made by a newer version of Timeblock (export version ${version}). Update the app to import it.`],
     };
-  if (version !== 1 && version !== 2 && version !== EXPORT_VERSION)
+  if (version !== 1 && version !== 2 && version !== 3 && version !== EXPORT_VERSION)
     return { ok: false, errors: [`Unsupported export version: ${JSON.stringify(version) ?? "missing"}.`] };
 
   /** v1/v2 goals/targets lack `trackBy`/`targetCount`; default them. */
@@ -430,6 +457,7 @@ export function parseImportFile(text: string): ImportResult {
       routines: [],
       blocks: blocks.map((b) => ({ ...b, routineId: null })),
       weekNotes,
+      calendarSubscriptions: [],
     };
   } else if (version === 2) {
     const parsed = exportFileSchemaV2.safeParse(raw);
@@ -439,8 +467,8 @@ export function parseImportFile(text: string): ImportResult {
         errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
       };
     const { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes } = parsed.data;
-    valid = { settings, ...withTaskDefaults(goals, weekTargets), checklistItems, templates, routines, blocks, weekNotes };
-  } else {
+    valid = { settings, ...withTaskDefaults(goals, weekTargets), checklistItems, templates, routines, blocks, weekNotes, calendarSubscriptions: [] };
+  } else if (version === 3) {
     const parsed = exportFileSchemaV3.safeParse(raw);
     if (!parsed.success)
       return {
@@ -448,7 +476,16 @@ export function parseImportFile(text: string): ImportResult {
         errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
       };
     const { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes } = parsed.data;
-    valid = { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes };
+    valid = { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes, calendarSubscriptions: [] };
+  } else {
+    const parsed = exportFileSchemaV4.safeParse(raw);
+    if (!parsed.success)
+      return {
+        ok: false,
+        errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
+      };
+    const { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes, calendarSubscriptions } = parsed.data;
+    valid = { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes, calendarSubscriptions };
   }
   const dupes = duplicateKeys(valid);
   if (dupes.length) return { ok: false, errors: capErrors(dupes) };
@@ -468,6 +505,7 @@ export function parseImportFile(text: string): ImportResult {
       routines: data.routines.length,
       blocks: data.blocks.length,
       weekNotes: data.weekNotes.length,
+      calendarSubscriptions: data.calendarSubscriptions.length,
     },
   };
 }

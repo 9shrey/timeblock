@@ -177,6 +177,7 @@ export function demoSeed(now: Now): ExportData {
     routines: [],
     blocks,
     weekNotes: [{ weekStart: lastWeek, text: "Good focus week; gym slipped midweek.", updatedAt: T0 }],
+    calendarSubscriptions: [],
   };
 }
 
@@ -189,4 +190,5 @@ export const EMPTY_DATA: ExportData = {
   routines: [],
   blocks: [],
   weekNotes: [],
+  calendarSubscriptions: [],
 };

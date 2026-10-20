@@ -5,6 +5,7 @@
 import { keyOf } from "../changes";
 import type {
   Block,
+  CalendarSubscription,
   ChecklistItem,
   EntityMap,
   ExportData,
@@ -20,7 +21,7 @@ import type {
 } from "../types";
 
 export const EXPORT_FORMAT = "timeblock.export";
-export const EXPORT_VERSION = 3;
+export const EXPORT_VERSION = 4;
 
 /** Code-unit order, independent of locale. */
 function cmp(a: string, b: string): number {
@@ -117,6 +118,14 @@ const routineOut = (r: Routine): Routine => ({
   updatedAt: r.updatedAt,
 });
 
+const subscriptionOut = (s: CalendarSubscription): CalendarSubscription => ({
+  id: s.id,
+  name: s.name,
+  url: s.url,
+  createdAt: s.createdAt,
+  updatedAt: s.updatedAt,
+});
+
 const noteOut = (n: WeekNote): WeekNote => ({ weekStart: n.weekStart, text: n.text, updatedAt: n.updatedAt });
 
 /** Sorts every table by primary key and copies rows with a stable key order. */
@@ -130,10 +139,11 @@ export function normalizeExportData(data: ExportData): ExportData {
     routines: sortRows("routines", data.routines).map(routineOut),
     blocks: sortRows("blocks", data.blocks).map(blockOut),
     weekNotes: sortRows("weekNotes", data.weekNotes).map(noteOut),
+    calendarSubscriptions: sortRows("calendarSubscriptions", data.calendarSubscriptions).map(subscriptionOut),
   };
 }
 
-/** Wraps all data in a v3 export envelope with deterministic ordering. */
+/** Wraps all data in a v4 export envelope with deterministic ordering. */
 export function toExportFile(data: ExportData, meta: { appVersion: string; exportedAt: number }): ExportFile {
   return {
     format: EXPORT_FORMAT,

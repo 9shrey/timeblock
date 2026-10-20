@@ -10,6 +10,7 @@ export const TABLES: readonly Table[] = [
   "routines",
   "blocks",
   "weekNotes",
+  "calendarSubscriptions",
 ] as const;
 
 /** Primary key of a row, as used in `DataState` and `del` changes. */
@@ -33,7 +34,7 @@ export function targetKey(goalId: string, weekStart: string): string {
 }
 
 export function emptyState(): DataState {
-  return { settings: {}, goals: {}, weekTargets: {}, checklistItems: {}, templates: {}, routines: {}, blocks: {}, weekNotes: {} };
+  return { settings: {}, goals: {}, weekTargets: {}, checklistItems: {}, templates: {}, routines: {}, blocks: {}, weekNotes: {}, calendarSubscriptions: {} };
 }
 
 export function stateFrom(rows: { [T in Table]?: EntityMap[T][] }): DataState {
