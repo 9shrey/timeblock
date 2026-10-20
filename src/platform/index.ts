@@ -63,6 +63,18 @@ export interface Platform {
   setCloseToTray(enabled: boolean): Promise<void>;
   /** Fires when a tray menu action needing app state (not just show/hide/quit) is clicked. */
   onTrayAction(cb: (action: TrayAction) => void): Promise<() => void>;
+  /**
+   * GETs an `https://` URL as text (a calendar subscription). Desktop goes through the Tauri
+   * http plugin, scoped to https; the browser uses `fetch`, which most calendar hosts block
+   * with CORS. Rejects with a readable message on a network error or a non-2xx status.
+   */
+  fetchText(url: string): Promise<string>;
+}
+
+/** The body of a successful response, or a readable error for a failed one. */
+export async function responseText(res: Response): Promise<string> {
+  if (!res.ok) throw new Error(`The server answered ${res.status}${res.statusText ? ` ${res.statusText}` : ""}.`);
+  return res.text();
 }
 
 export type TrayAction = "startTimer" | "confirmRestOfDay";

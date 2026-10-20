@@ -101,6 +101,7 @@ const empty = (): ExportData => ({
   routines: [],
   blocks: [],
   weekNotes: [],
+  calendarSubscriptions: [],
 });
 
 /** A realistic data set with Monday weeks. */
@@ -117,6 +118,10 @@ const sample = (): ExportData => ({
     block("b2", { skipped: true, startMinute: 0, endMinute: 1440 }),
   ],
   weekNotes: [note("2026-10-19"), note("2026-10-12", { text: "" })],
+  calendarSubscriptions: [
+    { id: "s2", name: "Team", url: "https://outlook.office365.com/owa/calendar/x/reachcalendar.ics", createdAt: 1, updatedAt: 1 },
+    { id: "s1", name: "Work", url: "https://calendar.google.com/calendar/ical/x/private-abc/basic.ics", createdAt: 1, updatedAt: 1 },
+  ],
 });
 
 const fileText = (data: ExportData) => serializeExport(toExportFile(data, meta));
@@ -136,10 +141,10 @@ const rawFile = (data: unknown, over: Record<string, unknown> = {}) =>
   JSON.stringify({ format: "timeblock.export", version: 1, exportedAt: 1, appVersion: "x", ...(data as object), ...over });
 
 describe("toExportFile / serializeExport", () => {
-  it("builds a v3 envelope with sorted arrays", () => {
+  it("builds a v4 envelope with sorted arrays", () => {
     const f = toExportFile(sample(), meta);
     expect(f.format).toBe("timeblock.export");
-    expect(f.version).toBe(3);
+    expect(f.version).toBe(4);
     expect(f.exportedAt).toBe(meta.exportedAt);
     expect(f.appVersion).toBe("0.1.0");
     expect(f.goals.map((g) => g.id)).toEqual(["g1", "g2"]);
@@ -149,6 +154,7 @@ describe("toExportFile / serializeExport", () => {
     expect(f.weekTargets.map((t) => t.weekStart)).toEqual(["2026-10-12", "2026-10-19"]);
     expect(f.weekNotes.map((n) => n.weekStart)).toEqual(["2026-10-12", "2026-10-19"]);
     expect(f.settings.map((s) => s.key)).toEqual(["snapMinutes", "weekStartDay"]);
+    expect(f.calendarSubscriptions.map((s) => s.id)).toEqual(["s1", "s2"]);
   });
 
   it("uses a stable key order regardless of input key order", () => {
@@ -170,6 +176,7 @@ describe("toExportFile / serializeExport", () => {
       "routines",
       "blocks",
       "weekNotes",
+      "calendarSubscriptions",
     ]);
   });
 
@@ -221,6 +228,7 @@ describe("parseImportFile", () => {
       routines: 1,
       blocks: 3,
       weekNotes: 2,
+      calendarSubscriptions: 2,
     });
     // And re-exporting the parsed data gives the same bytes.
     expect(fileText(r.data)).toBe(fileText(sample()));
@@ -233,7 +241,7 @@ describe("parseImportFile", () => {
   });
 
   it("rejects files from a newer version", () => {
-    const errors = expectErr(parseImportFile(rawFile(empty(), { version: 4 })));
+    const errors = expectErr(parseImportFile(rawFile(empty(), { version: 5 })));
     expect(errors).toHaveLength(1);
     expect(errors[0]).toMatch(/newer version of Timeblock/);
   });
@@ -523,13 +531,28 @@ describe("parseImportFile", () => {
       const r = expectOk(parseImportFile(JSON.stringify(v2)));
       expect(r.data.goals[0]?.trackBy).toBe("time");
       expect(r.data.weekTargets[0]?.targetCount).toBeNull();
+      expect(r.data.calendarSubscriptions).toEqual([]);
       expect(r.warnings).toEqual([]);
     });
 
-    it("round-trips a v3 export with templates, routines and routineId", () => {
+    it("imports a v3 file (no calendarSubscriptions), defaulting them", () => {
+      const { calendarSubscriptions: _s, ...v3data } = sample();
+      const r = expectOk(parseImportFile(rawFile(v3data, { version: 3 })));
+      expect(r.data.calendarSubscriptions).toEqual([]);
+      expect(r.data.routines.map((x) => x.id)).toEqual(["r1"]);
+      expect(r.warnings).toEqual([]);
+    });
+
+    it("rejects a subscription whose URL isn't https", () => {
+      const sub = { id: "s1", name: "Bad", url: "file:///etc/passwd", createdAt: 1, updatedAt: 1 };
+      const errors = expectErr(parseImportFile(rawFile({ ...empty(), calendarSubscriptions: [sub] }, { version: 4 })));
+      expect(errors[0]).toMatch(/calendarSubscriptions\[0\]\.url/);
+    });
+
+    it("round-trips a v4 export with templates, routines, routineId and subscriptions", () => {
       const data = sample();
       const file = toExportFile(data, meta);
-      expect(file.version).toBe(3);
+      expect(file.version).toBe(4);
       const r = expectOk(parseImportFile(serializeExport(file)));
       const { format: _f, version: _v, exportedAt: _e, appVersion: _a, ...expected } = file;
       expect(r.data).toEqual(expected);

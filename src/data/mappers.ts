@@ -226,6 +226,14 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
     }),
     keyParams: single,
   },
+  calendarSubscriptions: {
+    name: "calendar_subscriptions",
+    columns: ["id", "name", "url", "created_at", "updated_at"],
+    pk: ["id"],
+    toRow: (e) => [e.id, e.name, e.url, e.createdAt, e.updatedAt],
+    fromRow: (r) => ({ id: str(r.id), name: str(r.name), url: str(r.url), createdAt: num(r.created_at), updatedAt: num(r.updated_at) }),
+    keyParams: single,
+  },
   weekNotes: {
     name: "week_notes",
     columns: ["week_start", "text", "updated_at"],

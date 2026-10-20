@@ -94,6 +94,7 @@ async function loadAll(repo: Repository, weeks: readonly LocalDate[]): Promise<D
     settings: base.settings,
     templates: base.templates,
     routines: base.routines,
+    calendarSubscriptions: base.calendarSubscriptions,
   });
   for (const w of weeks) data = mergeWeek(data, await repo.loadWeek(w));
   return data;

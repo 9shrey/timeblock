@@ -5,7 +5,7 @@
 import { useStore } from "./store";
 import { computeStats, type WeekStats } from "@/domain/stats/stats";
 import { weekDays, weekStartOf } from "@/domain/time/localDate";
-import type { Block, ChecklistItem, DataState, Goal, LocalDate, Now, Routine, Settings, Template, TimeFormat, WeekTarget } from "@/domain/types";
+import type { Block, CalendarSubscription, ChecklistItem, DataState, Goal, LocalDate, Now, Routine, Settings, Template, TimeFormat, WeekTarget } from "@/domain/types";
 
 function memoByIdentity<K extends object, V>(fn: (k: K) => V): (k: K) => V {
   const cache = new WeakMap<K, V>();
@@ -64,6 +64,9 @@ export function activeGoals(data: DataState, weekStart: LocalDate): Goal[] {
 
 export const targetList = memoByIdentity((t: DataState["weekTargets"]): WeekTarget[] => Object.values(t));
 export const checklistList = memoByIdentity((c: DataState["checklistItems"]): ChecklistItem[] => Object.values(c));
+export const subscriptionList = memoByIdentity((s: DataState["calendarSubscriptions"]): CalendarSubscription[] =>
+  Object.values(s).sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id)),
+);
 export const templateList = memoByIdentity((t: DataState["templates"]): Template[] =>
   Object.values(t).sort((a, b) => a.name.localeCompare(b.name) || a.createdAt - b.createdAt),
 );

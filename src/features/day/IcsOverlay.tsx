@@ -3,12 +3,13 @@ import { CalendarPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMinuteRange } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
-import { clearIcsOverlay, copyToPlan, useIcsEventsOn } from "@/state/ics";
+import { clearIcsOverlay, copyToPlan, useIcsEventsOn, useIcsOverlay } from "@/state/ics";
 import { useTimeFormat } from "@/state/selectors";
 
 export function IcsOverlay({ day }: { day: LocalDate }) {
   const tf = useTimeFormat();
   const events = useIcsEventsOn(day);
+  const fileName = useIcsOverlay((s) => s.fileName);
   if (events.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2 text-xs">
@@ -22,9 +23,11 @@ export function IcsOverlay({ day }: { day: LocalDate }) {
           </Button>
         </span>
       ))}
-      <Button variant="ghost" size="icon-xs" aria-label="Clear imported events" onClick={clearIcsOverlay} className="ml-auto">
-        <X />
-      </Button>
+      {fileName && (
+        <Button variant="ghost" size="icon-xs" aria-label="Clear events imported from a file" title={`Clear ${fileName}`} onClick={clearIcsOverlay} className="ml-auto">
+          <X />
+        </Button>
+      )}
     </div>
   );
 }

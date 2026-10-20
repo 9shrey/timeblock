@@ -7,6 +7,22 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Calendar subscriptions**: paste a Google/Outlook secret iCal link (or any `https://` /
+  `webcal://` `.ics` URL) in Settings → Calendar and its events show up in the read-only
+  Day view overlay, with "copy to plan" as before. Subscriptions refresh on launch, every
+  30 minutes while the app runs, and from a Refresh button; a failed fetch keeps the last
+  good events and shows the error next to the subscription. The desktop app fetches
+  through the Tauri http plugin, scoped to `https://` only; the browser build falls back to
+  `fetch` and explains when the calendar host blocks it (CORS). Subscriptions are stored in
+  a new `calendar_subscriptions` table (migration 0005); fetched events stay in memory.
+  Export format v4 adds `calendarSubscriptions`; v1–v3 files still import.
+- **Recurring events and time zones in calendar import** (file and subscription), via
+  `ical.js`: `RRULE`/`RDATE` series are expanded for the weeks around the visible date,
+  minus `EXDATE`s, with `RECURRENCE-ID` overrides (moved, retitled or cancelled
+  occurrences) applied. `TZID` times are converted using the file's `VTIMEZONE` (including
+  Outlook's Windows zone names) or, failing that, the platform's IANA zone data, so a 9:00
+  New York meeting shows at the right local time, DST changes included. A multi-day
+  all-day event shows on each of its days.
 - **12-hour time**: Settings → Time format switches every displayed time (timeline hour
   labels, block labels, the editor's time slots, the tray's next-block line, Review, routines)
   between `13:00` and `1:00 PM`. A new `timeFormat` setting, default `24h`. Time inputs and

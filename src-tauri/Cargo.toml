@@ -28,6 +28,7 @@ tauri-plugin-dialog = "2.8.3"
 tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2.5.0"
 tauri-plugin-notification = "2.7.0"
+tauri-plugin-http = "2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

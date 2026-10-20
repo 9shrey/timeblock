@@ -36,6 +36,7 @@ import { useGoalMap, useRoutines, useTemplates, useTimeFormat } from "@/state/se
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
 import { BackupList } from "./BackupList";
+import { CalendarSubscriptions } from "./CalendarSubscriptions";
 import { RoutineDialog } from "./RoutineDialog";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -93,6 +94,7 @@ const COUNT_LABELS: Record<string, string> = {
   routines: "routines",
   blocks: "blocks",
   weekNotes: "reflections",
+  calendarSubscriptions: "calendar subscriptions",
   settings: "settings",
 };
 
@@ -471,9 +473,11 @@ export function SettingsView() {
         <section>
           <h2 className="mb-1 text-lg font-semibold">Calendar</h2>
           <p className="mb-3 text-sm text-muted-foreground">
-            Import a calendar's events as a read-only overlay in Day view, with a button to copy any of them into your plan. Recurring
-            events aren't expanded — each shows up once. Export writes your plan and actual blocks for a date range as a calendar file.
+            Show a calendar's events as a read-only overlay in Day view, with a button to copy any of them into your plan — from a
+            subscription that stays up to date, or a one-off .ics file. Export writes your plan and actual blocks for a date range as a
+            calendar file.
           </p>
+          <CalendarSubscriptions web={info?.kind === "web"} />
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void importIcsFile()}>
               <CalendarArrowDown /> Import .ics…

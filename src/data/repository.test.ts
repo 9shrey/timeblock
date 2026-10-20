@@ -273,6 +273,7 @@ describe("SqliteRepository", () => {
       ],
       blocks: [block("p1", { goalId: "g1", routineId: "r1" }), block("a1", { layer: "actual", planBlockId: "p1" })],
       weekNotes: [{ weekStart: "2026-10-19", text: "reflection", updatedAt: 3 }],
+      calendarSubscriptions: [{ id: "s1", name: "Work", url: "https://example.com/basic.ics", createdAt: 1, updatedAt: 2 }],
     };
     await repo.applyChanges([put("blocks", block("stale"))]);
     await repo.replaceAll(data);
@@ -286,6 +287,8 @@ describe("SqliteRepository", () => {
     expect(out.routines).toEqual(data.routines);
     expect(sortById(out.blocks)).toEqual(sortById(data.blocks));
     expect(out.weekNotes).toEqual(data.weekNotes);
+    expect(out.calendarSubscriptions).toEqual(data.calendarSubscriptions);
+    expect((await repo.loadBase()).calendarSubscriptions).toEqual(data.calendarSubscriptions);
   });
 
   it("rejects boolean params like the Rust driver", async () => {
