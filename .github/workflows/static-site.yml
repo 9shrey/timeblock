@@ -1,13 +1,20 @@
 name: Deploy static site
 
-# This site now owns the automatic deploy to the repo's GitHub Pages slot
-# (9shrey.github.io/timeblock), replacing the Astro marketing site that site.yml used
-# to publish there automatically (site.yml is still around, manual-dispatch only, if
-# you want that site back temporarily). No build step: it's plain HTML/CSS served as-is.
+# Owns the automatic deploy to the repo's GitHub Pages slot (9shrey.github.io/timeblock):
+# the plain HTML/CSS site in site/ served as-is, plus the in-browser app demo built into
+# /demo/ (VITE_DEMO=1: sql.js in localStorage, auto-seeded sample data). site.yml (the
+# old Astro site) is manual-dispatch only.
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/static-site.yml"]
+    paths:
+      - "site/**"
+      - "src/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - ".github/workflows/static-site.yml"
   workflow_dispatch:
 
 permissions:
@@ -27,9 +34,22 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_DEMO: "1"
+      - name: Assemble site with demo
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          cp -r dist _site/demo
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

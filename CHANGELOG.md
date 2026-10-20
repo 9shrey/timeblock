@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Live in-browser demo** at `9shrey.github.io/timeblock/demo/`, linked from the website: the
+  web build (`VITE_DEMO=1`) starts with two weeks of sample data, keeps edits in the
+  browser, and has a banner with "Reset demo" and a link to the desktop app. The site
+  deploy now builds and ships it as one Pages artifact.
 - **Task-based goals**: a goal can now be measured by outcomes done each week instead of
   minutes logged. Set "Measure by" to Tasks when creating or editing a goal, then set a
   weekly outcome-count target instead of an hours target; status (met/missed/behind/...)
