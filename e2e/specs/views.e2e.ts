@@ -76,18 +76,19 @@ describe("Goals (native)", () => {
     await expect($('section[aria-label="Reading"] input[aria-label="Target hours this week"]')).toHaveValue("2.5");
     await gotoView("Day");
     await (await item("Plan, 14:00–16:00")).click();
-    await key("4"); // fourth goal
+    await key("5"); // fifth goal (after the seed's Thesis, Exercise, Social, Errands)
     expect(await itemLabels()).toContain("Plan, 14:00–16:00, Thesis: experiments, goal Reading, upcoming");
   });
 
   it("carries unfinished outcomes over once", async () => {
     const carry = $("button*=Carry over");
-    await expect(carry).toHaveText(expect.stringContaining("2 unfinished"));
+    await expect(carry).toHaveText(expect.stringContaining("3 unfinished"));
     await carry.click();
     await expect($("button*=Carry over")).not.toBeExisting();
     const outcomes = await $$('[role="checkbox"]').map((c) => c.getAttribute("aria-label"));
     expect(outcomes).toContain("Done: Run baseline experiments");
     expect(outcomes).toContain("Done: Three gym sessions");
+    expect(outcomes).toContain("Done: Dentist appointment");
   });
 
   it("adds, ticks and deletes an outcome", async () => {
@@ -113,7 +114,7 @@ describe("Weekly review (native)", () => {
     let text = await mainText();
     expect(text).toContain("2 days have planned blocks that aren't confirmed yet");
     expect(text).toContain("Actual 8h 30m");
-    expect(await $$('[data-testid="status"]').map((s) => s.getText())).toEqual(["On track", "On track", "At risk"]);
+    expect(await $$('[data-testid="status"]').map((s) => s.getText())).toEqual(["On track", "On track", "At risk", "Behind"]);
     await expect($('nav button[aria-label^="Review"]')).toHaveAttribute("aria-label", "Review (2 days to review)");
 
     await $$("button=Confirm as planned")[0]!.click();
@@ -127,7 +128,7 @@ describe("Weekly review (native)", () => {
 
   it("last week shows met / missed / over", async () => {
     await key("[");
-    expect(await $$('[data-testid="status"]').map((s) => s.getText())).toEqual(["Met", "Missed", "Over"]);
+    expect(await $$('[data-testid="status"]').map((s) => s.getText())).toEqual(["Met", "Missed", "Over", "Missed"]);
   });
 
   it("the reflection note persists across a reload", async () => {
@@ -159,7 +160,13 @@ describe("Settings (native)", () => {
     await gotoView("Goals");
     expect(await mainText()).toContain("from 18 Oct 2026");
     const outcomes = await $$('[role="checkbox"]').map((c) => c.getAttribute("aria-label"));
-    expect(outcomes).toEqual(["Done: Write related-work section", "Done: Send draft to advisor", "Done: Long run on Saturday"]);
+    expect(outcomes).toEqual([
+      "Done: Write related-work section",
+      "Done: Send draft to advisor",
+      "Done: Long run on Saturday",
+      "Done: Book flights",
+      "Done: Return library books",
+    ]);
     await gotoView("Week");
     expect(await mainText()).toContain("Sun 18");
   });
