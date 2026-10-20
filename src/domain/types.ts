@@ -14,6 +14,8 @@ export type WeekStartDay = 1 | 0 | 6;
 
 export type Layer = "plan" | "actual";
 export type GoalKind = "min" | "max";
+/** What a goal's target and status are measured against: minutes logged, or outcomes done. */
+export type GoalTrackBy = "time" | "tasks";
 
 export interface Block {
   id: string;
@@ -39,6 +41,8 @@ export interface Goal {
   name: string; // 1..80 chars
   color: string; // "#rrggbb"
   kind: GoalKind; // min = "at least T", max = "at most T"
+  /** "time" measures target/status in minutes logged; "tasks" measures them in outcomes done. */
+  trackBy: GoalTrackBy;
   sortOrder: number;
   archivedOn: LocalDate | null;
   createdAt: number;
@@ -49,8 +53,10 @@ export interface Goal {
 export interface WeekTarget {
   goalId: string;
   weekStart: LocalDate;
-  /** null = "tracked only", no target from this week on. */
+  /** null = "tracked only", no target from this week on. Used when the goal's trackBy is "time". */
   targetMinutes: number | null;
+  /** Outcomes due that week; null = "tracked only". Used when the goal's trackBy is "tasks". */
+  targetCount: number | null;
   updatedAt: number;
 }
 
@@ -221,8 +227,8 @@ export interface ExportData {
 
 export interface ExportFile extends ExportData {
   format: "timeblock.export";
-  /** 1: original tables. 2: adds templates, routines and blocks.routineId. */
-  version: 2;
+  /** 1: original tables. 2: adds templates, routines and blocks.routineId. 3: adds goals.trackBy and weekTargets.targetCount. */
+  version: 3;
   exportedAt: number;
   appVersion: string;
 }

@@ -43,14 +43,15 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
   },
   goals: {
     name: "goals",
-    columns: ["id", "name", "color", "kind", "sort_order", "archived_on", "created_at", "updated_at"],
+    columns: ["id", "name", "color", "kind", "track_by", "sort_order", "archived_on", "created_at", "updated_at"],
     pk: ["id"],
-    toRow: (e) => [e.id, e.name, e.color, e.kind, e.sortOrder, e.archivedOn, e.createdAt, e.updatedAt],
+    toRow: (e) => [e.id, e.name, e.color, e.kind, e.trackBy, e.sortOrder, e.archivedOn, e.createdAt, e.updatedAt],
     fromRow: (r) => ({
       id: str(r.id),
       name: str(r.name),
       color: str(r.color),
       kind: r.kind === "max" ? "max" : "min",
+      trackBy: r.track_by === "tasks" ? "tasks" : "time",
       sortOrder: num(r.sort_order),
       archivedOn: strOrNull(r.archived_on),
       createdAt: num(r.created_at),
@@ -60,13 +61,14 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
   },
   weekTargets: {
     name: "week_targets",
-    columns: ["goal_id", "week_start", "target_minutes", "updated_at"],
+    columns: ["goal_id", "week_start", "target_minutes", "target_count", "updated_at"],
     pk: ["goal_id", "week_start"],
-    toRow: (e) => [e.goalId, e.weekStart, e.targetMinutes, e.updatedAt],
+    toRow: (e) => [e.goalId, e.weekStart, e.targetMinutes, e.targetCount, e.updatedAt],
     fromRow: (r) => ({
       goalId: str(r.goal_id),
       weekStart: str(r.week_start),
       targetMinutes: numOrNull(r.target_minutes),
+      targetCount: numOrNull(r.target_count),
       updatedAt: num(r.updated_at),
     }),
     keyParams: (key) => {

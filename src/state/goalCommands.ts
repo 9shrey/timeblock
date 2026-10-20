@@ -1,10 +1,17 @@
 /** Goal, weekly target, checklist and week-note actions. Each is one undo step. */
 import { toast } from "sonner";
 import { addItem, carryOver, deleteItem, reorderItemsChanges, updateItem } from "@/domain/goals/checklist";
-import { createGoal as createGoalChanges, deleteGoalChanges, reorderGoalsChanges, setTargetChanges, updateGoal } from "@/domain/goals/targets";
+import {
+  createGoal as createGoalChanges,
+  deleteGoalChanges,
+  reorderGoalsChanges,
+  setTargetChanges,
+  setTaskTargetChanges,
+  updateGoal,
+} from "@/domain/goals/targets";
 import { put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
-import type { ChecklistItem, Goal, GoalKind, LocalDate } from "@/domain/types";
+import type { ChecklistItem, Goal, GoalKind, GoalTrackBy, LocalDate } from "@/domain/types";
 import { allBlocks, checklistList, goalList, targetList } from "./selectors";
 import { commit, getRepo, useStore } from "./store";
 
@@ -12,8 +19,12 @@ const env = systemEnv;
 const data = () => useStore.getState().data;
 
 export const MAX_TARGET_MINUTES = 10080;
+export const MAX_TARGET_COUNT = 10000;
 
-export function createGoal(input: { name: string; color: string; kind: GoalKind; targetMinutes: number | null }, weekStart: LocalDate): Goal | null {
+export function createGoal(
+  input: { name: string; color: string; kind: GoalKind; trackBy: GoalTrackBy; targetMinutes: number | null; targetCount: number | null },
+  weekStart: LocalDate,
+): Goal | null {
   const name = input.name.trim();
   if (name.length < 1 || name.length > 80) {
     toast.error("Goal names need 1–80 characters.");
@@ -24,18 +35,31 @@ export function createGoal(input: { name: string; color: string; kind: GoalKind;
   return goal;
 }
 
-export function editGoal(goal: Goal, patch: Partial<Pick<Goal, "name" | "color" | "kind" | "archivedOn" | "sortOrder">>, coalesceKey?: string): void {
+export function editGoal(
+  goal: Goal,
+  patch: Partial<Pick<Goal, "name" | "color" | "kind" | "trackBy" | "archivedOn" | "sortOrder">>,
+  coalesceKey?: string,
+): void {
   if (patch.name !== undefined && (patch.name.trim().length < 1 || patch.name.trim().length > 80)) return;
   commit(updateGoal(goal, patch, env), { label: "Edit goal", coalesceKey });
 }
 
-/** Sets the target for `weekStart` only; later weeks keep their own rows, earlier weeks are untouched. */
+/** Sets the time target for `weekStart` only; later weeks keep their own rows, earlier weeks are untouched. */
 export function setTarget(goalId: string, weekStart: LocalDate, minutes: number | null): void {
   if (minutes !== null && (!Number.isFinite(minutes) || minutes < 0 || minutes > MAX_TARGET_MINUTES)) {
     toast.error("Targets must be between 0 and 168 hours.");
     return;
   }
   commit(setTargetChanges(goalId, weekStart, minutes === null ? null : Math.round(minutes), env), { label: "Set target" });
+}
+
+/** Sets the task-count target for `weekStart` only; later weeks keep their own rows. */
+export function setTaskTarget(goalId: string, weekStart: LocalDate, count: number | null): void {
+  if (count !== null && (!Number.isFinite(count) || count < 0 || count > MAX_TARGET_COUNT)) {
+    toast.error(`Targets must be between 0 and ${MAX_TARGET_COUNT} outcomes.`);
+    return;
+  }
+  commit(setTaskTargetChanges(goalId, weekStart, count === null ? null : Math.round(count), env), { label: "Set target" });
 }
 
 /** Deletes a goal only if no block or checklist item (in any week) uses it. */

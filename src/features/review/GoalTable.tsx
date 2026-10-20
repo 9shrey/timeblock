@@ -36,14 +36,21 @@ export function StatusChip({ status }: { status: GoalStatus }) {
 
 function delta(g: GoalStats): string {
   if (g.target === null) return "–";
+  if (g.trackBy === "tasks") {
+    const d = g.checklist.done - g.target;
+    return d === 0 ? "±0" : `${d > 0 ? "+" : "−"}${Math.abs(d)}`;
+  }
   const d = g.actual - g.target;
   return d === 0 ? "±0" : `${d > 0 ? "+" : "−"}${formatDuration(Math.abs(d))}`;
 }
 
-/** Target vs plan vs actual per goal, with bullet bars on one shared scale. */
+/** Target vs plan vs actual per goal, with bullet bars on one shared scale (time and task goals scaled separately). */
 export function GoalTable({ goals, unassigned }: { goals: readonly GoalStats[]; unassigned: GoalStats | null }) {
   const rows = unassigned ? [...goals, unassigned] : [...goals];
-  const scale = bulletScale(rows);
+  const timeScale = bulletScale(rows.filter((g) => g.trackBy === "time"));
+  const taskScale = bulletScale(
+    rows.filter((g) => g.trackBy === "tasks").map((g) => ({ target: g.target, planned: 0, actual: g.checklist.done, unconfirmed: 0 })),
+  );
   return (
     <table className="w-full text-sm">
       <thead>
@@ -68,16 +75,30 @@ export function GoalTable({ goals, unassigned }: { goals: readonly GoalStats[]; 
               </span>
             </td>
             <td className="px-2 text-right tabular-nums">
-              {g.target === null ? "–" : `${g.kind === "min" ? "≥" : "≤"} ${formatDuration(g.target)}`}
+              {g.target === null
+                ? "–"
+                : g.trackBy === "tasks"
+                  ? `${g.kind === "min" ? "≥" : "≤"} ${g.target} outcome${g.target === 1 ? "" : "s"}`
+                  : `${g.kind === "min" ? "≥" : "≤"} ${formatDuration(g.target)}`}
             </td>
-            <td className="px-2 text-right tabular-nums">{formatDuration(g.planned)}</td>
+            <td className="px-2 text-right tabular-nums">{g.trackBy === "tasks" ? "–" : formatDuration(g.planned)}</td>
             <td className="px-2 text-right tabular-nums">
-              {formatDuration(g.actual)}
-              {g.unconfirmed > 0 && <span className="block text-[11px] text-muted-foreground">+{formatDuration(g.unconfirmed)} unconf.</span>}
+              {g.trackBy === "tasks" ? (
+                `${g.checklist.done}`
+              ) : (
+                <>
+                  {formatDuration(g.actual)}
+                  {g.unconfirmed > 0 && <span className="block text-[11px] text-muted-foreground">+{formatDuration(g.unconfirmed)} unconf.</span>}
+                </>
+              )}
             </td>
             <td className="px-2 text-right tabular-nums">{delta(g)}</td>
             <td className="px-3">
-              <BulletBar target={g.target} planned={g.planned} actual={g.actual} unconfirmed={g.unconfirmed} kind={g.kind} color={g.goal?.color} scaleMax={scale} />
+              {g.trackBy === "tasks" ? (
+                <BulletBar target={g.target} planned={0} actual={g.checklist.done} unconfirmed={0} kind={g.kind} color={g.goal?.color} scaleMax={taskScale} />
+              ) : (
+                <BulletBar target={g.target} planned={g.planned} actual={g.actual} unconfirmed={g.unconfirmed} kind={g.kind} color={g.goal?.color} scaleMax={timeScale} />
+              )}
             </td>
             <td className="px-2 text-right tabular-nums">{g.checklist.total > 0 ? `${g.checklist.done}/${g.checklist.total}` : "–"}</td>
             <td className="pl-2">{g.goal ? <StatusChip status={g.status} /> : null}</td>

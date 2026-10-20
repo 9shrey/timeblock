@@ -13,11 +13,19 @@ export function demoSeed(now: Now): ExportData {
   let n = 0;
   const id = (p: string) => `seed-${p}-${++n}`;
 
-  const goal = (key: string, name: string, color: string, kind: Goal["kind"], sortOrder: number): Goal => ({
+  const goal = (
+    key: string,
+    name: string,
+    color: string,
+    kind: Goal["kind"],
+    sortOrder: number,
+    trackBy: Goal["trackBy"] = "time",
+  ): Goal => ({
     id: `seed-goal-${key}`,
     name,
     color,
     kind,
+    trackBy,
     sortOrder,
     archivedOn: null,
     createdAt: T0,
@@ -26,14 +34,16 @@ export function demoSeed(now: Now): ExportData {
   const thesis = goal("thesis", "Thesis", "#2563eb", "min", 0);
   const exercise = goal("exercise", "Exercise", "#059669", "min", 1);
   const social = goal("social", "Social", "#e11d48", "max", 2);
+  const errands = goal("errands", "Errands", "#7c3aed", "min", 3, "tasks");
 
   const thisWeek = weekStartOf(now.day, 1);
   const lastWeek = addDays(thisWeek, -7);
 
   const targets: WeekTarget[] = [
-    { goalId: thesis.id, weekStart: lastWeek, targetMinutes: h(15), updatedAt: T0 },
-    { goalId: exercise.id, weekStart: lastWeek, targetMinutes: h(5), updatedAt: T0 },
-    { goalId: social.id, weekStart: lastWeek, targetMinutes: h(3), updatedAt: T0 },
+    { goalId: thesis.id, weekStart: lastWeek, targetMinutes: h(15), targetCount: null, updatedAt: T0 },
+    { goalId: exercise.id, weekStart: lastWeek, targetMinutes: h(5), targetCount: null, updatedAt: T0 },
+    { goalId: social.id, weekStart: lastWeek, targetMinutes: h(3), targetCount: null, updatedAt: T0 },
+    { goalId: errands.id, weekStart: lastWeek, targetMinutes: null, targetCount: 3, updatedAt: T0 },
   ];
 
   const blocks: Block[] = [];
@@ -148,14 +158,19 @@ export function demoSeed(now: Now): ExportData {
     item(thesis, lastWeek, "Draft chapter 3 outline", true, 0),
     item(thesis, lastWeek, "Run baseline experiments", false, 1),
     item(exercise, lastWeek, "Three gym sessions", false, 0),
+    item(errands, lastWeek, "Renew passport", true, 0),
+    item(errands, lastWeek, "Car service", true, 1),
+    item(errands, lastWeek, "Dentist appointment", false, 2),
     item(thesis, thisWeek, "Write related-work section", false, 0),
     item(thesis, thisWeek, "Send draft to advisor", false, 1),
     item(exercise, thisWeek, "Long run on Saturday", false, 0),
+    item(errands, thisWeek, "Book flights", true, 0),
+    item(errands, thisWeek, "Return library books", false, 1),
   ];
 
   return {
     settings: [],
-    goals: [thesis, exercise, social],
+    goals: [thesis, exercise, social, errands],
     weekTargets: targets,
     checklistItems,
     templates: [],

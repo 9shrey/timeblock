@@ -6,7 +6,7 @@ import { clip, unionLength, type Interval } from "../blocks/intervals";
 import { ghostsOf, isPast } from "../blocks/reconcile";
 import { progress } from "../goals/checklist";
 import { effectiveTarget } from "../goals/targets";
-import type { Block, ChecklistItem, Goal, GoalKind, LocalDate, Now, WeekTarget } from "../types";
+import type { Block, ChecklistItem, Goal, GoalKind, GoalTrackBy, LocalDate, Now, WeekTarget } from "../types";
 
 /** Bucket id for blocks without a (known) goal. */
 export const UNASSIGNED = "__unassigned__";
@@ -45,6 +45,8 @@ export interface GoalStats extends Amounts {
   goalId: string;
   goal: Goal | null;
   kind: GoalKind;
+  trackBy: GoalTrackBy;
+  /** The configured target, in the goal's own unit: minutes if trackBy is "time", outcomes if "tasks". */
   target: number | null;
   targetFromWeek: LocalDate | null;
   checklist: { done: number; total: number };
@@ -124,6 +126,20 @@ export function goalStatus(kind: GoalKind, phase: WeekPhase, target: number | nu
   if (phase === "past") return a.actual > target ? "over" : "within";
   if (phase === "current" && a.actual > target) return "over";
   return a.projected > target ? "at_risk" : "within";
+}
+
+/**
+ * Status of one task-based goal: outcomes done vs. a weekly count target. There is no ghost
+ * time to project from, so past and current/future phases both compare done against target.
+ */
+export function taskGoalStatus(kind: GoalKind, phase: WeekPhase, target: number | null, done: number): GoalStatus {
+  if (target === null) return "no_target";
+  if (kind === "min") {
+    if (phase === "past") return done >= target ? "met" : "missed";
+    return done >= target ? "met" : "behind";
+  }
+  if (phase === "past") return done > target ? "over" : "within";
+  return done > target ? "over" : "within";
 }
 
 /** Phase of a week relative to now. */
@@ -206,16 +222,18 @@ export function computeStats(input: StatsInput): WeekStats {
     const active = goal.archivedOn === null || goal.archivedOn > weekStart;
     if (!active && !hasTime(total) && checklist.total === 0) continue;
     const t = effectiveTarget(input.targets, goal.id, weekStart);
+    const isTasks = goal.trackBy === "tasks";
     goals.push({
       ...total,
       goalId: goal.id,
       goal,
       kind: goal.kind,
-      target: t.minutes,
+      trackBy: goal.trackBy,
+      target: isTasks ? t.count : t.minutes,
       targetFromWeek: t.fromWeek,
       checklist,
       byDay,
-      status: goalStatus(goal.kind, phase, t.minutes, total),
+      status: isTasks ? taskGoalStatus(goal.kind, phase, t.count, checklist.done) : goalStatus(goal.kind, phase, t.minutes, total),
     });
   }
 
@@ -226,6 +244,7 @@ export function computeStats(input: StatsInput): WeekStats {
         goalId: UNASSIGNED,
         goal: null,
         kind: "min",
+        trackBy: "time",
         target: null,
         targetFromWeek: null,
         checklist: { done: 0, total: 0 },

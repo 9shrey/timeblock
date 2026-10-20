@@ -33,7 +33,7 @@ export const settingRowSchema = z.object({
   value: z.string(),
 });
 
-export const goalSchema = z.object({
+const goalFieldsLegacy = {
   id,
   name: text(1, 80),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a #rrggbb colour"),
@@ -42,13 +42,26 @@ export const goalSchema = z.object({
   archivedOn: localDate.nullable(),
   createdAt: timestamp,
   updatedAt: timestamp,
-});
+};
 
-export const weekTargetSchema = z.object({
+/** v1/v2 shape (no `trackBy`): imported goals default to `trackBy: "time"`. */
+export const goalSchemaLegacy = z.object(goalFieldsLegacy);
+
+export const goalSchema = z.object({ ...goalFieldsLegacy, trackBy: z.enum(["time", "tasks"]) });
+
+const weekTargetFieldsLegacy = {
   goalId: id,
   weekStart: localDate,
   targetMinutes: z.number().int().min(0).max(10080).nullable(),
   updatedAt: timestamp,
+};
+
+/** v1/v2 shape (no `targetCount`): imported targets default to `targetCount: null`. */
+export const weekTargetSchemaLegacy = z.object(weekTargetFieldsLegacy);
+
+export const weekTargetSchema = z.object({
+  ...weekTargetFieldsLegacy,
+  targetCount: z.number().int().min(0).max(10000).nullable(),
 });
 
 export const checklistItemSchema = z.object({
@@ -135,14 +148,29 @@ const exportFileSchemaV1 = z.object({
   exportedAt: timestamp,
   appVersion: z.string(),
   settings: z.array(settingRowSchema),
-  goals: z.array(goalSchema),
-  weekTargets: z.array(weekTargetSchema),
+  goals: z.array(goalSchemaLegacy),
+  weekTargets: z.array(weekTargetSchemaLegacy),
   checklistItems: z.array(checklistItemSchema),
   blocks: z.array(blockSchemaV1),
   weekNotes: z.array(weekNoteSchema),
 });
 
 const exportFileSchemaV2 = z.object({
+  format: z.literal(EXPORT_FORMAT),
+  version: z.literal(2),
+  exportedAt: timestamp,
+  appVersion: z.string(),
+  settings: z.array(settingRowSchema),
+  goals: z.array(goalSchemaLegacy),
+  weekTargets: z.array(weekTargetSchemaLegacy),
+  checklistItems: z.array(checklistItemSchema),
+  templates: z.array(templateSchema),
+  routines: z.array(routineSchema),
+  blocks: z.array(blockSchema),
+  weekNotes: z.array(weekNoteSchema),
+});
+
+const exportFileSchemaV3 = z.object({
   format: z.literal(EXPORT_FORMAT),
   version: z.literal(EXPORT_VERSION),
   exportedAt: timestamp,
@@ -373,8 +401,17 @@ export function parseImportFile(text: string): ImportResult {
       ok: false,
       errors: [`This file was made by a newer version of Timeblock (export version ${version}). Update the app to import it.`],
     };
-  if (version !== 1 && version !== EXPORT_VERSION)
+  if (version !== 1 && version !== 2 && version !== EXPORT_VERSION)
     return { ok: false, errors: [`Unsupported export version: ${JSON.stringify(version) ?? "missing"}.`] };
+
+  /** v1/v2 goals/targets lack `trackBy`/`targetCount`; default them. */
+  const withTaskDefaults = (
+    goals: readonly z.infer<typeof goalSchemaLegacy>[],
+    weekTargets: readonly z.infer<typeof weekTargetSchemaLegacy>[],
+  ): { goals: ExportData["goals"]; weekTargets: ExportData["weekTargets"] } => ({
+    goals: goals.map((g) => ({ ...g, trackBy: "time" as const })),
+    weekTargets: weekTargets.map((t) => ({ ...t, targetCount: null })),
+  });
 
   let valid: ExportData;
   if (version === 1) {
@@ -387,16 +424,24 @@ export function parseImportFile(text: string): ImportResult {
     const { settings, goals, weekTargets, checklistItems, blocks, weekNotes } = parsed.data;
     valid = {
       settings,
-      goals,
-      weekTargets,
+      ...withTaskDefaults(goals, weekTargets),
       checklistItems,
       templates: [],
       routines: [],
       blocks: blocks.map((b) => ({ ...b, routineId: null })),
       weekNotes,
     };
-  } else {
+  } else if (version === 2) {
     const parsed = exportFileSchemaV2.safeParse(raw);
+    if (!parsed.success)
+      return {
+        ok: false,
+        errors: capErrors(parsed.error.issues.map((i) => `${formatPath(i.path)}: ${i.message}`)),
+      };
+    const { settings, goals, weekTargets, checklistItems, templates, routines, blocks, weekNotes } = parsed.data;
+    valid = { settings, ...withTaskDefaults(goals, weekTargets), checklistItems, templates, routines, blocks, weekNotes };
+  } else {
+    const parsed = exportFileSchemaV3.safeParse(raw);
     if (!parsed.success)
       return {
         ok: false,

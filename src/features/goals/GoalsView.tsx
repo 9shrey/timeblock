@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { useDragReorder } from "./useDragReorder";
 import { Checklist } from "./Checklist";
 import { GoalDialog } from "./GoalDialog";
-import { TargetInput } from "./TargetInput";
+import { TargetInput, TaskTargetInput } from "./TargetInput";
 
 function GoalRow({
   goal,
@@ -61,13 +61,23 @@ function GoalRow({
             ≤
           </ToggleGroupItem>
         </ToggleGroup>
-        <TargetInput
-          key={`${weekStart}:${target.minutes}:${target.fromWeek}`}
-          goalId={goal.id}
-          weekStart={weekStart}
-          minutes={target.minutes}
-          fromWeek={target.fromWeek}
-        />
+        {goal.trackBy === "time" ? (
+          <TargetInput
+            key={`${weekStart}:${target.minutes}:${target.fromWeek}`}
+            goalId={goal.id}
+            weekStart={weekStart}
+            minutes={target.minutes}
+            fromWeek={target.fromWeek}
+          />
+        ) : (
+          <TaskTargetInput
+            key={`${weekStart}:${target.count}:${target.fromWeek}`}
+            goalId={goal.id}
+            weekStart={weekStart}
+            count={target.count}
+            fromWeek={target.fromWeek}
+          />
+        )}
       </div>
       <div className="mt-2 pl-5">
         <Checklist goalId={goal.id} weekStart={weekStart} items={items} />
@@ -138,11 +148,16 @@ export function GoalsView() {
               dropZoneProps={dropZoneProps(g.id)}
               dragOver={isDragOver(g.id)}
             />
-            {byGoal.get(g.id) && (
-              <p className="mt-1 pl-1 text-xs text-muted-foreground">
-                This week: planned {formatDuration(byGoal.get(g.id)!.planned)} · actual {formatDuration(byGoal.get(g.id)!.actual)}
-              </p>
-            )}
+            {byGoal.get(g.id) &&
+              (g.trackBy === "time" ? (
+                <p className="mt-1 pl-1 text-xs text-muted-foreground">
+                  This week: planned {formatDuration(byGoal.get(g.id)!.planned)} · actual {formatDuration(byGoal.get(g.id)!.actual)}
+                </p>
+              ) : (
+                <p className="mt-1 pl-1 text-xs text-muted-foreground">
+                  This week: {byGoal.get(g.id)!.checklist.done}/{byGoal.get(g.id)!.checklist.total} outcomes done
+                </p>
+              ))}
           </div>
         ))}
 

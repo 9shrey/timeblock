@@ -3,30 +3,40 @@
  * week W is the latest row with weekStart <= W.
  */
 import { del, keyOf, put } from "../changes";
-import type { Block, ChangeSet, ChecklistItem, Env, Goal, GoalKind, LocalDate, WeekTarget } from "../types";
+import type { Block, ChangeSet, ChecklistItem, Env, Goal, GoalKind, GoalTrackBy, LocalDate, WeekTarget } from "../types";
 
-/** Latest target row for `goalId` at or before `weekStart`; `minutes` null = tracked only / none. */
+/**
+ * Latest target row for `goalId` at or before `weekStart`; `minutes`/`count` null = tracked
+ * only / none. Which field applies depends on the goal's `trackBy`.
+ */
 export function effectiveTarget(
   rows: readonly WeekTarget[],
   goalId: string,
   weekStart: LocalDate,
-): { minutes: number | null; fromWeek: LocalDate | null } {
+): { minutes: number | null; count: number | null; fromWeek: LocalDate | null } {
   let best: WeekTarget | null = null;
   for (const r of rows) {
     if (r.goalId !== goalId || r.weekStart > weekStart) continue;
     if (!best || r.weekStart > best.weekStart) best = r;
   }
-  return best ? { minutes: best.targetMinutes, fromWeek: best.weekStart } : { minutes: null, fromWeek: null };
+  return best
+    ? { minutes: best.targetMinutes, count: best.targetCount, fromWeek: best.weekStart }
+    : { minutes: null, count: null, fromWeek: null };
 }
 
 /** Upserts only the row for `weekStart`; later weeks keep their own rows. */
 export function setTargetChanges(goalId: string, weekStart: LocalDate, minutes: number | null, env: Env): ChangeSet {
-  return [put("weekTargets", { goalId, weekStart, targetMinutes: minutes, updatedAt: env.nowMs() })];
+  return [put("weekTargets", { goalId, weekStart, targetMinutes: minutes, targetCount: null, updatedAt: env.nowMs() })];
+}
+
+/** Upserts only the row for `weekStart` with a task-count target; later weeks keep their own rows. */
+export function setTaskTargetChanges(goalId: string, weekStart: LocalDate, count: number | null, env: Env): ChangeSet {
+  return [put("weekTargets", { goalId, weekStart, targetMinutes: null, targetCount: count, updatedAt: env.nowMs() })];
 }
 
 /** New goal at the end of the list, plus a target row for the viewed week. */
 export function createGoal(
-  input: { name: string; color: string; kind: GoalKind; targetMinutes: number | null },
+  input: { name: string; color: string; kind: GoalKind; trackBy: GoalTrackBy; targetMinutes: number | null; targetCount: number | null },
   weekStart: LocalDate,
   existingGoals: readonly Goal[],
   env: Env,
@@ -38,6 +48,7 @@ export function createGoal(
     name: input.name.trim(),
     color: input.color,
     kind: input.kind,
+    trackBy: input.trackBy,
     sortOrder,
     archivedOn: null,
     createdAt: now,
@@ -47,7 +58,13 @@ export function createGoal(
     goal,
     changes: [
       put("goals", goal),
-      put("weekTargets", { goalId: goal.id, weekStart, targetMinutes: input.targetMinutes, updatedAt: now }),
+      put("weekTargets", {
+        goalId: goal.id,
+        weekStart,
+        targetMinutes: input.targetMinutes,
+        targetCount: input.targetCount,
+        updatedAt: now,
+      }),
     ],
   };
 }
@@ -55,7 +72,7 @@ export function createGoal(
 /** Patches a goal (name is trimmed). */
 export function updateGoal(
   goal: Goal,
-  patch: Partial<Pick<Goal, "name" | "color" | "kind" | "sortOrder" | "archivedOn">>,
+  patch: Partial<Pick<Goal, "name" | "color" | "kind" | "trackBy" | "sortOrder" | "archivedOn">>,
   env: Env,
 ): ChangeSet {
   const next: Goal = { ...goal, ...patch, updatedAt: env.nowMs() };

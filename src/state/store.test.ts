@@ -156,8 +156,8 @@ describe("bulk changes", () => {
   it("changeWeekStartDay remaps keys, reloads and clears history", async () => {
     const { changeWeekStartDay } = await import("./store");
     commit([
-      put("goals", { id: "g", name: "G", color: "#000000", kind: "min", sortOrder: 0, archivedOn: null, createdAt: 1, updatedAt: 1 }),
-      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: 60, updatedAt: 1 }),
+      put("goals", { id: "g", name: "G", color: "#000000", kind: "min", trackBy: "time", sortOrder: 0, archivedOn: null, createdAt: 1, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: 60, targetCount: null, updatedAt: 1 }),
     ]);
     await changeWeekStartDay(0);
     const s = useStore.getState();

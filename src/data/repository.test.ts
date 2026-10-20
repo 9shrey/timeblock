@@ -11,6 +11,7 @@ const goal = (id: string, extra: Partial<Goal> = {}): Goal => ({
   name: id,
   color: "#3b82f6",
   kind: "min",
+  trackBy: "time",
   sortOrder: 0,
   archivedOn: null,
   createdAt: 1,
@@ -105,7 +106,7 @@ describe("SqliteRepository", () => {
   it("round-trips entities through applyChanges / load", async () => {
     await repo.applyChanges([
       put("goals", goal("g1")),
-      put("weekTargets", { goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, targetCount: null, updatedAt: 1 }),
       put("blocks", block("p1", { goalId: "g1" })),
       put("blocks", block("a1", { layer: "actual", planBlockId: "p1", goalId: "g1" })),
       put("checklistItems", item("c1", "g1", "2026-10-19", { done: true })),
@@ -113,7 +114,7 @@ describe("SqliteRepository", () => {
     ]);
     const base = await repo.loadBase();
     expect(base.goals).toEqual([goal("g1")]);
-    expect(base.weekTargets).toEqual([{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, updatedAt: 1 }]);
+    expect(base.weekTargets).toEqual([{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, targetCount: null, updatedAt: 1 }]);
     const week = await repo.loadWeek("2026-10-19");
     expect(week.blocks.map((b) => b.id).sort()).toEqual(["a1", "p1"]);
     expect(week.blocks.find((b) => b.id === "a1")?.planBlockId).toBe("p1");
@@ -129,7 +130,7 @@ describe("SqliteRepository", () => {
     expect(week.blocks[0]).toMatchObject({ title: "renamed", skipped: true });
     await repo.applyChanges([
       put("goals", goal("g")),
-      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: null, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g", weekStart: "2026-10-19", targetMinutes: null, targetCount: null, updatedAt: 1 }),
     ]);
     await repo.applyChanges([del("blocks", "b"), del("weekTargets", "g|2026-10-19")]);
     week = await repo.loadWeek("2026-10-19");
@@ -172,7 +173,7 @@ describe("SqliteRepository", () => {
   it("FK ON DELETE SET NULL / CASCADE", async () => {
     await repo.applyChanges([
       put("goals", goal("g1")),
-      put("weekTargets", { goalId: "g1", weekStart: "2026-10-19", targetMinutes: 60, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g1", weekStart: "2026-10-19", targetMinutes: 60, targetCount: null, updatedAt: 1 }),
       put("checklistItems", item("c1", "g1", "2026-10-19")),
       put("blocks", block("p1", { goalId: "g1" })),
       put("blocks", block("a1", { layer: "actual", planBlockId: "p1" })),
@@ -200,8 +201,8 @@ describe("SqliteRepository", () => {
   it("changeWeekStart remaps week keys and saves the setting", async () => {
     await repo.applyChanges([
       put("goals", goal("g1")),
-      put("weekTargets", { goalId: "g1", weekStart: "2026-10-12", targetMinutes: 60, updatedAt: 1 }),
-      put("weekTargets", { goalId: "g1", weekStart: "2026-10-19", targetMinutes: 90, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g1", weekStart: "2026-10-12", targetMinutes: 60, targetCount: null, updatedAt: 1 }),
+      put("weekTargets", { goalId: "g1", weekStart: "2026-10-19", targetMinutes: 90, targetCount: null, updatedAt: 1 }),
       put("checklistItems", item("c1", "g1", "2026-10-19")),
       put("weekNotes", { weekStart: "2026-10-19", text: "n", updatedAt: 1 }),
     ]);
@@ -242,7 +243,7 @@ describe("SqliteRepository", () => {
     const data: ExportData = {
       settings: [{ key: "snapMinutes", value: "10" }],
       goals: [goal("g1"), goal("g2", { kind: "max", archivedOn: "2026-10-01" })],
-      weekTargets: [{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, updatedAt: 2 }],
+      weekTargets: [{ goalId: "g1", weekStart: "2026-10-19", targetMinutes: 600, targetCount: null, updatedAt: 2 }],
       checklistItems: [item("c1", "g1", "2026-10-19", { carriedFromId: "x" })],
       templates: [
         {

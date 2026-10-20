@@ -18,6 +18,7 @@ which is deliberately deferred.
 | M10.6: drag to reorder | ✅ Done: goals and outcomes |
 | M10.7: running block / timer | ✅ Done |
 | M10.8: split at midnight | ✅ Done |
+| M10.9: task-based goals | ✅ Done: `goals.trackBy`, outcome-count targets, status from the outcomes checklist, export format v3 |
 | M11.1: window state | ✅ Done: `tauri-plugin-window-state` |
 | M11.2: notifications | ✅ Done: upcoming block, evening unconfirmed nudge, weekly review |
 | M11.3: tray icon | ✅ Done: next block, start timer, confirm rest of day, show/hide, quit, close-to-tray setting |
