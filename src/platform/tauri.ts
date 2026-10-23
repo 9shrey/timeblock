@@ -2,11 +2,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { fetch as httpFetch } from "@tauri-apps/plugin-http";
 import { isPermissionGranted, onAction, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
-import type { BackupInfo, OpenedFile, Platform, SystemTheme, TrayAction } from "./index";
+import { responseText, type BackupInfo, type OpenedFile, type Platform, type SystemTheme, type TrayAction } from "./index";
 
 const CLOSE_FLUSH_TIMEOUT_MS = 3000;
 
@@ -62,5 +63,14 @@ export const tauriPlatform: Platform = {
     await invoke("backup_now", { reason: "pre-update" });
     await pendingUpdate.downloadAndInstall();
     await relaunch();
+  },
+  async fetchText(url) {
+    let res: Response;
+    try {
+      res = await httpFetch(url, { method: "GET", headers: { Accept: "text/calendar, */*" } });
+    } catch (e) {
+      throw new Error(`Couldn't reach the server: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
+    }
+    return responseText(res);
   },
 };

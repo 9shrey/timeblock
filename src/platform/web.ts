@@ -4,7 +4,7 @@
  */
 import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
 import { createSqlJsDriver } from "@/data/drivers/sqljsDriver";
-import type { Platform, SystemTheme } from "./index";
+import { responseText, type Platform, type SystemTheme } from "./index";
 
 const STORAGE_KEY = "timeblock.db";
 
@@ -96,6 +96,18 @@ export const webPlatform: Platform = {
   },
   checkForUpdate: async () => null,
   installUpdate: async () => {},
+  async fetchText(url) {
+    let res: Response;
+    try {
+      res = await fetch(url, { headers: { Accept: "text/calendar, */*" } });
+    } catch {
+      // A CORS rejection and a network failure look the same from here (a bare TypeError).
+      throw new Error(
+        "The browser blocked this request. Most calendar hosts (Google, Outlook) don't allow web pages to read their feeds (CORS), so subscriptions work in the desktop app. You can still download the .ics and import the file.",
+      );
+    }
+    return responseText(res);
+  },
 };
 
 const notificationClickListeners = new Set<(id: number) => void>();

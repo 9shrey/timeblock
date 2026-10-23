@@ -5,7 +5,9 @@ import {
   dayOfWeek,
   diffDays,
   formatDuration,
+  formatHourLabel,
   formatMinute,
+  formatMinuteRange,
   isoWeek,
   parseLocalDate,
   parseTimeInput,
@@ -105,6 +107,42 @@ describe("formatting and parsing", () => {
     expect(formatMinute(1440)).toBe("24:00");
   });
 
+  it.each([
+    [0, "12:00 AM"],
+    [5, "12:05 AM"],
+    [555, "9:15 AM"],
+    [720, "12:00 PM"],
+    [779, "12:59 PM"],
+    [780, "1:00 PM"],
+    [1439, "11:59 PM"],
+    [1440, "12:00 AM"],
+  ])("formatMinute(%i, 12h) = %s", (min, want) => {
+    expect(formatMinute(min, "12h")).toBe(want);
+  });
+
+  it("formatMinuteRange", () => {
+    expect(formatMinuteRange(540, 630)).toBe("09:00–10:30");
+    expect(formatMinuteRange(540, 630, "12h")).toBe("9:00–10:30 AM");
+    expect(formatMinuteRange(660, 780, "12h")).toBe("11:00 AM–1:00 PM");
+    expect(formatMinuteRange(1380, 1440, "12h")).toBe("11:00 PM–12:00 AM");
+  });
+
+  it("formatHourLabel", () => {
+    expect(formatHourLabel(9)).toBe("09:00");
+    expect(formatHourLabel(9, "24h")).toBe("09:00");
+    expect(formatHourLabel(0, "12h")).toBe("12 AM");
+    expect(formatHourLabel(9, "12h")).toBe("9 AM");
+    expect(formatHourLabel(12, "12h")).toBe("12 PM");
+    expect(formatHourLabel(23, "12h")).toBe("11 PM");
+  });
+
+  it("every minute round-trips through both formats", () => {
+    for (let min = 0; min < 1440; min++) {
+      expect(parseTimeInput(formatMinute(min, "24h"))).toBe(min);
+      expect(parseTimeInput(formatMinute(min, "12h"))).toBe(min);
+    }
+  });
+
   it("formatDuration", () => {
     expect(formatDuration(0)).toBe("0m");
     expect(formatDuration(45)).toBe("45m");
@@ -122,11 +160,23 @@ describe("formatting and parsing", () => {
     ["24:00", 1440],
     [" 13:05 ", 785],
     ["0", 0],
+    ["9am", 540],
+    ["9 AM", 540],
+    ["9:30pm", 1290],
+    ["9:30 PM", 1290],
+    ["930p", 1290],
+    ["9.30 p.m.", 1290],
+    ["12am", 0],
+    ["12:15 AM", 15],
+    ["12pm", 720],
+    ["12:45pm", 765],
+    ["11:59 pm", 1439],
+    ["1 PM", 780],
   ])("parseTimeInput(%s) = %i", (s, want) => {
     expect(parseTimeInput(s)).toBe(want);
   });
 
-  it.each(["", "abc", "9:60", "25:00", "24:01", "12345", "9:5"])("parseTimeInput(%s) = null", (s) => {
+  it.each(["", "abc", "9:60", "25:00", "24:01", "12345", "9:5", "0am", "13pm", "24am", "9:60pm", "pm", "9 xm", "9amm"])("parseTimeInput(%s) = null", (s) => {
     expect(parseTimeInput(s)).toBeNull();
   });
 });

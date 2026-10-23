@@ -27,15 +27,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ImportResult } from "@/domain/export/schema";
-import { formatMinute, weekDays, weekStartOf } from "@/domain/time/localDate";
-import type { Routine, SnapMinutes, Template, ThemePref, WeekStartDay } from "@/domain/types";
+import { formatMinute, formatMinuteRange, weekDays, weekStartOf } from "@/domain/time/localDate";
+import type { Routine, SnapMinutes, Template, ThemePref, TimeFormat, WeekStartDay } from "@/domain/types";
 import { getPlatform } from "@/platform";
 import { applyImport, backupNow, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
 import { exportIcs, importIcsFile } from "@/state/ics";
-import { useGoalMap, useRoutines, useTemplates } from "@/state/selectors";
+import { useGoalMap, useRoutines, useTemplates, useTimeFormat } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
 import { BackupList } from "./BackupList";
+import { CalendarSubscriptions } from "./CalendarSubscriptions";
 import { RoutineDialog } from "./RoutineDialog";
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -74,7 +75,11 @@ const WEEK_STARTS: { value: WeekStartDay; label: string }[] = [
 ];
 const SNAPS: { value: SnapMinutes; label: string }[] = [5, 10, 15, 30].map((v) => ({ value: v as SnapMinutes, label: `${v} minutes` }));
 const LENGTHS = [15, 30, 45, 60, 90, 120, 180, 240].map((v) => ({ value: v, label: v < 60 ? `${v} minutes` : `${v / 60} h` }));
-const DAY_STARTS = Array.from({ length: 24 }, (_, h) => ({ value: h * 60, label: formatMinute(h * 60) }));
+const dayStarts = (tf: TimeFormat) => Array.from({ length: 24 }, (_, h) => ({ value: h * 60, label: formatMinute(h * 60, tf) }));
+const TIME_FORMATS: { value: TimeFormat; label: string }[] = [
+  { value: "24h", label: "24-hour (13:00)" },
+  { value: "12h", label: "12-hour (1:00 PM)" },
+];
 const THEMES: { value: ThemePref; label: string }[] = [
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
@@ -89,6 +94,7 @@ const COUNT_LABELS: Record<string, string> = {
   routines: "routines",
   blocks: "blocks",
   weekNotes: "reflections",
+  calendarSubscriptions: "calendar subscriptions",
   settings: "settings",
 };
 
@@ -146,6 +152,7 @@ function weekdaysSummary(mask: number): string {
 }
 
 function RoutineRow({ routine, onEdit }: { routine: Routine; onEdit: () => void }) {
+  const tf = useTimeFormat();
   const goals = useGoalMap();
   const goal = routine.goalId ? goals[routine.goalId] : null;
   return (
@@ -156,7 +163,7 @@ function RoutineRow({ routine, onEdit }: { routine: Routine; onEdit: () => void 
           <span className="truncate">{routine.title}</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          {formatMinute(routine.startMinute)}–{formatMinute(routine.endMinute)} · {weekdaysSummary(routine.weekdays)}
+          {formatMinuteRange(routine.startMinute, routine.endMinute, tf)} · {weekdaysSummary(routine.weekdays)}
           {routine.endsOn ? ` · until ${routine.endsOn}` : ""}
         </p>
       </div>
@@ -421,6 +428,7 @@ function ImportDialog({ pending, onClose }: { pending: { name: string; result: I
 }
 
 export function SettingsView() {
+  const tf = useTimeFormat();
   const settings = useStore((s) => s.settings);
   const [pending, setPending] = useState<{ name: string; result: ImportResult } | null>(null);
   const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
@@ -458,7 +466,10 @@ export function SettingsView() {
               />
             </Row>
             <Row label="Day starts at" hint="Where Day and Week views scroll to for days other than today.">
-              <Choice label="Day starts at" value={settings.dayStartMinute} options={DAY_STARTS} onChange={(v) => setSetting("dayStartMinute", v)} />
+              <Choice label="Day starts at" value={settings.dayStartMinute} options={dayStarts(tf)} onChange={(v) => setSetting("dayStartMinute", v)} />
+            </Row>
+            <Row label="Time format" hint="How times are shown. Typing 9:30pm or 21:30 works either way.">
+              <Choice label="Time format" value={settings.timeFormat} options={TIME_FORMATS} onChange={(v) => setSetting("timeFormat", v)} />
             </Row>
             <Row label="Snap to" hint="Hold Shift while dragging for 5-minute steps.">
               <Choice label="Snap to" value={settings.snapMinutes} options={SNAPS} onChange={(v) => setSetting("snapMinutes", v)} />
@@ -519,9 +530,11 @@ export function SettingsView() {
         <section>
           <h2 className="mb-1 text-lg font-semibold">Calendar</h2>
           <p className="mb-3 text-sm text-muted-foreground">
-            Import a calendar's events as a read-only overlay in Day view, with a button to copy any of them into your plan. Recurring
-            events aren't expanded — each shows up once. Export writes your plan and actual blocks for a date range as a calendar file.
+            Show a calendar's events as a read-only overlay in Day view, with a button to copy any of them into your plan — from a
+            subscription that stays up to date, or a one-off .ics file. Export writes your plan and actual blocks for a date range as a
+            calendar file.
           </p>
+          <CalendarSubscriptions web={info?.kind === "web"} />
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void importIcsFile()}>
               <CalendarArrowDown /> Import .ics…

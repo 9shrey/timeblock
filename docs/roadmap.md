@@ -22,7 +22,7 @@ which is deliberately deferred.
 | M11.1: window state | ✅ Done: `tauri-plugin-window-state` |
 | M11.2: notifications | ✅ Done: upcoming block, evening unconfirmed nudge, weekly review |
 | M11.3: tray icon | ✅ Done: next block, start timer, confirm rest of day, show/hide, quit, close-to-tray setting |
-| M11.4: ICS import/export | ✅ Done: read-only overlay import (no RRULE expansion), plan+actual export for a date range |
+| M11.4: ICS import/export | ✅ Done: read-only overlay import (file or subscribed URL, RRULE/TZID via `ical.js`), plan+actual export for a date range |
 | M11.5: auto-update | ⛔ Not implemented — needs signing keys/accounts from the owner |
 | M11.6: signing/notarization | ⛔ Not implemented — needs accounts from the owner |
 | M12.1: trends view, `loadBlocksRange` | ✅ Done |
@@ -101,10 +101,16 @@ Product decisions M12 made where the spec left them open:
   hang" in the middle of a drag. CI retries each spec file once.
 - The auto-updater and code signing need keys and accounts from the owner. Don't
   implement them without asking.
-- ICS import has no timezone database: a UTC (`Z`) timestamp is converted to the host
-  machine's local wall clock (correct); a floating or `TZID` timestamp is taken at face
-  value, assuming it already matches the viewer's zone. Recurring events (`RRULE`) are
-  not expanded — each `VEVENT` becomes at most one overlay event.
+- ICS import (`src/domain/ics/parse.ts`, `ical.js`) expands recurring series only for a
+  window around the cursor (`src/state/ics.ts`: 2 weeks before to 8 after, moved when the
+  cursor leaves it), capped at 20,000 iterations per series. `TZID` times use the file's
+  `VTIMEZONE`, else `Intl` (IANA names only); a Windows zone name with no `VTIMEZONE` is
+  taken at face value, as are floating times. A file that `ical.js` can't parse is
+  rejected whole.
+- Calendar subscriptions store only the row (`calendar_subscriptions`); fetched events
+  and fetch status live in memory. The http plugin's capability allows `https://*` only
+  (`src-tauri/capabilities/default.json`); `webcal://` is rewritten to `https://` and
+  `http://` links are refused. The browser build's `fetch` is usually blocked by CORS.
 
 ---
 
