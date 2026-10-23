@@ -1,34 +1,75 @@
+<div align="center">
+
+<img src="site/assets/icon-256.png" alt="Timeblock" width="96" height="96">
+
 # Timeblock
 
-Time-block your day (**Plan**), correct it to what really happened (**Actual**), and see
-how each weekly goal's target and outcomes compare with the time you planned and spent.
+**Plan your day. Log what really happened. See how it stacks up against your weekly goals.**
 
-Timeblock is a local-first desktop app (Tauri 2, React, TypeScript). Your data is a
-SQLite file on your machine: no account, no server, no telemetry.
+[![Release](https://img.shields.io/github/v/release/9shrey/timeblock?include_prereleases&style=flat-square)](../../releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+![Platforms](https://img.shields.io/badge/Linux%20%C2%B7%20macOS%20%C2%B7%20Windows-555?style=flat-square)
+![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&logo=tauri&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+
+[Download](../../releases) · [Features](#features) · [Shortcuts](#keyboard-shortcuts) · [Development](#development) · [Changelog](CHANGELOG.md)
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="site/assets/screenshots/day-dark.png">
+  <img src="site/assets/screenshots/day-light.png" alt="Timeblock day view with Plan and Actual lanes" width="860">
+</picture>
+
+</div>
+
+<br>
+
+Timeblock is a **local-first desktop app**. Your data is a SQLite file on your machine:
+no account, no server, no telemetry.
 
 ## Features
 
-- **Plan | Actual day view.** Drag to create, move and resize blocks; Shift snaps to
-  5 minutes, Ctrl copies. Overlapping blocks sit side by side.
-- **Ghosts.** Every plan block shows up dashed in the Actual lane until you confirm it
-  (✓, `a`) or skip it (✗, `s`). Drag a ghost to log it at a different time. *Confirm rest
-  of day* (`Shift+A`) logs every past ghost around whatever you already logged.
-  Unconfirmed time never counts as actual, so your numbers stay honest.
-- **Week view** with Plan | Actual split for past days; drag blocks across days.
-- **Goals** with weekly targets, either *at least* (e.g. Thesis ≥ 15 h) or *at most*
-  (e.g. Social ≤ 3 h). Targets carry forward until you change them; past weeks never
-  change. Each goal has an outcome checklist per week, with carry-over.
-- **Week budget** panel (`Ctrl+B`) and a **weekly review**: target vs plan vs actual,
-  status per goal, outcomes and a reflection note.
-- Undo/redo for everything, keyboard shortcuts, daily automatic backups, JSON
-  export/import.
+| | |
+|---|---|
+| 🗓️ **Plan \| Actual day view** | Drag to create, move and resize blocks. `Shift` snaps to 5 minutes, `Ctrl` copies. Overlapping blocks sit side by side. |
+| 👻 **Ghosts** | Every plan block shows up dashed in the Actual lane until you confirm it (`a`) or skip it (`s`). Drag a ghost to log it at a different time. *Confirm rest of day* (`Shift+A`) logs every past ghost around whatever you already logged. Unconfirmed time never counts as actual, so your numbers stay honest. |
+| 📅 **Week view** | Plan \| Actual split for past days; drag blocks across days. |
+| 🎯 **Goals** | Weekly targets, either *at least* (Thesis ≥ 15 h) or *at most* (Social ≤ 3 h), measured by time or by tasks done. Targets carry forward until you change them; past weeks never change. Each goal has a weekly outcome checklist with carry-over. |
+| 📊 **Budget and review** | A week budget panel (`Ctrl+B`) and a weekly review: target vs plan vs actual, status per goal, outcomes and a reflection note. |
+| 📈 **Trends** | Planned vs actual per goal over 4, 12 or 26 weeks, streaks, and plan-accuracy stats (`i`). |
+| 🛟 **Safe by default** | Undo/redo for everything, command palette (`Ctrl+K`), daily automatic backups, JSON export/import. |
+
+<details>
+<summary><b>More screenshots</b></summary>
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="site/assets/screenshots/week-dark.png">
+  <img src="site/assets/screenshots/week-light.png" alt="Week view" width="860">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="site/assets/screenshots/goals-dark.png">
+  <img src="site/assets/screenshots/goals-light.png" alt="Goals" width="860">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="site/assets/screenshots/review-dark.png">
+  <img src="site/assets/screenshots/review-light.png" alt="Weekly review" width="860">
+</picture>
+
+</details>
 
 ### Keyboard shortcuts
 
 | Keys | Action |
 |---|---|
-| `d` `w` `g` `r` | Day, Week, Goals, Review |
+| `d` `w` `g` `r` `i` | Day, Week, Goals, Review, Trends |
 | `t`, `[`, `]` | Today, previous, next |
+| `Ctrl+K` | Command palette |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |
 | `Ctrl+B` | Week budget panel |
 | `Enter` | Edit the selected block |
@@ -38,6 +79,7 @@ SQLite file on your machine: no account, no server, no telemetry.
 | `a` / `s` | Confirm / skip the selected plan block or ghost |
 | `Shift+A` | Confirm the rest of the day as planned |
 | `Esc` | Cancel a drag, close the editor, clear the selection |
+| `?` | Show all shortcuts |
 
 ## Install
 
