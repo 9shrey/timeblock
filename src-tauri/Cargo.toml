@@ -1,6 +1,6 @@
 [package]
 name = "timeblock"
-version = "0.1.0"
+version = "0.2.0"
 description = "Time-block your day, record what actually happened, and track weekly goals."
 authors = ["Shrey Singh"]
 license = "MIT"
@@ -41,3 +41,7 @@ strip = true
 
 [dev-dependencies]
 tempfile = "3.27.0"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"

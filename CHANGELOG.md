@@ -6,7 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-20
+
 ### Added
+- **In-app updates**: Settings → Updates checks GitHub Releases for a newer version and
+  installs it with one click (after backing up your data). Update bundles are signed with
+  Timeblock's updater key and verified before installing. This is separate from OS code
+  signing, so first installs are still unsigned.
+- **Live in-browser demo** at `9shrey.github.io/timeblock/demo/`, linked from the website: the
+  web build (`VITE_DEMO=1`) starts with two weeks of sample data, keeps edits in the
+  browser, and has a banner with "Reset demo" and a link to the desktop app. The site
+  deploy now builds and ships it as one Pages artifact.
 - **Calendar subscriptions**: paste a Google/Outlook secret iCal link (or any `https://` /
   `webcal://` `.ics` URL) in Settings → Calendar and its events show up in the read-only
   Day view overlay, with "copy to plan" as before. Subscriptions refresh on launch, every

@@ -69,6 +69,15 @@ export interface Platform {
    * with CORS. Rejects with a readable message on a network error or a non-2xx status.
    */
   fetchText(url: string): Promise<string>;
+  /** The newer release, or null if up to date. Always null on web. Rejects if the check fails. */
+  checkForUpdate(): Promise<UpdateInfo | null>;
+  /** Downloads and installs the update found by the last `checkForUpdate`, then restarts. */
+  installUpdate(): Promise<void>;
+}
+
+export interface UpdateInfo {
+  version: string;
+  notes: string | null;
 }
 
 /** The body of a successful response, or a readable error for a failed one. */

@@ -84,6 +84,11 @@ async function boot() {
 
   const clock = makeClock(TEST_SWITCHES ? parseNowOverride(location.search) : null);
   if (TEST_SWITCHES) await applyDevParams(repo, clock());
+  // The public demo starts with two weeks of sample data instead of an empty app.
+  if (import.meta.env.VITE_DEMO === "1" && (await repo.loadBase()).goals.length === 0) {
+    const { demoSeed } = await import("./data/devSeed");
+    await repo.replaceAll(demoSeed(clock()));
+  }
 
   await initStore(
     {

@@ -11,6 +11,8 @@
     "core:window:allow-destroy",
     "opener:default",
     "notification:default",
+    "updater:default",
+    "process:allow-restart",
     {
       "identifier": "http:allow-fetch",
       "allow": [

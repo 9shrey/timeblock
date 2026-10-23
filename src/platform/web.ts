@@ -94,6 +94,8 @@ export const webPlatform: Platform = {
   async onTrayAction() {
     return () => {};
   },
+  checkForUpdate: async () => null,
+  installUpdate: async () => {},
   async fetchText(url) {
     let res: Response;
     try {
