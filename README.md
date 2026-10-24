@@ -97,6 +97,15 @@ not code-signed yet.
 Only one copy of Timeblock runs at a time: launching it again brings the open window to
 the front.
 
+### Updates
+
+From 0.2.0 on, Timeblock looks for a new release on launch and once a day (turn this off in
+*Settings → Updates*). Nothing installs until you click **Install and restart**: your data is
+backed up first, and the update is checked against Timeblock's signing key before it runs.
+All install types update in place. On Linux, `.deb` and `.rpm` installs ask for your system
+password, the same as installing the package by hand. Version 0.1.0 has no updater, so
+download 0.2.0 from Releases once.
+
 ## Your data and backups
 
 | OS | Folder |
@@ -170,9 +179,17 @@ Design notes live in [docs/design/](docs/design/); start with
 
 ### Releasing
 
-Bump `version` in `package.json`, add a CHANGELOG entry, then push a matching tag
-(`git tag v0.1.0 && git push --tags`). CI builds Linux, macOS and Windows bundles into a
-draft GitHub release.
+Bump `version` in `package.json` and `src-tauri/Cargo.toml`, add a `## [x.y.z]` section
+to the CHANGELOG, then push a matching tag (`git tag v0.2.1 && git push --tags`). CI builds
+Linux, macOS and Windows bundles into a draft GitHub release. That CHANGELOG section becomes
+the release notes, which the app shows as "What's new". Publish the draft to make the
+update visible to the in-app updater.
+
+The workflow needs the updater signing key as the `TAURI_SIGNING_PRIVATE_KEY` repository
+secret (plus `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if the key has one), and stops early
+without it. The key's public half is `plugins.updater.pubkey` in `src-tauri/tauri.conf.json`.
+Keep a copy of the private key somewhere safe: releases signed with a different key can't
+update existing installs.
 
 ## License
 

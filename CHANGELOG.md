@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Automatic update checks**: the desktop app looks for a new release 15 seconds after
+  launch and then once a day, and shows a toast with a "View" button when one is found.
+  Nothing installs without a click. Turn it off with Settings → Updates → "Check
+  automatically".
+- **Release notes in the app**: Settings → Updates shows "What's new" for the available
+  version. The release workflow now uses the version's CHANGELOG section as the release
+  body (which goes into the updater's `latest.json`), and stops if that section is missing.
+
+### Changed
+- Updates show download progress, then "Installing…", instead of a bare "Working…".
+- A failed install says why (for example, a dismissed password prompt), offers "Try
+  again", and links to the Releases page. Before, it showed "Couldn't reach the update
+  server" even when the download had worked.
+- `.deb` and `.rpm` installs say up front that installing asks for the system password.
+
+### Fixed
+- The install-failure message said only the AppImage could update itself on Linux. The
+  updater also installs `.deb` and `.rpm` updates, through a `pkexec` password prompt.
+
 ## [0.2.0] - 2026-10-20
 
 ### Added

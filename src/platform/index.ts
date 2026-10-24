@@ -71,14 +71,28 @@ export interface Platform {
   fetchText(url: string): Promise<string>;
   /** The newer release, or null if up to date. Always null on web. Rejects if the check fails. */
   checkForUpdate(): Promise<UpdateInfo | null>;
-  /** Downloads and installs the update found by the last `checkForUpdate`, then restarts. */
-  installUpdate(): Promise<void>;
+  /**
+   * Backs up, downloads and installs the update found by the last `checkForUpdate`, then
+   * restarts. Reports download progress, then `installing`. Rejects if any step fails.
+   */
+  installUpdate(onProgress?: (progress: InstallProgress) => void): Promise<void>;
+  /** Opens an `https://` link in the default browser. */
+  openUrl(url: string): Promise<void>;
 }
 
 export interface UpdateInfo {
   version: string;
+  /** Release notes (the CHANGELOG section, as Markdown), if the release has any. */
   notes: string | null;
+  /** Installing asks for the system password (Linux .deb/.rpm installs go through pkexec). */
+  needsPassword: boolean;
 }
+
+export type InstallProgress =
+  | { phase: "downloading"; downloaded: number; /** Bytes, when the server sends a length. */ total: number | null }
+  | { phase: "installing" };
+
+export const RELEASES_URL = "https://github.com/9shrey/timeblock/releases/latest";
 
 /** The body of a successful response, or a readable error for a failed one. */
 export async function responseText(res: Response): Promise<string> {

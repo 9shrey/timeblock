@@ -96,6 +96,9 @@ export const webPlatform: Platform = {
   },
   checkForUpdate: async () => null,
   installUpdate: async () => {},
+  async openUrl(url) {
+    window.open(url, "_blank", "noopener");
+  },
   async fetchText(url) {
     let res: Response;
     try {
