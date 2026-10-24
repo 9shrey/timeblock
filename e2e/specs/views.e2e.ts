@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { browser, $, $$, expect } from "@wdio/globals";
 import { dragMinutes, gotoView, item, itemLabels, key, openSeeded, snap } from "../helpers";
+
+/** The version the app reports, so a release bump doesn't break the Settings check. */
+const APP_VERSION = (JSON.parse(readFileSync(resolve(import.meta.dirname, "../../package.json"), "utf8")) as { version: string }).version;
 
 /** Text of the main content area, whitespace-collapsed. */
 async function mainText(): Promise<string> {
@@ -149,7 +154,7 @@ describe("Settings (native)", () => {
   it("shows the desktop data folder and version", async () => {
     const text = await mainText();
     expect(text).toMatch(/com\.shreysingh\.timeblock/);
-    expect(text).toContain("Timeblock 0.1.0");
+    expect(text).toContain(`Timeblock ${APP_VERSION} · MIT licensed`);
     await expect($("button=Open data folder")).toBeDisplayed();
   });
 

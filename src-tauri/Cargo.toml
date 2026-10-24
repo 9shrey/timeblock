@@ -44,4 +44,6 @@ tempfile = "3.27.0"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-process = "2"
-tauri-plugin-updater = "2"
+# No "zip" feature: it only unpacks Tauri v1-style .zip/.tar.gz update bundles, and this app
+# publishes v2 artifacts (`createUpdaterArtifacts: true`). It also pulled in a vulnerable zip 4.x.
+tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls", "system-proxy"] }

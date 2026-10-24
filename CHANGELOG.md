@@ -22,6 +22,12 @@ All notable changes to this project are documented here. The format follows
   server" even when the download had worked.
 - `.deb` and `.rpm` installs say up front that installing asks for the system password.
 
+### Security
+- Turned off the updater plugin's `zip` feature, which only unpacks Tauri v1-style
+  `.zip`/`.tar.gz` update bundles (this app publishes v2 ones). This removes `zip` 4.6.1
+  and its advisories (RUSTSEC-2026-0367, -0368, -0369). Updated `rustls-webpki` to
+  0.103.16 (RUSTSEC-2026-0382).
+
 ### Fixed
 - The install-failure message said only the AppImage could update itself on Linux. The
   updater also installs `.deb` and `.rpm` updates, through a `pkexec` password prompt.
