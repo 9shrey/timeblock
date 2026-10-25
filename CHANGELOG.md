@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-25
+
+0.2.0 was tagged but never published, so this is the first release with its changes too
+(in-app updates, the live demo, calendar subscriptions and more); see 0.2.0 below.
+
 ### Added
 - **Automatic update checks**: the desktop app looks for a new release 15 seconds after
   launch and then once a day, and shows a toast with a "View" button when one is found.
