@@ -162,6 +162,8 @@ export interface Settings {
   closeToTray: boolean;
   /** How clock times are shown: "09:30" or "9:30 AM". Input accepts either in both modes. */
   timeFormat: TimeFormat;
+  /** Desktop: look for a new release on launch and once a day while running. */
+  autoCheckUpdates: boolean;
 }
 
 // ---------------------------------------------------------------------------

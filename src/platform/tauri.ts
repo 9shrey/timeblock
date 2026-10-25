@@ -1,13 +1,22 @@
-import { getVersion } from "@tauri-apps/api/app";
+import { BundleType, getBundleType, getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { fetch as httpFetch } from "@tauri-apps/plugin-http";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { isPermissionGranted, onAction, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { createTauriDriver } from "@/data/drivers/tauriDriver";
-import { responseText, type BackupInfo, type OpenedFile, type Platform, type SystemTheme, type TrayAction } from "./index";
+import {
+  responseText,
+  type BackupInfo,
+  type InstallProgress,
+  type OpenedFile,
+  type Platform,
+  type SystemTheme,
+  type TrayAction,
+} from "./index";
 
 const CLOSE_FLUSH_TIMEOUT_MS = 3000;
 
@@ -55,15 +64,28 @@ export const tauriPlatform: Platform = {
   onTrayAction: (cb) => listen<TrayAction>("tray-action", (event) => cb(event.payload)),
   async checkForUpdate() {
     pendingUpdate = await check();
-    return pendingUpdate ? { version: pendingUpdate.version, notes: pendingUpdate.body ?? null } : null;
+    if (!pendingUpdate) return null;
+    const bundle = await getBundleType().catch(() => null);
+    return {
+      version: pendingUpdate.version,
+      notes: pendingUpdate.body?.trim() || null,
+      needsPassword: bundle === BundleType.Deb || bundle === BundleType.Rpm,
+    };
   },
-  async installUpdate() {
-    if (!pendingUpdate) return;
+  async installUpdate(onProgress?: (progress: InstallProgress) => void) {
+    if (!pendingUpdate) throw new Error("No update to install. Check for updates first.");
     // A backup first keeps data recoverable if a release misbehaves.
     await invoke("backup_now", { reason: "pre-update" });
-    await pendingUpdate.downloadAndInstall();
+    let downloaded = 0;
+    let total: number | null = null;
+    await pendingUpdate.downloadAndInstall((event) => {
+      if (event.event === "Started") total = event.data.contentLength ?? null;
+      else if (event.event === "Progress") downloaded += event.data.chunkLength;
+      onProgress?.(event.event === "Finished" ? { phase: "installing" } : { phase: "downloading", downloaded, total });
+    });
     await relaunch();
   },
+  openUrl: (url) => openUrl(url),
   async fetchText(url) {
     let res: Response;
     try {

@@ -46,6 +46,30 @@ jobs:
             exit 1
           fi
 
+      # The CHANGELOG section becomes the release body, which the in-app updater shows as
+      # "What's new" (tauri-action copies it into latest.json).
+      - name: Release notes from CHANGELOG.md
+        id: notes
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          notes="$(tr -d '\r' < CHANGELOG.md | awk -v head="## [${version}]" '
+            index($0, head) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ')"
+          if [ -z "$(echo "$notes" | tr -d '[:space:]')" ]; then
+            echo "CHANGELOG.md has no '## [${version}]' section; add one before tagging." >&2
+            exit 1
+          fi
+          {
+            echo "body<<RELEASE_NOTES_EOF"
+            echo "$notes"
+            echo
+            echo "Builds are not code-signed; see the README for install notes."
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-24.04'
         run: |
@@ -81,7 +105,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Timeblock ${{ github.ref_name }}"
-          releaseBody: "See CHANGELOG.md. Builds are unsigned; see the README for install notes."
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

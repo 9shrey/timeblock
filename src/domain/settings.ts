@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notifyWeeklyReview: false,
   closeToTray: false,
   timeFormat: "24h",
+  autoCheckUpdates: true,
 };
 
 /** Per-key schemas. Invalid or missing values fall back to the default. */
@@ -30,6 +31,7 @@ const schemas: { [K in keyof Settings]: z.ZodType<Settings[K]> } = {
   notifyWeeklyReview: z.boolean(),
   closeToTray: z.boolean(),
   timeFormat: z.enum(["24h", "12h"]),
+  autoCheckUpdates: z.boolean(),
 };
 
 export const SETTING_KEYS = Object.keys(schemas) as (keyof Settings)[];

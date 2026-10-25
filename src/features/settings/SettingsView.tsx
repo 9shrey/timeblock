@@ -29,12 +29,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { ImportResult } from "@/domain/export/schema";
 import { formatMinute, formatMinuteRange, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { Routine, SnapMinutes, Template, ThemePref, TimeFormat, WeekStartDay } from "@/domain/types";
-import { getPlatform } from "@/platform";
+import { cn } from "@/lib/utils";
+import { getPlatform, RELEASES_URL } from "@/platform";
 import { applyImport, backupNow, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
 import { exportIcs, importIcsFile } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates, useTimeFormat } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
+import { checkForUpdate, installUpdate, plainReleaseNotes, useUpdates, type UpdateState } from "@/state/updates";
 import { BackupList } from "./BackupList";
 import { CalendarSubscriptions } from "./CalendarSubscriptions";
 import { RoutineDialog } from "./RoutineDialog";
@@ -261,57 +263,91 @@ function DesktopSection() {
   );
 }
 
+function updateStatus(state: UpdateState, version: string): string {
+  switch (state.kind) {
+    case "idle":
+      return `You have Timeblock ${version}.`;
+    case "checking":
+      return "Checking for updates…";
+    case "current":
+      return `Timeblock ${version} is up to date.`;
+    case "checkFailed":
+      return "Couldn't reach the update server. Check your connection and try again.";
+    case "available":
+      return `Version ${state.update.version} is available. You have ${version}.`;
+    case "downloading":
+      return state.percent === null ? `Downloading ${state.update.version}…` : `Downloading ${state.update.version}… ${state.percent}%`;
+    case "installing":
+      return `Installing ${state.update.version}. Timeblock restarts when it's done.`;
+    case "installFailed":
+      return `Couldn't install ${state.update.version}: ${state.message}`;
+  }
+}
+
 function UpdatesSection({ version }: { version: string }) {
-  const [state, setState] = useState<
-    { kind: "idle" } | { kind: "busy" } | { kind: "current" } | { kind: "available"; version: string } | { kind: "error" }
-  >({ kind: "idle" });
-  const run = async (fn: () => Promise<void>, onError: () => void) => {
-    setState({ kind: "busy" });
-    try {
-      await fn();
-    } catch {
-      onError();
-    }
-  };
+  const state = useUpdates((s) => s.state);
+  const autoCheck = useStore((s) => s.settings.autoCheckUpdates);
+  const update = "update" in state ? state.update : null;
+  const busy = state.kind === "checking" || state.kind === "downloading" || state.kind === "installing";
+  const notes = update?.notes ? plainReleaseNotes(update.notes) : "";
   return (
     <section>
       <h2 className="mb-1 text-lg font-semibold">Updates</h2>
-      <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
-        <p className="text-sm text-muted-foreground" role="status">
-          {state.kind === "current" && `Timeblock ${version} is up to date.`}
-          {state.kind === "available" && `Version ${state.version} is available.`}
-          {state.kind === "busy" && "Working…"}
-          {state.kind === "error" && "Couldn't reach the update server. Check your connection and try again."}
-          {state.kind === "idle" && `You have ${version}.`}
-        </p>
-        {state.kind === "available" ? (
-          <Button
-            onClick={() =>
-              void run(async () => {
-                await flushWrites();
-                await (await getPlatform()).installUpdate();
-              }, () => {
-                setState({ kind: "error" });
-                toast.error("The update failed to install. Your data is unchanged. On Linux, only the AppImage updates itself; for .deb or .rpm, download the new version from Releases.");
-              })
-            }
-          >
-            Install and restart
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            disabled={state.kind === "busy"}
-            onClick={() =>
-              void run(async () => {
-                const u = await (await getPlatform()).checkForUpdate();
-                setState(u ? { kind: "available", version: u.version } : { kind: "current" });
-              }, () => setState({ kind: "error" }))
-            }
-          >
-            Check for updates
-          </Button>
-        )}
+      <div className="rounded-lg border px-4">
+        <div className="flex flex-col gap-3 border-b py-3">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground" role="status">
+              {updateStatus(state, version)}
+            </p>
+            {state.kind === "available" || state.kind === "installFailed" ? (
+              <Button className="shrink-0" onClick={() => void getPlatform().then(installUpdate)}>
+                {state.kind === "installFailed" ? "Try again" : "Install and restart"}
+              </Button>
+            ) : (
+              <Button className="shrink-0" variant="outline" disabled={busy} onClick={() => void getPlatform().then((p) => checkForUpdate(p))}>
+                Check for updates
+              </Button>
+            )}
+          </div>
+          {state.kind === "downloading" && (
+            <div
+              role="progressbar"
+              aria-label="Download progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={state.percent ?? undefined}
+              className="h-1.5 overflow-hidden rounded-full bg-muted"
+            >
+              <div
+                className={cn("h-full rounded-full bg-primary transition-[width]", state.percent === null && "w-1/3 animate-pulse")}
+                style={state.percent === null ? undefined : { width: `${state.percent}%` }}
+              />
+            </div>
+          )}
+          {update?.needsPassword && (state.kind === "available" || state.kind === "downloading" || state.kind === "installFailed") && (
+            <p className="text-xs text-muted-foreground">Installing asks for your system password, because this copy was installed from a .deb or .rpm package.</p>
+          )}
+          {state.kind === "installFailed" && (
+            <p className="text-xs text-muted-foreground">
+              Your data is unchanged, and a backup was made first. You can also download the new version yourself.{" "}
+              <Button variant="link" className="h-auto p-0 text-xs" onClick={() => void getPlatform().then((p) => p.openUrl(RELEASES_URL))}>
+                Open the Releases page
+              </Button>
+            </p>
+          )}
+          {notes && (
+            <details className="text-sm">
+              <summary className="cursor-pointer select-none text-muted-foreground">What's new in {update!.version}</summary>
+              <p className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed">{notes}</p>
+            </details>
+          )}
+        </div>
+        <NotifyRow
+          label="Check automatically"
+          hint="On launch and once a day while Timeblock runs. Nothing installs without your click."
+          checked={autoCheck}
+          onChange={(v) => setSetting("autoCheckUpdates", v)}
+        />
       </div>
     </section>
   );

@@ -14,6 +14,7 @@ import { startCalendarSync } from "./state/ics";
 import { scheduleNotifications, wireNotificationClicks } from "./state/notifications";
 import { flushWrites, initStore, pendingWrites, useStore } from "./state/store";
 import { scheduleTray, wireTrayActions } from "./state/tray";
+import { startUpdateChecks } from "./state/updates";
 import { useUi } from "./state/ui";
 import "./styles/index.css";
 
@@ -109,6 +110,8 @@ async function boot() {
   scheduleNotifications(platform, clock());
   scheduleTray(platform, clock());
   startCalendarSync(platform);
+  // Dev and e2e builds would only ever find the latest release "newer" than a local build.
+  if (!TEST_SWITCHES) startUpdateChecks(platform);
   void platform.setCloseToTray(useStore.getState().settings.closeToTray);
   useStore.subscribe((s, prev) => {
     if (s.settings.closeToTray !== prev.settings.closeToTray) void platform.setCloseToTray(s.settings.closeToTray);
