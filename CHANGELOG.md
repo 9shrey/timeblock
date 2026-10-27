@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-27
+
+### Added
+- **Select mode** (Select button or `x`, Day and Week views): drag a box over blocks to select
+  them, click to toggle one, "Select all today / this week", then Delete.
+
+### Changed
+- Deleting a multi-selection now also removes blocks on locked past days (still one undo step).
+
 ## [0.2.2] - 2026-10-27
 
 ### Added
