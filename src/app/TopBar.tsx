@@ -1,14 +1,15 @@
 import { ChevronLeft, ChevronRight, CopyPlus, PanelRight, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { addDays, formatDateLong, isoWeek, weekdayLong, weekStartOf } from "@/domain/time/localDate";
+import { addDays, addMonths, formatDateLong, formatMonthLong, isoWeek, weekdayLong, weekStartOf } from "@/domain/time/localDate";
 import { copyWeekPlan, redo, undo } from "@/state/commands";
 import { useStore } from "@/state/store";
 
 /** Step size for ‹ › in the current view: a day in Day view, a week elsewhere. */
 export function stepCursor(direction: -1 | 1): void {
   const { view, cursor } = useStore.getState();
-  useStore.setState({ cursor: addDays(cursor, direction * (view === "day" ? 1 : 7)), selection: null });
+  const next = view === "month" ? addMonths(cursor, direction) : addDays(cursor, direction * (view === "day" ? 1 : 7));
+  useStore.setState({ cursor: next, selection: null });
 }
 
 export function goToday(): void {
@@ -40,7 +41,7 @@ export function TopBar() {
   const canRedo = useStore((s) => s.history.redo.length > 0);
   const budgetOpen = useStore((s) => s.budgetOpen);
   const { week } = isoWeek(cursor);
-  const unit = view === "day" ? "day" : "week";
+  const unit = view === "day" ? "day" : view === "month" ? "month" : "week";
   const weekStart = weekStartOf(cursor, weekStartDay);
 
   return (
@@ -55,8 +56,8 @@ export function TopBar() {
         <ChevronRight />
       </IconButton>
       <h1 className="ml-2 text-sm font-semibold">
-        {view === "day" ? `${weekdayLong(cursor)}, ${formatDateLong(cursor)}` : formatDateLong(cursor)}
-        <span className="ml-2 font-normal text-muted-foreground">W{week}</span>
+        {view === "day" ? `${weekdayLong(cursor)}, ${formatDateLong(cursor)}` : view === "month" ? formatMonthLong(cursor) : formatDateLong(cursor)}
+        {view !== "month" && <span className="ml-2 font-normal text-muted-foreground">W{week}</span>}
       </h1>
       {view === "week" && (
         <Tooltip>

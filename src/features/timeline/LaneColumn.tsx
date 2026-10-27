@@ -26,6 +26,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
   const laneMinute = useLaneMinute(spec.day);
   const selected = useLaneSelection(spec.day, spec.layer, !!spec.showGhosts);
   const editable = isEditable(spec);
+  const multi = useUi((s) => s.multiSelected);
   const highlighted = useUi((s) => s.highlightedGoalId);
   const dim = (goalId: string | null) => highlighted !== null && goalId !== highlighted;
 
@@ -109,7 +110,7 @@ export const LaneColumn = memo(function LaneColumn({ spec, index, pxPerHour }: P
             col={index}
             planState={states?.get(b.id) ?? null}
             delta={plan ? blockDelta(b, plan) : null}
-            selected={selected === `block:${b.id}`}
+            selected={selected === `block:${b.id}` || multi.includes(b.id)}
             editable={editable}
             dimmed={dim(b.goalId)}
           />

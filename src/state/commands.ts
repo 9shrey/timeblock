@@ -28,7 +28,7 @@ import { addDays, weekDays } from "@/domain/time/localDate";
 import type { Block, ChangeSet, Layer, LocalDate, Now } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { activeGoals, allBlocks, goalList } from "./selectors";
-import { commit, redo as storeRedo, undo as storeUndo, useStore } from "./store";
+import { commit, redo as storeRedo, undo as storeUndo, useStore, type Selection } from "./store";
 import { closeEditor, openEditor, useUi } from "./ui";
 
 const env = systemEnv;
@@ -393,6 +393,62 @@ export function resizeItemBy(ref: ItemRef, delta: number): void {
 }
 
 /** Delete key: deletes blocks, skips ghosts. */
+// --- multi-select ----------------------------------------------------------
+
+export function clearMulti(): void {
+  if (useUi.getState().multiSelected.length > 0) useUi.setState({ multiSelected: [] });
+}
+
+/** Adds or removes a block from the multi-selection; the single selection joins it first. */
+export function toggleMulti(id: string, before: Selection = state().selection): void {
+  const sel = before;
+  const current = useUi.getState().multiSelected;
+  const base = current.length === 0 && sel?.kind === "block" ? [sel.id] : current;
+  const next = base.includes(id) ? base.filter((x) => x !== id) : [...base, id];
+  useUi.setState({ multiSelected: next });
+  useStore.setState({ selection: null });
+  closeEditor();
+}
+
+/** Multi-selects every block on `days` (both lanes), so one Delete can clear them. */
+export function selectAllOn(days: readonly LocalDate[]): void {
+  const set = new Set(days);
+  const ids = blocks().filter((b) => set.has(b.day)).map((b) => b.id);
+  useUi.setState({ multiSelected: ids });
+  useStore.setState({ selection: null });
+  closeEditor();
+  if (ids.length === 0) toast("No blocks to select.");
+}
+
+/** Deletes every multi-selected block in one undo step; blocks in locked lanes are kept. */
+export function deleteMulti(): void {
+  const ids = useUi.getState().multiSelected;
+  if (ids.length === 0) return;
+  let data = state().data;
+  const changes: ChangeSet = [];
+  let removed = 0;
+  let locked = 0;
+  for (const id of ids) {
+    const b = data.blocks[id];
+    if (!b) continue;
+    if (!canEditLane(b.day, b.layer)) {
+      locked++;
+      continue;
+    }
+    const cs = deleteBlock(b, allBlocks(data.blocks), env);
+    changes.push(...cs);
+    data = applyChanges(data, cs);
+    removed++;
+  }
+  if (removed > 0 && commitChecked(changes, `Delete ${removed} block${removed === 1 ? "" : "s"}`)) {
+    useUi.setState({ multiSelected: [] });
+    closeEditor();
+    toast(`Deleted ${removed} block${removed === 1 ? "" : "s"}${locked ? `; ${locked} in locked lanes kept` : ""}.`);
+  } else if (locked > 0) {
+    toast(`${locked} selected block${locked === 1 ? " is" : "s are"} in locked lanes. Unlock the day to delete.`);
+  }
+}
+
 export function deleteItem(ref: ItemRef): void {
   if (ref.kind === "ghost") skip(ref.planBlockId);
   else removeBlock(ref.id);

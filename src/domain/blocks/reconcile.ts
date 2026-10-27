@@ -439,15 +439,22 @@ export function rescheduleSkipped(
     );
 }
 
-/** Copies `fromDay`'s plan blocks (title, goal, notes, times) to `toDay` with new ids. */
+/**
+ * Copies `fromDay`'s plan blocks (title, goal, notes, times) to `toDay` with new ids.
+ * A block already on `toDay` with the same title and times is not copied again, so
+ * repeating a copy never stacks duplicates.
+ */
 export function copyPlan(
   fromDay: LocalDate,
   toDay: LocalDate,
   blocks: readonly Block[],
   env: Env,
 ): ChangeSet {
+  const existing = new Set(
+    blocks.filter((b) => b.layer === "plan" && b.day === toDay).map((b) => `${b.startMinute}|${b.endMinute}|${b.title}`),
+  );
   return blocks
-    .filter((b) => b.layer === "plan" && b.day === fromDay)
+    .filter((b) => b.layer === "plan" && b.day === fromDay && !existing.has(`${b.startMinute}|${b.endMinute}|${b.title}`))
     .sort((a, b) => a.startMinute - b.startMinute || a.endMinute - b.endMinute)
     .flatMap(
       (b) =>

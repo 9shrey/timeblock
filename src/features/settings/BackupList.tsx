@@ -6,6 +6,7 @@ import { getPlatform, type BackupInfo } from "@/platform";
 const REASONS: Record<string, string> = {
   auto: "Daily",
   manual: "Manual",
+  "pre-clear": "Before clearing data",
   "pre-import": "Before import",
   "pre-migration": "Before upgrade",
   "pre-restore": "Before restore",

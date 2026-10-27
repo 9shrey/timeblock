@@ -114,6 +114,35 @@ export async function applyImport(data: ExportData): Promise<boolean> {
   }
 }
 
+/** Deletes every goal, block, template, routine and note (preferences are kept) after a backup. */
+export async function clearAllData(): Promise<boolean> {
+  try {
+    await flushWrites();
+    const platform = await getPlatform();
+    const backup = await platform.backupNow("pre-clear");
+    const repo = getRepo();
+    const current = await repo.exportAll();
+    await repo.replaceAll({
+      settings: current.settings,
+      goals: [],
+      weekTargets: [],
+      checklistItems: [],
+      templates: [],
+      routines: [],
+      blocks: [],
+      weekNotes: [],
+      calendarSubscriptions: [],
+    });
+    await reloadAll();
+    toast.success("All data cleared", { description: backup ? `Previous data backed up to ${backup}` : undefined });
+    return true;
+  } catch (e) {
+    toast.error("Couldn't clear data; nothing was changed", { description: errorText(e) });
+    await reloadAll().catch(() => {});
+    return false;
+  }
+}
+
 export async function backupNow(): Promise<void> {
   try {
     const path = await (await getPlatform()).backupNow("manual");

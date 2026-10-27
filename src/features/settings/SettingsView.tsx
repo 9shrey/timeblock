@@ -31,7 +31,7 @@ import { formatMinute, formatMinuteRange, weekDays, weekStartOf } from "@/domain
 import type { Routine, SnapMinutes, Template, ThemePref, TimeFormat, WeekStartDay } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { getPlatform, RELEASES_URL } from "@/platform";
-import { applyImport, backupNow, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
+import { applyImport, backupNow, clearAllData, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
 import { exportIcs, importIcsFile } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates, useTimeFormat } from "@/state/selectors";
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
@@ -463,9 +463,43 @@ function ImportDialog({ pending, onClose }: { pending: { name: string; result: I
   );
 }
 
+function ClearDataDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Clear all data?</DialogTitle>
+          <DialogDescription>
+            This deletes every goal, block, template, routine and note so you can start over. Your preferences are kept. A backup of the current data is made first.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const ok = await clearAllData();
+              setBusy(false);
+              if (ok) onClose();
+            }}
+          >
+            Clear all data
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function SettingsView() {
   const tf = useTimeFormat();
   const settings = useStore((s) => s.settings);
+  const [clearOpen, setClearOpen] = useState(false);
   const [pending, setPending] = useState<{ name: string; result: ImportResult } | null>(null);
   const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
@@ -547,6 +581,9 @@ export function SettingsView() {
             >
               <Upload /> Import JSON…
             </Button>
+            <Button variant="outline" className="text-destructive" onClick={() => setClearOpen(true)}>
+              <Trash2 /> Clear all data…
+            </Button>
             <Button variant="outline" onClick={() => void backupNow()}>
               <HardDriveDownload /> Back up now
             </Button>
@@ -585,6 +622,7 @@ export function SettingsView() {
           Timeblock {info?.version ?? ""} · MIT licensed{info?.kind === "web" ? " · browser dev mode (data in localStorage)" : ""}
         </p>
       </div>
+      <ClearDataDialog open={clearOpen} onClose={() => setClearOpen(false)} />
       <ImportDialog pending={pending} onClose={() => setPending(null)} />
       <IcsExportDialog open={icsExportOpen} onClose={() => setIcsExportOpen(false)} />
       <Dialog open={restoreOpen} onOpenChange={setRestoreOpen}>
