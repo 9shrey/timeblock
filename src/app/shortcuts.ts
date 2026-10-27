@@ -1,7 +1,10 @@
 /** Global keyboard shortcuts. Ignored while typing in a field or while a dialog/menu has focus. */
 import { useEffect } from "react";
 import {
+  clearMulti,
   confirm,
+  deleteMulti,
+  selectAllOn,
   confirmRestOfDay,
   deleteItem,
   nudge,
@@ -12,13 +15,13 @@ import {
   skip,
   undo,
 } from "@/state/commands";
-import { goalList } from "@/state/selectors";
+import { goalList, weekOf } from "@/state/selectors";
 import { useStore, type View } from "@/state/store";
 import { closeEditor, openEditor, openQuickAdd, setCommandPaletteOpen, setShortcutsOpen, useUi } from "@/state/ui";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { goToday, stepCursor } from "./TopBar";
 
-const VIEW_KEYS: Record<string, View> = { d: "day", w: "week", g: "goals", r: "review", i: "trends" };
+const VIEW_KEYS: Record<string, View> = { d: "day", w: "week", m: "month", g: "goals", r: "review", i: "trends" };
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -57,6 +60,10 @@ export function handleKey(e: KeyboardEvent): boolean {
       useStore.setState({ budgetOpen: !s.budgetOpen });
       return true;
     }
+    if (key.toLowerCase() === "a" && (s.view === "day" || s.view === "week")) {
+      selectAllOn(s.view === "day" ? [s.cursor] : weekOf(s.cursor, s.settings).days);
+      return true;
+    }
     if (key.toLowerCase() === "k") {
       setCommandPaletteOpen(true);
       return true;
@@ -64,6 +71,17 @@ export function handleKey(e: KeyboardEvent): boolean {
     return false;
   }
   if (e.altKey) return false;
+
+  if (useUi.getState().multiSelected.length > 0) {
+    if (key === "Delete" || key === "Backspace") {
+      deleteMulti();
+      return true;
+    }
+    if (key === "Escape") {
+      clearMulti();
+      return true;
+    }
+  }
 
   if (key === "Escape") {
     if (useUi.getState().editing) closeEditor();

@@ -8,9 +8,11 @@ import {
   materialize,
   moveBlockTo,
   resizeOrSplitAtMidnight,
+  clearMulti,
   select,
+  toggleMulti,
 } from "@/state/commands";
-import { useStore } from "@/state/store";
+import { useStore, type Selection } from "@/state/store";
 import { closeEditor, openEditor, useUi } from "@/state/ui";
 import { BlockContextMenu } from "./BlockContextMenu";
 import { BlockPopover } from "./BlockPopover";
@@ -53,6 +55,8 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollKey, pxPerHour]);
 
+  const mods = useRef(false);
+  const selBefore = useRef<Selection>(null);
   const getCtx = useCallback(
     (): DragCtx => ({ columns: columnsRef.current, snap: useStore.getState().settings.snapMinutes, intervalOf: intervalOfRef }),
     [],
@@ -64,10 +68,14 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
       case "click": {
         const editing = useUi.getState().editing;
         if (e.target.type === "empty") {
+          clearMulti();
           select(null);
           closeEditor();
+        } else if (mods.current && e.target.ref.kind === "block") {
+          toggleMulti(e.target.ref.id, selBefore.current);
         } else {
           if (editing && !sameRef(editing.ref, e.target.ref)) closeEditor();
+          clearMulti();
           select(e.target.ref);
         }
         return;
@@ -147,6 +155,10 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
                 onDoubleClick={onDoubleClick}
                 onContextMenu={onContextMenu}
                 {...handlers}
+                onPointerDownCapture={(e) => {
+                  mods.current = e.shiftKey || e.ctrlKey || e.metaKey;
+                  selBefore.current = useStore.getState().selection;
+                }}
               >
                 {columns.map((c, i) => (
                   <LaneColumn key={c.key} spec={c} index={i} pxPerHour={pxPerHour} />

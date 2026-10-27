@@ -9,6 +9,7 @@ import { SettingsView } from "@/features/settings/SettingsView";
 import { TrendsView } from "@/features/trends/TrendsView";
 import { QuickAddDialog } from "@/features/timeline/QuickAddDialog";
 import { TemplateDialog } from "@/features/timeline/TemplateDialog";
+import { MonthView } from "@/features/month/MonthView";
 import { WeekView } from "@/features/week/WeekView";
 import { materializeRoutines } from "@/state/routineCommands";
 import { ensureWeeksAround, useStore } from "@/state/store";
@@ -16,6 +17,7 @@ import { closeEditor, useUi } from "@/state/ui";
 import { CommandPalette } from "./CommandPalette";
 import { DemoBanner } from "./DemoBanner";
 import { NavRail } from "./NavRail";
+import { SelectionBar } from "./SelectionBar";
 import { ShortcutsSheet } from "./ShortcutsSheet";
 import { TopBar } from "./TopBar";
 import { useShortcuts } from "./shortcuts";
@@ -31,7 +33,7 @@ export function Shell() {
   // A popover or selection never outlives the day/view it belongs to.
   useEffect(() => {
     closeEditor();
-    useUi.setState({ menu: null });
+    useUi.setState({ menu: null, multiSelected: [] });
   }, [view, cursor]);
   useEffect(() => {
     useStore.setState({ selection: null });
@@ -71,6 +73,7 @@ export function Shell() {
         <main className="min-h-0 flex-1">
           {view === "day" && <DayView />}
           {view === "week" && <WeekView />}
+          {view === "month" && <MonthView />}
           {view === "goals" && <GoalsView />}
           {view === "review" && <ReviewView />}
           {view === "trends" && <TrendsView />}
@@ -80,6 +83,7 @@ export function Shell() {
       {budgetOpen && <BudgetPanel />}
       <TemplateDialog />
       <QuickAddDialog />
+      <SelectionBar />
       <CommandPalette />
       <ShortcutsSheet />
     </div>

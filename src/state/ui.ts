@@ -33,6 +33,8 @@ interface UiState {
   highlightedGoalId: string | null;
   /** The actual block the clock tick extends to "now", until `stopTimer` is called. */
   runningBlockId: string | null;
+  /** Blocks picked with Ctrl/Shift+click (or select-all) for a mass action such as delete. */
+  multiSelected: string[];
 }
 
 export const useUi = create<UiState>(() => ({
@@ -45,6 +47,7 @@ export const useUi = create<UiState>(() => ({
   shortcutsOpen: false,
   highlightedGoalId: null,
   runningBlockId: null,
+  multiSelected: [],
 }));
 
 let sessionCounter = 0;

@@ -12,7 +12,7 @@ const platform = vi.hoisted(() => ({
 }));
 vi.mock("@/platform", async (importOriginal) => ({ ...(await importOriginal<object>()), getPlatform: async () => platform }));
 
-import { put } from "@/domain/changes";
+import { del, put } from "@/domain/changes";
 import { serializeExport, toExportFile } from "@/domain/export/format";
 import type { Block, Goal } from "@/domain/types";
 import { demoSeed } from "@/data/devSeed";
@@ -24,6 +24,7 @@ import {
   confirm,
   confirmRestOfDay,
   copyWeekPlan,
+  deleteMulti,
   createBlockAt,
   extendRunningTimer,
   isTimerRunning,
@@ -165,6 +166,9 @@ describe("copyWeekPlan", () => {
     // Archive the Social goal before copying: a copied block referencing it must drop the link.
     const social = useStore.getState().data.goals["seed-goal-social"]!;
     commit([put("goals", { ...social, archivedOn: thisWeek })]);
+
+    // Clear this Friday's plan so the copy isn't skipped as already present.
+    commit(Object.values(useStore.getState().data.blocks).filter((b) => b.layer === "plan" && b.day === "2026-10-23").map((b) => del("blocks", b.id)));
 
     const before = new Set(Object.keys(useStore.getState().data.blocks));
     copyWeekPlan(lastWeek, thisWeek);
@@ -577,5 +581,19 @@ describe("resizeOrSplitAtMidnight", () => {
     expect(useStore.getState().data.blocks[id]).toMatchObject({ endMinute: 1440 });
     expect(Object.keys(useStore.getState().data.blocks)).toEqual([...before]); // nothing added
     expect(toastFn).toHaveBeenCalledWith(expect.stringContaining("resized to end at midnight"));
+  });
+});
+
+describe("multi-select delete", () => {
+  it("deletes every selected unlocked block in one undo step", () => {
+    const a = createBlockAt("2026-10-22", "plan", 540, 600, false)!;
+    const b = createBlockAt("2026-10-22", "plan", 600, 660, false)!;
+    useUi.setState({ multiSelected: [a, b] });
+    const n = history().length;
+    deleteMulti();
+    expect(useStore.getState().data.blocks[a]).toBeUndefined();
+    expect(useStore.getState().data.blocks[b]).toBeUndefined();
+    expect(history()).toHaveLength(n + 1);
+    expect(useUi.getState().multiSelected).toEqual([]);
   });
 });

@@ -52,6 +52,28 @@ export function addDays(day: LocalDate, n: number): LocalDate {
   return formatYMD(fromUtcMs(Date.UTC(y, m - 1, d + n)));
 }
 
+/** `n` calendar months from `day`, clamping the day of month (31 Jan + 1 → 28/29 Feb). */
+export function addMonths(day: LocalDate, n: number): LocalDate {
+  const { y, m, d } = parseLocalDate(day);
+  const total = y * 12 + (m - 1) + n;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  const last = new Date(Date.UTC(ny, nm, 0)).getUTCDate();
+  return formatYMD({ y: ny, m: nm, d: Math.min(d, last) });
+}
+
+/** The first day of `day`'s month. */
+export function monthStartOf(day: LocalDate): LocalDate {
+  const { y, m } = parseLocalDate(day);
+  return formatYMD({ y, m, d: 1 });
+}
+
+/** "October 2026" */
+export function formatMonthLong(day: LocalDate): string {
+  const { y, m } = parseLocalDate(day);
+  return `${MONTH_LONG[m - 1]} ${y}`;
+}
+
 /** Whole days from `a` to `b` (positive when b is later). */
 export function diffDays(a: LocalDate, b: LocalDate): number {
   return Math.round((toUtcMs(parseLocalDate(b)) - toUtcMs(parseLocalDate(a))) / DAY_MS);
@@ -181,6 +203,7 @@ export function parseTimeInput(input: string): Minute | null {
 /** "Mon", "Tue", … for a date (English short names; i18n is post-MVP). */
 const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const MONTH_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as const;
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
 export function weekdayShort(day: LocalDate): string {

@@ -460,6 +460,15 @@ describe("copyPlan", () => {
   });
 });
 
+describe("copyPlan repeated", () => {
+  it("does not copy a block the target day already has (same title and times)", () => {
+    const blocks = [plan("p1", 540, 600), plan("p2", 600, 660)];
+    const first = run(blocks, copyPlan(DAY, NEXT, blocks, testEnv()));
+    expect(first.all.filter((b) => b.day === NEXT)).toHaveLength(2);
+    expect(copyPlan(DAY, NEXT, first.all, testEnv())).toEqual([]);
+  });
+});
+
 describe("rescheduleSkipped", () => {
   it("copies skipped plan blocks across the given days onto one target day, unskipped and unlinked", () => {
     const blocks = [

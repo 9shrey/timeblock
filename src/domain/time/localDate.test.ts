@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
   addDays,
+  addMonths,
   dayOfWeek,
   diffDays,
   formatDuration,
@@ -16,6 +17,14 @@ import {
   weekStartOf,
 } from "./localDate";
 import { nowFrom, parseNowOverride } from "./clock";
+
+describe("addMonths", () => {
+  it("clamps the day of month and crosses years", () => {
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonths("2026-12-15", 1)).toBe("2027-01-15");
+    expect(addMonths("2026-01-15", -1)).toBe("2025-12-15");
+  });
+});
 
 describe("addDays", () => {
   it.each([

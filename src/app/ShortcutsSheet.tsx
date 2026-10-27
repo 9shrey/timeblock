@@ -7,7 +7,7 @@ const GROUPS: { title: string; rows: { keys: string; label: string }[] }[] = [
     rows: [
       { keys: "[ / ]", label: "Previous / next day or week" },
       { keys: "t", label: "Go to today" },
-      { keys: "d / w / g / r / i", label: "Day / Week / Goals / Review / Trends view" },
+      { keys: "d / w / m / g / r / i", label: "Day / Week / Month / Goals / Review / Trends view" },
       { keys: "Ctrl+K", label: "Command palette" },
       { keys: "?", label: "This sheet" },
     ],
@@ -18,6 +18,8 @@ const GROUPS: { title: string; rows: { keys: string; label: string }[] }[] = [
       { keys: "n", label: "Quick add (Day view)" },
       { keys: "⏎", label: "Edit the selected block" },
       { keys: "Del / ⌫", label: "Delete block, or skip a ghost" },
+      { keys: "Ctrl/⇧ + click", label: "Add or remove a block from the selection" },
+      { keys: "Ctrl+A", label: "Select every block on this day or week (Del deletes)" },
     ],
   },
   {
