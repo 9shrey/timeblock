@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-27
+
+### Added
+- **Month view** (`m`): a grid of the month with each day's planned blocks and planned/actual
+  totals; click a day to open it.
+- **Select and delete many blocks**: Ctrl/Shift+click to add blocks to a selection, Ctrl+A to
+  select everything on the day or week, then Delete (one undo step; blocks in locked lanes are
+  kept).
+- **Clear all data** (Settings → Data): removes goals, blocks, templates, routines and notes
+  after making a backup; preferences are kept.
+
+### Fixed
+- "Copy last week's plan" (and copying a day's plan) no longer stacks duplicates when repeated;
+  blocks already on the target day are skipped.
+
 ## [0.2.1] - 2026-10-25
 
 0.2.0 was tagged but never published, so this is the first release with its changes too
