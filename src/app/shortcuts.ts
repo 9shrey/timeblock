@@ -4,7 +4,8 @@ import {
   clearMulti,
   confirm,
   deleteMulti,
-  selectAllOn,
+  selectAllVisible,
+  setSelectMode,
   confirmRestOfDay,
   deleteItem,
   nudge,
@@ -15,7 +16,7 @@ import {
   skip,
   undo,
 } from "@/state/commands";
-import { goalList, weekOf } from "@/state/selectors";
+import { goalList } from "@/state/selectors";
 import { useStore, type View } from "@/state/store";
 import { closeEditor, openEditor, openQuickAdd, setCommandPaletteOpen, setShortcutsOpen, useUi } from "@/state/ui";
 import type { ItemRef } from "@/features/timeline/dragMachine";
@@ -61,7 +62,7 @@ export function handleKey(e: KeyboardEvent): boolean {
       return true;
     }
     if (key.toLowerCase() === "a" && (s.view === "day" || s.view === "week")) {
-      selectAllOn(s.view === "day" ? [s.cursor] : weekOf(s.cursor, s.settings).days);
+      selectAllVisible();
       return true;
     }
     if (key.toLowerCase() === "k") {
@@ -81,6 +82,14 @@ export function handleKey(e: KeyboardEvent): boolean {
       clearMulti();
       return true;
     }
+  }
+  if (key === "Escape" && useUi.getState().selectMode) {
+    setSelectMode(false);
+    return true;
+  }
+  if (key === "x" && (s.view === "day" || s.view === "week")) {
+    setSelectMode(!useUi.getState().selectMode);
+    return true;
   }
 
   if (key === "Escape") {

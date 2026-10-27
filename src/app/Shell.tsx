@@ -33,7 +33,7 @@ export function Shell() {
   // A popover or selection never outlives the day/view it belongs to.
   useEffect(() => {
     closeEditor();
-    useUi.setState({ menu: null, multiSelected: [] });
+    useUi.setState({ menu: null, multiSelected: [], ...(view === "day" || view === "week" ? {} : { selectMode: false }) });
   }, [view, cursor]);
   useEffect(() => {
     useStore.setState({ selection: null });

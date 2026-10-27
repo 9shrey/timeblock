@@ -35,6 +35,8 @@ interface UiState {
   runningBlockId: string | null;
   /** Blocks picked with Ctrl/Shift+click (or select-all) for a mass action such as delete. */
   multiSelected: string[];
+  /** Select mode: dragging draws a selection box and clicking toggles blocks, instead of editing. */
+  selectMode: boolean;
 }
 
 export const useUi = create<UiState>(() => ({
@@ -48,6 +50,7 @@ export const useUi = create<UiState>(() => ({
   highlightedGoalId: null,
   runningBlockId: null,
   multiSelected: [],
+  selectMode: false,
 }));
 
 let sessionCounter = 0;

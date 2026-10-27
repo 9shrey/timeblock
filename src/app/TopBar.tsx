@@ -1,9 +1,10 @@
-import { ChevronLeft, ChevronRight, CopyPlus, PanelRight, Redo2, Undo2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CopyPlus, ListChecks, PanelRight, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { addDays, addMonths, formatDateLong, formatMonthLong, isoWeek, weekdayLong, weekStartOf } from "@/domain/time/localDate";
-import { copyWeekPlan, redo, undo } from "@/state/commands";
+import { copyWeekPlan, redo, setSelectMode, undo } from "@/state/commands";
 import { useStore } from "@/state/store";
+import { useUi } from "@/state/ui";
 
 /** Step size for ‹ › in the current view: a day in Day view, a week elsewhere. */
 export function stepCursor(direction: -1 | 1): void {
@@ -39,6 +40,7 @@ export function TopBar() {
   const weekStartDay = useStore((s) => s.settings.weekStartDay);
   const canUndo = useStore((s) => s.history.undo.length > 0);
   const canRedo = useStore((s) => s.history.redo.length > 0);
+  const selectMode = useUi((s) => s.selectMode);
   const budgetOpen = useStore((s) => s.budgetOpen);
   const { week } = isoWeek(cursor);
   const unit = view === "day" ? "day" : view === "month" ? "month" : "week";
@@ -70,6 +72,19 @@ export function TopBar() {
         </Tooltip>
       )}
       <div className="flex-1" />
+      {(view === "day" || view === "week") && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant={selectMode ? "secondary" : "outline"} size="sm" aria-pressed={selectMode} onClick={() => setSelectMode(!selectMode)}>
+              <ListChecks /> Select
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Drag a box over blocks to select them, then delete them all
+            <kbd className="ml-2 opacity-70">x</kbd>
+          </TooltipContent>
+        </Tooltip>
+      )}
       <IconButton label="Undo" shortcut="Ctrl+Z" onClick={undo} disabled={!canUndo}>
         <Undo2 />
       </IconButton>
