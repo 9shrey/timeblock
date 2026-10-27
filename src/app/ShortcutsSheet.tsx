@@ -18,6 +18,7 @@ const GROUPS: { title: string; rows: { keys: string; label: string }[] }[] = [
       { keys: "n", label: "Quick add (Day view)" },
       { keys: "⏎", label: "Edit the selected block" },
       { keys: "Del / ⌫", label: "Delete block, or skip a ghost" },
+      { keys: "x", label: "Select mode: drag a box over blocks, then Delete" },
       { keys: "Ctrl/⇧ + click", label: "Add or remove a block from the selection" },
       { keys: "Ctrl+A", label: "Select every block on this day or week (Del deletes)" },
     ],

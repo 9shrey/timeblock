@@ -24,7 +24,7 @@ import { parseQuickAdd } from "@/domain/blocks/quickAdd";
 import { validateBlock } from "@/domain/blocks/validate";
 import { applyChanges, put } from "@/domain/changes";
 import { systemEnv } from "@/domain/env";
-import { addDays, weekDays } from "@/domain/time/localDate";
+import { addDays, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { Block, ChangeSet, Layer, LocalDate, Now } from "@/domain/types";
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { activeGoals, allBlocks, goalList } from "./selectors";
@@ -410,6 +410,27 @@ export function toggleMulti(id: string, before: Selection = state().selection): 
   closeEditor();
 }
 
+export function setSelectMode(on: boolean): void {
+  useUi.setState({ selectMode: on, ...(on ? {} : { multiSelected: [] }) });
+  if (on) {
+    useStore.setState({ selection: null });
+    closeEditor();
+  }
+}
+
+/** Replaces (or, with `add`, extends) the multi-selection with `ids`. */
+export function setMulti(ids: readonly string[], add = false): void {
+  useUi.setState((s) => ({ multiSelected: add ? [...new Set([...s.multiSelected, ...ids])] : [...ids] }));
+  useStore.setState({ selection: null });
+  closeEditor();
+}
+
+/** Selects every block on the days the current view shows (Day: the cursor day; Week: the week). */
+export function selectAllVisible(): void {
+  const s = state();
+  selectAllOn(s.view === "day" ? [s.cursor] : weekDays(weekStartOf(s.cursor, s.settings.weekStartDay)));
+}
+
 /** Multi-selects every block on `days` (both lanes), so one Delete can clear them. */
 export function selectAllOn(days: readonly LocalDate[]): void {
   const set = new Set(days);
@@ -420,21 +441,16 @@ export function selectAllOn(days: readonly LocalDate[]): void {
   if (ids.length === 0) toast("No blocks to select.");
 }
 
-/** Deletes every multi-selected block in one undo step; blocks in locked lanes are kept. */
+/** Deletes every multi-selected block in one undo step (past plan locks don't apply: it's explicit, and undoable). */
 export function deleteMulti(): void {
   const ids = useUi.getState().multiSelected;
   if (ids.length === 0) return;
   let data = state().data;
   const changes: ChangeSet = [];
   let removed = 0;
-  let locked = 0;
   for (const id of ids) {
     const b = data.blocks[id];
     if (!b) continue;
-    if (!canEditLane(b.day, b.layer)) {
-      locked++;
-      continue;
-    }
     const cs = deleteBlock(b, allBlocks(data.blocks), env);
     changes.push(...cs);
     data = applyChanges(data, cs);
@@ -443,9 +459,7 @@ export function deleteMulti(): void {
   if (removed > 0 && commitChecked(changes, `Delete ${removed} block${removed === 1 ? "" : "s"}`)) {
     useUi.setState({ multiSelected: [] });
     closeEditor();
-    toast(`Deleted ${removed} block${removed === 1 ? "" : "s"}${locked ? `; ${locked} in locked lanes kept` : ""}.`);
-  } else if (locked > 0) {
-    toast(`${locked} selected block${locked === 1 ? " is" : "s are"} in locked lanes. Unlock the day to delete.`);
+    toast(`Deleted ${removed} block${removed === 1 ? "" : "s"}.`);
   }
 }
 

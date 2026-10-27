@@ -10,6 +10,7 @@ import {
   resizeOrSplitAtMidnight,
   clearMulti,
   select,
+  setMulti,
   toggleMulti,
 } from "@/state/commands";
 import { useStore, type Selection } from "@/state/store";
@@ -21,6 +22,7 @@ import { isEditable, minuteAt, minutesToPx, type ColumnSpec } from "./geometry";
 import { LaneColumn } from "./LaneColumn";
 import { TimeGutter } from "./TimeGutter";
 import { targetFromElement, useDrag } from "./useDrag";
+import { useMarquee } from "./useMarquee";
 
 interface Props {
   columns: readonly ColumnSpec[];
@@ -104,7 +106,20 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
     }
   }, []);
 
-  const { handlers } = useDrag({ lanesRef, scrollerRef, pxPerHour, getCtx, onEffect });
+  const selectMode = useUi((s) => s.selectMode);
+  const onMarqueeSelect = useCallback((ids: string[], add: boolean, clicked: boolean) => {
+    if (clicked) {
+      // A click toggles the block under the pointer; on empty space it changes nothing.
+      const id = ids[0];
+      if (id) setMulti(useUi.getState().multiSelected.includes(id) ? useUi.getState().multiSelected.filter((x) => x !== id) : [...useUi.getState().multiSelected, id]);
+      return;
+    }
+    setMulti(ids, add);
+  }, []);
+  const marquee = useMarquee(lanesRef, onMarqueeSelect);
+  const { handlers: dragHandlers } = useDrag({ lanesRef, scrollerRef, pxPerHour, getCtx, onEffect });
+
+  const handlers = selectMode ? marquee.handlers : dragHandlers;
 
   // Pointer capture retargets click/dblclick to the lanes container: hit-test the point instead.
   const onDoubleClick = (e: React.MouseEvent) => {
@@ -152,7 +167,7 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
               <div
                 ref={lanesRef}
                 className="relative flex min-w-0 flex-1 touch-none select-none"
-                onDoubleClick={onDoubleClick}
+                onDoubleClick={selectMode ? undefined : onDoubleClick}
                 onContextMenu={onContextMenu}
                 {...handlers}
                 onPointerDownCapture={(e) => {
@@ -163,6 +178,18 @@ export function Timeline({ columns, pxPerHour, renderHeader, header, initialMinu
                 {columns.map((c, i) => (
                   <LaneColumn key={c.key} spec={c} index={i} pxPerHour={pxPerHour} />
                 ))}
+                {selectMode && marquee.box && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute z-30 border border-primary bg-primary/10"
+                    style={{
+                      left: Math.min(marquee.box.x0, marquee.box.x1),
+                      top: Math.min(marquee.box.y0, marquee.box.y1),
+                      width: Math.abs(marquee.box.x1 - marquee.box.x0),
+                      height: Math.abs(marquee.box.y1 - marquee.box.y0),
+                    }}
+                  />
+                )}
               </div>
             </ContextMenuTrigger>
             <BlockContextMenu columns={columns} />
