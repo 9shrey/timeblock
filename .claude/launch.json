@@ -82,6 +82,18 @@
         "--strictPort"
       ],
       "port": 1430
+    },
+    {
+      "name": "site-local",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8790",
+        "--directory",
+        "site"
+      ],
+      "port": 8790
     }
   ]
 }
