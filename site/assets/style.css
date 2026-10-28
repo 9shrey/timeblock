@@ -306,7 +306,7 @@ pre code { background: none; border: 0; padding: 0; font-size: 1em; }
 .release-meta { font-size: 14px; color: var(--fg-muted); margin-top: 18px; }
 .release-meta strong { color: var(--fg); font-weight: 600; }
 
-.platforms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
 .platform {
   border: 1px solid var(--border); border-radius: 12px; padding: 28px;
   display: flex; flex-direction: column; background: var(--bg);
