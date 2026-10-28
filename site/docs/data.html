@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Data and backups · Timeblock documentation</title>
-  <meta name="description" content="Timeblock keeps all of your data in a single SQLite file on your computer. There is no account and no server, and nothing is sent over the network.">
+  <meta name="description" content="Timeblock keeps all of your data in a single SQLite file on your computer. An optional sync account keeps it in step with the web app and your phone.">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
   <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="../assets/icon-256.png">
@@ -52,7 +52,7 @@
     <main id="main" class="prose">
       <p class="crumb">Documentation / Reference</p>
       <h1>Data and backups</h1>
-      <p class="lead">Timeblock keeps all of your data in a single SQLite file on your computer. There is no account and no server, and nothing is sent over the network.</p>
+      <p class="lead">Timeblock keeps all of your data in a single SQLite file on your computer. No account is needed. If you sign in to an optional sync account, your plan is also kept in step with the web app and your phone.</p>
 <h2 id="location">Where your data is stored</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>System</th><th>Folder</th></tr></thead>
@@ -88,8 +88,13 @@
 <h2 id="saving">How saving works</h2>
 <p>Every change is saved as you make it. If a save fails, Timeblock reloads your data from disk, discards changes that were waiting behind the failed save, and tells you. Undo history is cleared in that case. When you close the window, the app waits up to three seconds for pending saves to finish.</p>
 
+<h2 id="sync">Sync (optional)</h2>
+<p>In <strong>Settings → Sync &amp; account</strong>, sign in or create an account to sync your plan between the desktop app, the <a href="../app/">web app</a> and your phone (open the web app and use <em>Add to Home Screen</em>). Changes sync within a few seconds; the cloud icon in the top bar shows the status, and clicking it syncs right away. Everything keeps working offline and catches up when you're back online.</p>
+<p>The first time you sign in on a device that already has data, you choose whether to merge it with the account, use the account's data, or upload this device's data. The desktop app makes a backup first. Signing out of the desktop app keeps your data on the computer; signing out of the web app removes it from that browser.</p>
+<p>Device settings such as the theme and notifications are not synced. The sync server is self-hosted; its source is in <code>server/</code> in the repository.</p>
+
 <h2 id="privacy">Privacy</h2>
-<p>Timeblock has no account, no server and no telemetry. It does not connect to the network.</p>
+<p>Timeblock has no telemetry and needs no account. Without a sync account, your plan never leaves your computer. The app only goes online to check for updates and to download calendar subscriptions you add, and, if you sign in, to sync with your account's server.</p>
       <nav class="pager" aria-label="Pages">
         <a class="prev" href="settings.html"><span>Previous</span>Settings</a>
         <a class="next" href="troubleshooting.html"><span>Next</span>Troubleshooting</a>
@@ -104,6 +109,7 @@
           <li><a href="#restore">Restoring a backup</a></li>
           <li><a href="#export">Export and import</a></li>
           <li><a href="#saving">How saving works</a></li>
+          <li><a href="#sync">Sync (optional)</a></li>
           <li><a href="#privacy">Privacy</a></li>
       </ul>
     </nav>
