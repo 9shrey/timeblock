@@ -6,6 +6,7 @@ import App from "./App";
 import { Button } from "./components/ui/button";
 import { BackupList } from "./features/settings/BackupList";
 import { SqliteRepository } from "./data/SqliteRepository";
+import { SyncLocal } from "./data/syncLocal";
 import { CLOCK_TICK_MS, makeClock, parseNowOverride } from "./domain/time/clock";
 import type { Now } from "./domain/types";
 import { getPlatform } from "./platform";
@@ -16,6 +17,8 @@ import { flushWrites, initStore, pendingWrites, useStore } from "./state/store";
 import { scheduleTray, wireTrayActions } from "./state/tray";
 import { startUpdateChecks } from "./state/updates";
 import { useUi } from "./state/ui";
+import { initSync } from "./sync/engine";
+import { ACCOUNT_REQUIRED } from "./sync/mode";
 import "./styles/index.css";
 
 /** Dev and end-to-end test builds accept `?seed`, `?reset` and `?now`; release builds never do. */
@@ -101,6 +104,7 @@ async function boot() {
     },
     clock(),
   );
+  await initSync(new SyncLocal(driver));
   await platform.guardClose({ flush: flushWrites, pending: pendingWrites });
   useStore.setState({ systemTheme: await platform.systemTheme() });
   void platform.onSystemThemeChange((systemTheme) => useStore.setState({ systemTheme }));
@@ -142,6 +146,11 @@ async function boot() {
       description: `${e instanceof Error ? e.message : String(e)}. Try Settings → Back up now.`,
     });
   });
+}
+
+// The web app is installable (PWA) and opens offline; dev servers skip the worker.
+if (ACCOUNT_REQUIRED && import.meta.env.PROD && "serviceWorker" in navigator) {
+  void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((e: unknown) => console.warn("Service worker failed", e));
 }
 
 boot().then(

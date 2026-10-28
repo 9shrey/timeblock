@@ -55,6 +55,24 @@ jobs:
         working-directory: src-tauri
         run: cargo test
 
+  server:
+    # The sync server (server/): a standalone crate, no system libraries needed.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: server
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
   e2e:
     # Drives the real app (WebKitGTK) through tauri-driver under a virtual display.
     runs-on: ubuntu-24.04

@@ -6,7 +6,17 @@ import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
 import { createSqlJsDriver } from "@/data/drivers/sqljsDriver";
 import { responseText, type Platform, type SystemTheme } from "./index";
 
-const STORAGE_KEY = "timeblock.db";
+/** The web app (sync build) and the demo share an origin on GitHub Pages; keep them apart. */
+const STORAGE_KEY = import.meta.env.VITE_SYNC_URL && import.meta.env.VITE_DEMO !== "1" ? "timeblock.app.db" : "timeblock.db";
+
+/** Forgets this browser's copy of the data (web app sign-out). Reload afterwards. */
+export function clearStoredDb(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 function load(): Uint8Array | null {
   try {
@@ -99,6 +109,7 @@ export const webPlatform: Platform = {
   async openUrl(url) {
     window.open(url, "_blank", "noopener");
   },
+  request: (url, init) => fetch(url, init),
   async fetchText(url) {
     let res: Response;
     try {

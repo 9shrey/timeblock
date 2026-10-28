@@ -86,6 +86,7 @@ export const tauriPlatform: Platform = {
     await relaunch();
   },
   openUrl: (url) => openUrl(url),
+  request: (url, init) => httpFetch(url, init),
   async fetchText(url) {
     let res: Response;
     try {

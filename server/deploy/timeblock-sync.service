@@ -1,0 +1,23 @@
+[Unit]
+Description=Timeblock sync server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=timeblock
+Group=timeblock
+WorkingDirectory=/var/lib/timeblock-sync
+Environment=TIMEBLOCK_DB=/var/lib/timeblock-sync/timeblock-sync.db
+Environment=TIMEBLOCK_BIND=127.0.0.1:8787
+Environment=TIMEBLOCK_ORIGINS=https://9shrey.github.io,tauri://localhost,http://tauri.localhost
+ExecStart=/usr/local/bin/timeblock-sync
+Restart=on-failure
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/timeblock-sync
+
+[Install]
+WantedBy=multi-user.target

@@ -105,6 +105,8 @@ export async function summary(): Promise<string> {
 }
 
 export async function gotoView(label: "Day" | "Week" | "Goals" | "Review" | "Settings"): Promise<void> {
+  // A dialog that is still closing covers the sidebar and swallows the click.
+  await $('[role="dialog"]').waitForExist({ reverse: true });
   await $(`nav button[aria-label^="${label}"]`).click();
   await browser.pause(300);
 }

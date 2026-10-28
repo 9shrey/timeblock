@@ -69,6 +69,12 @@ export interface Platform {
    * with CORS. Rejects with a readable message on a network error or a non-2xx status.
    */
   fetchText(url: string): Promise<string>;
+  /**
+   * Plain HTTP request for the sync server. Desktop goes through the Tauri http plugin
+   * (no CORS, scoped to https and localhost); the browser uses `fetch`. Rejects only on a
+   * network failure; any status resolves.
+   */
+  request(url: string, init: RequestInit): Promise<Response>;
   /** The newer release, or null if up to date. Always null on web. Rejects if the check fails. */
   checkForUpdate(): Promise<UpdateInfo | null>;
   /**

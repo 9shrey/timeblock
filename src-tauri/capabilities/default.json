@@ -14,10 +14,16 @@
     "updater:default",
     "process:allow-restart",
     {
-      "identifier": "http:allow-fetch",
+      "identifier": "http:default",
       "allow": [
         {
           "url": "https://*"
+        },
+        {
+          "url": "http://localhost:*"
+        },
+        {
+          "url": "http://127.0.0.1:*"
         }
       ]
     }

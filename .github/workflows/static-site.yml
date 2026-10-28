@@ -42,11 +42,22 @@ jobs:
       - run: npm run build
         env:
           VITE_DEMO: "1"
-      - name: Assemble site with demo
+      - name: Move demo build aside
+        run: mv dist dist-demo
+      # The web app (sign in + sync). Built only once the server address is set as the
+      # repository variable SYNC_URL (Settings → Secrets and variables → Actions → Variables).
+      - name: Build web app
+        if: vars.SYNC_URL != ''
+        run: npm run build
+        env:
+          VITE_SYNC_URL: ${{ vars.SYNC_URL }}
+          VITE_BASE: /timeblock/app/
+      - name: Assemble site with demo and app
         run: |
           mkdir -p _site
           cp -r site/. _site/
-          cp -r dist _site/demo
+          cp -r dist-demo _site/demo
+          if [ -d dist ]; then cp -r dist _site/app; fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

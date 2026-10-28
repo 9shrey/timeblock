@@ -1,0 +1,6 @@
+# Replace sync.example.com with your domain (an A/AAAA record must point at this VPS).
+# Caddy gets and renews the HTTPS certificate automatically.
+sync.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8787
+}
