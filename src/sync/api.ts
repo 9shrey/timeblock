@@ -69,7 +69,9 @@ export async function call<T>(
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     });
   } catch (e) {
-    throw new ApiError("network", `Couldn't reach the sync server${e instanceof Error ? ` (${e.message})` : ""}.`);
+    // Tauri's HTTP plugin rejects with plain strings, not Errors.
+    const detail = e instanceof Error ? e.message : typeof e === "string" ? e : "";
+    throw new ApiError("network", `Couldn't reach the sync server${detail ? ` (${detail})` : ""}.`);
   }
   const text = await res.text();
   let json: unknown = null;
