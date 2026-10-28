@@ -6,14 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-28
+
 ### Added
 - **Sync account** (optional): sign in with a username and password in Settings → Sync & account
   to sync your plan between the desktop app, the web app and your phone. Changes sync on their own
   within seconds; the top-bar icon shows the status and syncs on click. On first sign-in with data
   on both sides, choose to merge, keep the account's data, or keep this device's (a backup is made
   first). Change password, sign out everywhere and delete account are in the same section.
-- **Web app** at `/timeblock/app/`: the full app in the browser, signed in to your account, and
-  installable on a phone (Add to Home Screen).
+- **Web app** at https://9shrey.github.io/timeblock/app/: the full app in the browser, signed in
+  to your account, and installable on a phone (Add to Home Screen).
 - **Sync server** (`server/`): a small self-hosted Rust server with login rate limiting and
   nightly backups; see `server/deploy/README.md`.
 

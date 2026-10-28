@@ -9,7 +9,7 @@ import pkg from "./package.json" with { type: "json" };
 const host = process.env.TAURI_DEV_HOST;
 
 /** The web app build: syncs with an account (VITE_SYNC_URL), served from /timeblock/app/. */
-const webApp = !!process.env.VITE_SYNC_URL && process.env.VITE_DEMO !== "1";
+const webApp = !!process.env.VITE_SYNC_URL && process.env.VITE_DEMO !== "1" && !process.env.TAURI_ENV_PLATFORM;
 
 /** Links the PWA manifest in the web app build only (desktop and demo don't install). */
 const pwaHead: Plugin = {
