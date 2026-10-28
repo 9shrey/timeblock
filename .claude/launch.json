@@ -32,6 +32,56 @@
         "/tmp/claude-1000/-home-shrey-Documents-Codes-calendar-goals-webapp/124c2020-9856-4fb9-8965-af6121f97ba8/scratchpad/www"
       ],
       "port": 8777
+    },
+    {
+      "name": "pages-demo",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8788",
+        "--directory",
+        "/tmp/claude-1000/-home-shrey-Documents-Codes-calendar-goals-webapp/8c9d3051-4de6-49b6-96d6-6d09163a90d3/scratchpad/pages"
+      ],
+      "port": 8788
+    },
+    {
+      "name": "sync-server",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "TIMEBLOCK_DB=/tmp/claude-1000/-home-shrey-Documents-Codes-calendar-goals-webapp/58091f73-87e1-4e41-b76c-3076a360bd98/scratchpad/sync-test.db",
+        "cargo",
+        "run",
+        "--manifest-path",
+        "server/Cargo.toml"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "web-sync-a",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_SYNC_URL=http://localhost:8787",
+        "npx",
+        "vite",
+        "--port",
+        "1420",
+        "--strictPort"
+      ],
+      "port": 1420
+    },
+    {
+      "name": "web-sync-b",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_SYNC_URL=http://localhost:8787",
+        "npx",
+        "vite",
+        "--port",
+        "1430",
+        "--strictPort"
+      ],
+      "port": 1430
     }
   ]
 }

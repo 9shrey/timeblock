@@ -5,6 +5,7 @@ import { addDays, addMonths, formatDateLong, formatMonthLong, isoWeek, weekdayLo
 import { copyWeekPlan, redo, setSelectMode, undo } from "@/state/commands";
 import { useStore } from "@/state/store";
 import { useUi } from "@/state/ui";
+import { SyncIndicator } from "./SyncIndicator";
 
 /** Step size for ‹ › in the current view: a day in Day view, a week elsewhere. */
 export function stepCursor(direction: -1 | 1): void {
@@ -85,6 +86,7 @@ export function TopBar() {
           </TooltipContent>
         </Tooltip>
       )}
+      <SyncIndicator />
       <IconButton label="Undo" shortcut="Ctrl+Z" onClick={undo} disabled={!canUndo}>
         <Undo2 />
       </IconButton>

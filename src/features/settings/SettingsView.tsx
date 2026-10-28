@@ -37,6 +37,9 @@ import { useGoalMap, useRoutines, useTemplates, useTimeFormat } from "@/state/se
 import { changeWeekStartDay, flushWrites, useStore } from "@/state/store";
 import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
 import { checkForUpdate, installUpdate, plainReleaseNotes, useUpdates, type UpdateState } from "@/state/updates";
+import { AccountSection } from "@/features/account/AccountSection";
+import { useSync } from "@/sync/engine";
+import { ACCOUNT_REQUIRED } from "@/sync/mode";
 import { BackupList } from "./BackupList";
 import { CalendarSubscriptions } from "./CalendarSubscriptions";
 import { RoutineDialog } from "./RoutineDialog";
@@ -504,6 +507,7 @@ export function SettingsView() {
   const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [icsExportOpen, setIcsExportOpen] = useState(false);
+  const syncedAs = useSync((s) => s.username);
 
   useEffect(() => {
     void getPlatform().then(async (p) =>
@@ -553,6 +557,7 @@ export function SettingsView() {
           </div>
         </section>
 
+        {info && <AccountSection desktop={info.kind === "tauri"} />}
         <NotificationsSection />
         {info?.kind === "tauri" && <DesktopSection />}
         {info?.kind === "tauri" && <UpdatesSection version={info.version} />}
@@ -562,7 +567,9 @@ export function SettingsView() {
         <section>
           <h2 className="mb-1 text-lg font-semibold">Data</h2>
           <p className="mb-3 text-sm text-muted-foreground">
-            Your data stays on this computer{info?.dir ? ` in ${info.dir}` : ""}. A backup is made automatically once a day; the newest 14 are kept.
+            {syncedAs
+              ? `Your data is saved on this device${info?.dir ? ` in ${info.dir}` : ""} and synced to your account (${syncedAs}).`
+              : `Your data stays on this computer${info?.dir ? ` in ${info.dir}` : ""}.`} A backup is made automatically once a day; the newest 14 are kept.
             {info?.kind === "tauri" && (info.lastBackup ? ` Last backup: ${new Date(info.lastBackup * 1000).toLocaleString()}.` : " No backup yet.")}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -619,7 +626,7 @@ export function SettingsView() {
         </section>
 
         <p className="text-xs text-muted-foreground">
-          Timeblock {info?.version ?? ""} · MIT licensed{info?.kind === "web" ? " · browser dev mode (data in localStorage)" : ""}
+          Timeblock {info?.version ?? ""} · MIT licensed{info?.kind === "web" && !ACCOUNT_REQUIRED ? " · browser dev mode (data in localStorage)" : ""}
         </p>
       </div>
       <ClearDataDialog open={clearOpen} onClose={() => setClearOpen(false)} />
