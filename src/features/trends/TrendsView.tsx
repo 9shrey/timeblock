@@ -5,9 +5,9 @@ import { computeAccuracy, type AccuracyStats } from "@/domain/stats/accuracy";
 import { heatmapMinutesByDay } from "@/domain/stats/heatmap";
 import { computeTrends, trendWeekStarts, type GoalTrend } from "@/domain/stats/trends";
 import { addDays, formatDuration } from "@/domain/time/localDate";
-import type { Block, TrendWindowWeeks } from "@/domain/types";
+import type { Block, ChecklistItem, TrendWindowWeeks } from "@/domain/types";
 import { setSetting } from "@/state/dataCommands";
-import { targetList, useGoals, weekOf } from "@/state/selectors";
+import { checklistList, targetList, useGoals, weekOf } from "@/state/selectors";
 import { getRepo, useStore } from "@/state/store";
 import { Heatmap } from "./Heatmap";
 import { TrendChart } from "./TrendChart";
@@ -31,6 +31,30 @@ function useBlocksRange(fromDay: string, toExclusive: string): Block[] | null {
     };
   }, [fromDay, toExclusive, key]);
   return loaded?.key === key ? loaded.blocks : null;
+}
+
+/** Outcomes of the weeks in range; the store's loaded week replaces its stale copy so ticks show up live. */
+function useChecklistRange(fromWeek: string, toExclusive: string): ChecklistItem[] {
+  const key = `${fromWeek}|${toExclusive}`;
+  const [loaded, setLoaded] = useState<{ key: string; items: ChecklistItem[] } | null>(null);
+  const live = useStore((s) => s.data.checklistItems);
+  useEffect(() => {
+    let cancelled = false;
+    void getRepo()
+      .loadChecklistRange(fromWeek, toExclusive)
+      .then((items) => {
+        if (!cancelled) setLoaded({ key, items });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fromWeek, toExclusive, key]);
+  return useMemo(() => {
+    const liveItems = checklistList(live);
+    const liveWeeks = new Set(liveItems.map((c) => c.weekStart));
+    const stored = loaded?.key === key ? loaded.items : [];
+    return [...stored.filter((c) => !liveWeeks.has(c.weekStart)), ...liveItems];
+  }, [loaded, key, live]);
 }
 
 function AccuracySummary({ stats }: { stats: AccuracyStats }) {
@@ -93,13 +117,14 @@ export function TrendsView() {
   const fromDay = weekStarts[0]!;
   const toExclusive = addDays(weekStarts[weekStarts.length - 1]!, 7);
   const trendBlocks = useBlocksRange(fromDay, toExclusive);
+  const checklist = useChecklistRange(fromDay, toExclusive);
 
   const heatmapFrom = addDays(now.day, -(HEATMAP_DAYS - 1));
   const yearBlocks = useBlocksRange(heatmapFrom, addDays(now.day, 1));
 
   const trends = useMemo(
-    () => (trendBlocks ? computeTrends({ weekStarts, blocks: trendBlocks, goals, targets, now }) : []),
-    [trendBlocks, weekStarts, goals, targets, now],
+    () => (trendBlocks ? computeTrends({ weekStarts, blocks: trendBlocks, goals, targets, checklist, now }) : []),
+    [trendBlocks, weekStarts, goals, targets, checklist, now],
   );
   const accuracy = useMemo(() => (trendBlocks ? computeAccuracy(trendBlocks, now) : null), [trendBlocks, now]);
   const heatmap = useMemo(

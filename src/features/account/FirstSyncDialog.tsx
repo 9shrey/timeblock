@@ -33,7 +33,7 @@ export function FirstSyncDialog() {
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>This device and {username ?? "your account"} both have data</DialogTitle>
-          <DialogDescription>Choose how to combine them. A backup of this device's data is kept either way (desktop app).</DialogDescription>
+          <DialogDescription>Choose how to combine them. A backup of this computer's data is made first either way.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
           {OPTIONS.map((o, i) => (

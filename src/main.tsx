@@ -18,7 +18,7 @@ import { scheduleTray, wireTrayActions } from "./state/tray";
 import { startUpdateChecks } from "./state/updates";
 import { useUi } from "./state/ui";
 import { initSync } from "./sync/engine";
-import { ACCOUNT_REQUIRED } from "./sync/mode";
+import { IS_DEMO } from "./app/demo";
 import "./styles/index.css";
 
 /** Dev and end-to-end test builds accept `?seed`, `?reset` and `?now`; release builds never do. */
@@ -89,7 +89,7 @@ async function boot() {
   const clock = makeClock(TEST_SWITCHES ? parseNowOverride(location.search) : null);
   if (TEST_SWITCHES) await applyDevParams(repo, clock());
   // The public demo starts with two weeks of sample data instead of an empty app.
-  if (import.meta.env.VITE_DEMO === "1" && (await repo.loadBase()).goals.length === 0) {
+  if (IS_DEMO && (await repo.loadBase()).goals.length === 0) {
     const { demoSeed } = await import("./data/devSeed");
     await repo.replaceAll(demoSeed(clock()));
   }
@@ -146,11 +146,6 @@ async function boot() {
       description: `${e instanceof Error ? e.message : String(e)}. Try Settings → Back up now.`,
     });
   });
-}
-
-// The web app is installable (PWA) and opens offline; dev servers skip the worker.
-if (ACCOUNT_REQUIRED && import.meta.env.PROD && "serviceWorker" in navigator) {
-  void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((e: unknown) => console.warn("Service worker failed", e));
 }
 
 boot().then(

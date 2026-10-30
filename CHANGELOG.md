@@ -6,13 +6,43 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+- **The web app.** Timeblock is a desktop app; the website keeps a live demo with sample data
+  (now linked from the download page too). Sync stays, between your computers. The sync server
+  no longer allows the GitHub Pages origin by default.
+
 ### Changed
+- The demo no longer shows the Sync & account section, desktop-only backup text or "browser dev
+  mode" wording. Settings → Sync & account moved below Notifications and Desktop.
+- **Goals are judged by pace, not by plan.** During the week an "at least" goal is compared with a
+  steady pace over its days: **On pace**, **Behind** (by how much), or **Met**. Only confirmed time
+  counts; unconfirmed plan blocks no longer make a goal look on track. The plan is shown as a
+  separate line ("plan short by 2h"). "At most" goals show **Within limit**, **Watch** (the plan
+  would go over) or **Over**; future weeks show **Planned** / **Under-planned**.
+- **One kind of goal.** A goal has an optional weekly time target, outcomes, or both; the
+  Time/Tasks switch is gone. A goal without a time target is judged by its outcomes when the week
+  ends. Former task goals keep their outcomes; their separate outcome-count target is dropped.
+- **Active days**: an "at least" goal can be spread over chosen weekdays (e.g. Mon–Fri), so its
+  pace is fair on weekends. A goal created mid-week gets a prorated first-week target.
+- Targets accept `15`, `7.5`, `1h30`, `90m` or `1:30`, can be edited in the goal dialog, and
+  **Use previous** drops a week's change. The status now shows on the Goals page and in the
+  week budget, not only in Review; progress bars mark where the pace is.
+- The ≥/≤ switch moved from the Goals page into the edit dialog (it changes every week of a goal).
+- New goals start from the current week, and archiving uses the current week, whichever week you
+  are viewing.
+
 - Week view's title shows the week's dates ("26 Oct – 1 Nov 2026"), and week numbers follow
   your week start day instead of always ISO weeks.
 - "Copy last week's plan" says how many blocks it copied, with an Undo button.
 - Command palette: switch views, go to Today, open Settings. "Confirm rest of day" only shows in
   Day and Week view.
 - `,` opens Settings.
+
+### Fixed
+- Trends: the streak reset every week until the target was reached; an unfinished week no longer
+  breaks it. Task goals were compared in minutes against an outcome count.
+- CSV weekly stats: task goals were always "behind"/"missed" and their count was written as minutes.
+- Goals no longer show up in Review for weeks before they were created.
 
 ## [0.3.0] - 2026-10-28
 

@@ -32,10 +32,9 @@ localhost, i.e. from Caddy. Keep `TIMEBLOCK_BIND` on `127.0.0.1`.
 
 ## 4. Point the apps at it
 
-- **Web app:** in the GitHub repo, Settings → Secrets and variables → Actions → Variables,
-  add `SYNC_URL` = `https://sync.yourdomain.com`. The next Pages deploy publishes the app
-  at `https://9shrey.github.io/timeblock/app/`.
-- **Desktop app:** Settings → Sync & account → enter the same server address.
+- **Desktop app:** Settings → Sync & account → enter the server address. Release builds can
+  pre-fill it: set the repository variable `SYNC_URL` (Settings → Secrets and variables →
+  Actions → Variables) before tagging a release.
 
 ## Settings (environment variables)
 
@@ -43,7 +42,7 @@ localhost, i.e. from Caddy. Keep `TIMEBLOCK_BIND` on `127.0.0.1`.
 |---|---|---|
 | `TIMEBLOCK_DB` | `./timeblock-sync.db` | SQLite file |
 | `TIMEBLOCK_BIND` | `127.0.0.1:8787` | listen address |
-| `TIMEBLOCK_ORIGINS` | GitHub Pages + localhost dev ports + Tauri | browser origins allowed by CORS |
+| `TIMEBLOCK_ORIGINS` | localhost dev ports + Tauri | browser origins allowed by CORS |
 
 ## Backups
 

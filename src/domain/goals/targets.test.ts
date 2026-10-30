@@ -4,7 +4,7 @@ import { applyChanges, invertChanges, stateFrom } from "../changes";
 import { testEnv } from "../env";
 import { addDays } from "../time/localDate";
 import type { Block, ChecklistItem, Goal, WeekTarget } from "../types";
-import { createGoal, deleteGoalChanges, effectiveTarget, reorderGoalsChanges, setTargetChanges, setTaskTargetChanges, updateGoal } from "./targets";
+import { createGoal, deleteGoalChanges, effectiveTarget, reorderGoalsChanges, clearTargetChanges, setTargetChanges, updateGoal } from "./targets";
 
 const W0 = "2026-10-05";
 const W1 = addDays(W0, 7);
@@ -25,7 +25,7 @@ const goal = (id: string, sortOrder = 0): Goal => ({
   name: id,
   color: "#123456",
   kind: "min",
-  trackBy: "time",
+  trackBy: "time", activeDays: 127,
   sortOrder,
   archivedOn: null,
   createdAt: 0,
@@ -77,21 +77,17 @@ describe("setTargetChanges", () => {
   });
 });
 
-describe("setTaskTargetChanges", () => {
-  it("writes a count target and clears the minutes field", () => {
-    const env = testEnv(5);
-    expect(setTaskTargetChanges("g", W1, 3, env)).toEqual([
-      { op: "put", table: "weekTargets", row: { goalId: "g", weekStart: W1, targetMinutes: null, targetCount: 3, updatedAt: 5 } },
-    ]);
-  });
-
-  it("carries forward like a time target", () => {
+describe("clearTargetChanges", () => {
+  it("deletes only that week's row, so the week inherits again", () => {
     const env = testEnv();
     let state = stateFrom({ weekTargets: [] });
-    state = applyChanges(state, setTaskTargetChanges("g", W1, 3, env));
+    state = applyChanges(state, setTargetChanges("g", W0, 300, env));
+    state = applyChanges(state, setTargetChanges("g", W1, 600, env));
+    const before = Object.values(state.weekTargets);
+    state = applyChanges(state, clearTargetChanges(before, "g", W1));
     const rows = Object.values(state.weekTargets);
-    expect(effectiveTarget(rows, "g", W1).count).toBe(3);
-    expect(effectiveTarget(rows, "g", W2).count).toBe(3);
+    expect(effectiveTarget(rows, "g", W1)).toMatchObject({ minutes: 300, fromWeek: W0 });
+    expect(clearTargetChanges(rows, "g", W2)).toEqual([]);
   });
 });
 
@@ -99,7 +95,7 @@ describe("createGoal / updateGoal", () => {
   it("creates a trimmed goal at the end plus a target row for the viewed week", () => {
     const env = testEnv(1000);
     const { goal: g, changes } = createGoal(
-      { name: "  Thesis ", color: "#ff0000", kind: "min", trackBy: "time", targetMinutes: 600, targetCount: null },
+      { name: "  Thesis ", color: "#ff0000", kind: "min", activeDays: 127, targetMinutes: 600 },
       W2,
       [goal("a", 3), goal("b", 7)],
       env,
@@ -111,24 +107,14 @@ describe("createGoal / updateGoal", () => {
     ]);
   });
 
-  it("creates a task-tracked goal with a count target", () => {
-    const { goal: g, changes } = createGoal(
-      { name: "Errands", color: "#7c3aed", kind: "min", trackBy: "tasks", targetMinutes: null, targetCount: 3 },
-      W0,
-      [],
-      testEnv(1000),
-    );
-    expect(g.trackBy).toBe("tasks");
-    expect(changes).toContainEqual({
-      op: "put",
-      table: "weekTargets",
-      row: { goalId: g.id, weekStart: W0, targetMinutes: null, targetCount: 3, updatedAt: 1000 },
-    });
+  it("stores its active days", () => {
+    const { goal: g } = createGoal({ name: "Gym", color: "#7c3aed", kind: "min", activeDays: 0b0111110, targetMinutes: 300 }, W0, [], testEnv(1000));
+    expect(g).toMatchObject({ activeDays: 0b0111110, trackBy: "time" });
   });
 
   it("first goal gets sortOrder 0", () => {
     const { goal: g } = createGoal(
-      { name: "x", color: "#000000", kind: "max", trackBy: "time", targetMinutes: null, targetCount: null },
+      { name: "x", color: "#000000", kind: "max", activeDays: 127, targetMinutes: null },
       W0,
       [],
       testEnv(),

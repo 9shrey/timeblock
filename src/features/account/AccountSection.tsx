@@ -4,21 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ACCOUNT_REQUIRED } from "@/sync/mode";
 import { changePassword, deleteAccount, signOut, signOutEverywhere, syncNow, useSync } from "@/sync/engine";
 import { AuthForm } from "./AuthForm";
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-/** On the web app, signing out also forgets this browser's copy of the data. */
-async function leave(action: () => Promise<void>): Promise<void> {
-  await action();
-  if (ACCOUNT_REQUIRED) {
-    const { clearStoredDb } = await import("@/platform/web");
-    clearStoredDb();
-    location.reload();
-  }
-}
 
 function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [oldPw, setOldPw] = useState("");
@@ -87,8 +77,8 @@ function DeleteDialog({ open, onClose }: { open: boolean; onClose: () => void })
             e.preventDefault();
             setBusy(true);
             try {
-              await leave(() => deleteAccount(pw));
-              toast.success("Account deleted", { description: ACCOUNT_REQUIRED ? undefined : "Your data is still on this device." });
+              await deleteAccount(pw);
+              toast.success("Account deleted", { description: "Your data is still on this device." });
               onClose();
             } catch (err) {
               setError(errorText(err));
@@ -100,8 +90,8 @@ function DeleteDialog({ open, onClose }: { open: boolean; onClose: () => void })
           <DialogHeader>
             <DialogTitle>Delete account?</DialogTitle>
             <DialogDescription>
-              This deletes the account and all data stored on the sync server, and signs out every device. Data in the desktop app stays on
-              that computer.
+              This deletes the account and all data stored on the sync server, and signs out every device. Your data stays on each
+              computer.
             </DialogDescription>
           </DialogHeader>
           <Label htmlFor="del-pw">Password</Label>
@@ -133,8 +123,8 @@ export function AccountSection({ desktop }: { desktop: boolean }) {
       {!username ? (
         <>
           <p className="mb-3 text-sm text-muted-foreground">
-            Optional. Sign in to sync your plan between this {desktop ? "computer" : "browser"} and the Timeblock web app. Without an
-            account, your data stays only on this device.
+            Optional. Sign in to keep your plan in sync between your computers, through your own Timeblock sync server. Without an
+            account, your data stays only on this computer.
           </p>
           {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
           <div className="max-w-sm rounded-lg border p-4">
@@ -162,8 +152,8 @@ export function AccountSection({ desktop }: { desktop: boolean }) {
             <Button
               variant="outline"
               onClick={() =>
-                void leave(signOut).then(
-                  () => toast("Signed out", { description: ACCOUNT_REQUIRED ? undefined : "Your data stays on this device." }),
+                void signOut().then(
+                  () => toast("Signed out", { description: "Your data stays on this device." }),
                   (e: unknown) => toast.error("Couldn't sign out", { description: errorText(e) }),
                 )
               }
@@ -173,7 +163,7 @@ export function AccountSection({ desktop }: { desktop: boolean }) {
             <Button
               variant="outline"
               onClick={() =>
-                void leave(signOutEverywhere).then(
+                void signOutEverywhere().then(
                   () => toast("Signed out on every device"),
                   (e: unknown) => toast.error("Couldn't sign out everywhere", { description: errorText(e) }),
                 )

@@ -26,7 +26,7 @@ describe("demoSeed", () => {
     expect([...states].sort()).toEqual(["adjusted", "done", "pending", "skipped", "unconfirmed"]);
   });
 
-  it("has met/missed/over last week and at_risk this week", () => {
+  it("has met/missed/over last week and watch / behind this week", () => {
     const stats = (weekStart: string) =>
       computeStats({
         weekStart,
@@ -39,7 +39,7 @@ describe("demoSeed", () => {
       });
     const status = (weekStart: string) => Object.fromEntries(stats(weekStart).goals.map((g) => [g.goal?.name, g.status]));
     expect(status("2026-10-12")).toEqual({ Thesis: "met", Exercise: "missed", Social: "over", Errands: "missed" });
-    expect(status("2026-10-19").Social).toBe("at_risk");
+    expect(status("2026-10-19")).toMatchObject({ Social: "watch", Errands: "open" });
     // Today's 9–11 thesis block is an unconfirmed ghost (used by the confirm-rest-of-day demo).
     expect(stats("2026-10-19").uncorrectedDays).toEqual(["2026-10-20", "2026-10-21"]);
   });

@@ -12,7 +12,7 @@ const goal = (id: string, over: Partial<Goal> = {}): Goal => ({
   name: `Goal ${id}`,
   color: "#3366cc",
   kind: "min",
-  trackBy: "time",
+  trackBy: "time", activeDays: 127,
   sortOrder: 0,
   archivedOn: null,
   createdAt: 1,
@@ -232,6 +232,13 @@ describe("parseImportFile", () => {
     });
     // And re-exporting the parsed data gives the same bytes.
     expect(fileText(r.data)).toBe(fileText(sample()));
+  });
+
+  it("defaults activeDays to every day for files from before it existed", () => {
+    const file = JSON.parse(fileText(sample())) as { goals: Record<string, unknown>[] };
+    for (const g of file.goals) delete g.activeDays;
+    const r = expectOk(parseImportFile(JSON.stringify(file)));
+    expect(r.data.goals.map((g) => g.activeDays)).toEqual([127, 127]);
   });
 
   it("round-trips an empty export", () => {

@@ -45,6 +45,7 @@ export async function exportCsv(weeks = 12): Promise<void> {
     const toInclusive = addDays(toExclusive, -1);
 
     const blocks = await repo.loadBlocksRange(fromWeek, toExclusive);
+    const checklist = await repo.loadChecklistRange(fromWeek, toExclusive);
     const goalsById = new Map(goalList(s.data.goals).map((g) => [g.id, g] as const));
     const targets = targetList(s.data.weekTargets);
     const goals = goalList(s.data.goals);
@@ -55,7 +56,15 @@ export async function exportCsv(weeks = 12): Promise<void> {
       const days = weekDays(weekStart);
       const daySet = new Set(days);
       const weekBlocks = blocks.filter((b) => daySet.has(b.day));
-      const stats = computeStats({ days, weekStart, blocks: weekBlocks, goals, targets, checklist: [], now: s.now });
+      const stats = computeStats({
+        days,
+        weekStart,
+        blocks: weekBlocks,
+        goals,
+        targets,
+        checklist: checklist.filter((c) => c.weekStart === weekStart),
+        now: s.now,
+      });
       for (const g of stats.goals) {
         rows.push({
           weekStart,

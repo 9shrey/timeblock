@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Download, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { STORAGE_KEY as DB_KEY } from "@/platform/web";
 import { flushWrites } from "@/state/store";
 
 const DISMISSED_KEY = "timeblock.demoBannerDismissed";
-/** Must match the web platform's database key (src/platform/web.ts). */
-const DB_KEY = "timeblock.db";
 const DOWNLOAD_URL = "https://9shrey.github.io/timeblock/download.html";
 
 function readDismissed(): boolean {
