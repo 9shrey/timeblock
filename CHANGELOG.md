@@ -31,6 +31,13 @@ All notable changes to this project are documented here. The format follows
 - New goals start from the current week, and archiving uses the current week, whichever week you
   are viewing.
 
+- Week view's title shows the week's dates ("26 Oct – 1 Nov 2026"), and week numbers follow
+  your week start day instead of always ISO weeks.
+- "Copy last week's plan" says how many blocks it copied, with an Undo button.
+- Command palette: switch views, go to Today, open Settings. "Confirm rest of day" only shows in
+  Day and Week view.
+- `,` opens Settings.
+
 ### Fixed
 - Trends: the streak reset every week until the target was reached; an unfinished week no longer
   breaks it. Task goals were compared in minutes against an outcome count.

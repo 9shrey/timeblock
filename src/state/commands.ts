@@ -283,7 +283,10 @@ export function copyWeekPlan(fromWeek: LocalDate, toWeek: LocalDate): void {
     return;
   }
   if (changes.length === 0) toast("Last week has no plan to copy.");
-  else commitChecked(changes, "Copy last week's plan");
+  else if (commitChecked(changes, "Copy last week's plan")) {
+    const n = changes.filter((c) => c.op === "put" && c.table === "blocks").length;
+    toast(`Copied ${n} block${n === 1 ? "" : "s"} from last week.`, { action: { label: "Undo", onClick: undo } });
+  }
 }
 
 /**

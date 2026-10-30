@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, CopyPlus, ListChecks, PanelRight, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { addDays, addMonths, formatDateLong, formatMonthLong, isoWeek, weekdayLong, weekStartOf } from "@/domain/time/localDate";
+import { addDays, addMonths, formatDateLong, formatDateRange, formatMonthLong, weekdayLong, weekNumber, weekStartOf } from "@/domain/time/localDate";
 import { copyWeekPlan, redo, setSelectMode, undo } from "@/state/commands";
 import { useStore } from "@/state/store";
 import { useUi } from "@/state/ui";
@@ -43,9 +43,9 @@ export function TopBar() {
   const canRedo = useStore((s) => s.history.redo.length > 0);
   const selectMode = useUi((s) => s.selectMode);
   const budgetOpen = useStore((s) => s.budgetOpen);
-  const { week } = isoWeek(cursor);
   const unit = view === "day" ? "day" : view === "month" ? "month" : "week";
   const weekStart = weekStartOf(cursor, weekStartDay);
+  const week = weekNumber(weekStart);
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b px-3">
@@ -59,7 +59,13 @@ export function TopBar() {
         <ChevronRight />
       </IconButton>
       <h1 className="ml-2 text-sm font-semibold">
-        {view === "day" ? `${weekdayLong(cursor)}, ${formatDateLong(cursor)}` : view === "month" ? formatMonthLong(cursor) : formatDateLong(cursor)}
+        {view === "day"
+          ? `${weekdayLong(cursor)}, ${formatDateLong(cursor)}`
+          : view === "month"
+            ? formatMonthLong(cursor)
+            : view === "week"
+              ? formatDateRange(weekStart, addDays(weekStart, 6))
+              : formatDateLong(cursor)}
         {view !== "month" && <span className="ml-2 font-normal text-muted-foreground">W{week}</span>}
       </h1>
       {view === "week" && (

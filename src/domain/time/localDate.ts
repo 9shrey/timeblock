@@ -233,3 +233,12 @@ export function formatDateLong(day: LocalDate): string {
   const { y, m, d } = parseLocalDate(day);
   return `${d} ${MONTH_SHORT[m - 1]} ${y}`;
 }
+
+/** "26 Oct – 1 Nov 2026", "5 – 11 Oct 2026", "29 Dec 2026 – 4 Jan 2027". */
+export function formatDateRange(from: LocalDate, to: LocalDate): string {
+  const a = parseLocalDate(from);
+  const b = parseLocalDate(to);
+  if (a.y !== b.y) return `${formatDateLong(from)} – ${formatDateLong(to)}`;
+  if (a.m === b.m) return `${a.d} – ${formatDateLong(to)}`;
+  return `${a.d} ${MONTH_SHORT[a.m - 1]} – ${formatDateLong(to)}`;
+}

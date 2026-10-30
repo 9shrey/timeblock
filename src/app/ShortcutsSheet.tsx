@@ -7,7 +7,7 @@ const GROUPS: { title: string; rows: { keys: string; label: string }[] }[] = [
     rows: [
       { keys: "[ / ]", label: "Previous / next day or week" },
       { keys: "t", label: "Go to today" },
-      { keys: "d / w / m / g / r / i", label: "Day / Week / Month / Goals / Review / Trends view" },
+      { keys: "d / w / m / g / r / i / ,", label: "Day / Week / Month / Goals / Review / Trends view / Settings" },
       { keys: "Ctrl+K", label: "Command palette" },
       { keys: "?", label: "This sheet" },
     ],

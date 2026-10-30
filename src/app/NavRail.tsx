@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { CalendarDays, CalendarRange, CalendarFold, ClipboardCheck, Settings, Target, TrendingUp, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -15,10 +16,13 @@ const ITEMS: { view: View; label: string; icon: LucideIcon; key: string }[] = [
 
 /** Number of days up to today in the current week with unconfirmed plan blocks. */
 function useUnconfirmedDays(): number {
-  return useStore((s) => {
-    const { weekStart, days } = weekOf(s.now.day, s.settings);
-    return statsFor(s.data, days, weekStart, s.now).uncorrectedDays.length;
-  });
+  const data = useStore((s) => s.data);
+  const now = useStore((s) => s.now);
+  const settings = useStore((s) => s.settings);
+  return useMemo(() => {
+    const { weekStart, days } = weekOf(now.day, settings);
+    return statsFor(data, days, weekStart, now).uncorrectedDays.length;
+  }, [data, now, settings]);
 }
 
 function RailButton({ view, label, icon: Icon, shortcut, badge }: { view: View; label: string; icon: LucideIcon; shortcut?: string; badge?: number }) {
@@ -61,7 +65,7 @@ export function NavRail() {
         <RailButton key={i.view} view={i.view} label={i.label} icon={i.icon} shortcut={i.key} badge={i.view === "review" ? unconfirmed : undefined} />
       ))}
       <div className="flex-1" />
-      <RailButton view="settings" label="Settings" icon={Settings} />
+      <RailButton view="settings" label="Settings" icon={Settings} shortcut="," />
     </nav>
   );
 }

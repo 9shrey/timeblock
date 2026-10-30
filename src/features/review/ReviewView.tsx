@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { carryableCount } from "@/domain/goals/checklist";
 import { computeAccuracy } from "@/domain/stats/accuracy";
 import { biggestGaps } from "@/domain/stats/gaps";
-import { addDays, formatDateLong, formatDayLabel, formatDuration, formatMinuteRange, isoWeek, weekDays } from "@/domain/time/localDate";
+import { addDays, formatDateLong, formatDayLabel, formatDuration, formatMinuteRange, weekDays, weekNumber } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
 import { confirmRestOfDay, rescheduleSkippedTo } from "@/state/commands";
 import { carryOverItems, setWeekNote } from "@/state/goalCommands";
@@ -167,7 +167,7 @@ export function ReviewView() {
       <div className="mx-auto flex max-w-4xl flex-col gap-5 p-6">
         <header>
           <h2 className="text-lg font-semibold">
-            Week {isoWeek(weekStart).week} review{phaseLabel}
+            Week {weekNumber(weekStart)} review{phaseLabel}
           </h2>
           <p className="text-sm text-muted-foreground">
             {formatDateLong(weekStart)} – {formatDateLong(addDays(weekStart, 6))}
