@@ -22,7 +22,7 @@ import { closeEditor, openEditor, openQuickAdd, setCommandPaletteOpen, setShortc
 import type { ItemRef } from "@/features/timeline/dragMachine";
 import { goToday, stepCursor } from "./TopBar";
 
-const VIEW_KEYS: Record<string, View> = { d: "day", w: "week", m: "month", g: "goals", r: "review", i: "trends" };
+const VIEW_KEYS: Record<string, View> = { d: "day", w: "week", m: "month", g: "goals", r: "review", i: "trends", ",": "settings" };
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;

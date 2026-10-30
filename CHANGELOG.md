@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Week view's title shows the week's dates ("26 Oct – 1 Nov 2026"), and week numbers follow
+  your week start day instead of always ISO weeks.
+- "Copy last week's plan" says how many blocks it copied, with an Undo button.
+- Command palette: switch views, go to Today, open Settings. "Confirm rest of day" only shows in
+  Day and Week view.
+- `,` opens Settings.
+
 ## [0.3.0] - 2026-10-28
 
 ### Added

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, CheckCheck, Download, LayoutTemplate, Target } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCheck, Download, LayoutTemplate, Target } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,13 +13,24 @@ import { isLocalDate } from "@/domain/time/localDate";
 import { confirmRestOfDay, setGoal } from "@/state/commands";
 import { exportJson } from "@/state/dataCommands";
 import { useGoals, useTemplates } from "@/state/selectors";
-import { useStore } from "@/state/store";
+import { useStore, type View } from "@/state/store";
 import { applyTemplateToDay, applyTemplateToWeek } from "@/state/templateCommands";
 import { setCommandPaletteOpen, useUi } from "@/state/ui";
+import { goToday } from "./TopBar";
+
+const VIEWS: { view: View; label: string; key: string }[] = [
+  { view: "day", label: "Day", key: "d" },
+  { view: "week", label: "Week", key: "w" },
+  { view: "month", label: "Month", key: "m" },
+  { view: "goals", label: "Goals", key: "g" },
+  { view: "review", label: "Review", key: "r" },
+  { view: "trends", label: "Trends", key: "i" },
+  { view: "settings", label: "Settings", key: "," },
+];
 
 /**
- * Ctrl+K command palette: go to a date, apply a template, confirm the rest of the day,
- * switch the selected block's goal, or export. Built on cmdk, inside the shared Dialog.
+ * Ctrl+K command palette: switch view, go to today or a date, apply a template, confirm the
+ * rest of the day, switch the selected block's goal, or export. Built on cmdk, inside the shared Dialog.
  *
  * Filters itself (`shouldFilter={false}` on the Command root): the "Go to date" item only
  * exists once `search` parses as a date, and cmdk's own filter — which scores items via a
@@ -29,12 +40,13 @@ import { setCommandPaletteOpen, useUi } from "@/state/ui";
 export function CommandPalette() {
   const open = useUi((s) => s.commandPaletteOpen);
   const cursor = useStore((s) => s.cursor);
+  const view = useStore((s) => s.view);
   const templates = useTemplates();
   const goals = useGoals();
   const [search, setSearch] = useState("");
   const close = () => setCommandPaletteOpen(false);
   const selection = useStore((s) => s.selection);
-  const sel = selection ? (selection.kind === "block" ? { kind: "block" as const, id: selection.id } : selection) : null;
+  const sel = selection;
   const q = search.trim().toLowerCase();
   const matches = (label: string) => q === "" || label.toLowerCase().includes(q);
 
@@ -45,11 +57,13 @@ export function CommandPalette() {
 
   const matchingTemplates = templates.filter((t) => matches(t.name));
   const matchingGoals = goals.filter((g) => matches(g.name));
-  const showConfirm = matches("confirm rest of day");
+  const matchingViews = VIEWS.filter((v) => matches(`go to ${v.label}`) || matches(v.label));
+  const showToday = matches("go to today");
+  const showConfirm = (view === "day" || view === "week") && matches("confirm rest of day");
   const showExport = matches("export json");
   const showNoGoal = matches("no goal");
   const anyMatch =
-    isLocalDate(search) || showConfirm || matchingTemplates.length > 0 || (!!sel && (matchingGoals.length > 0 || showNoGoal)) || showExport;
+    isLocalDate(search) || showToday || matchingViews.length > 0 || showConfirm || matchingTemplates.length > 0 || (!!sel && (matchingGoals.length > 0 || showNoGoal)) || showExport;
 
   return (
     <CommandDialog
@@ -70,6 +84,21 @@ export function CommandPalette() {
             <CommandItem onSelect={() => run(() => useStore.setState({ cursor: search, selection: null }))}>
               <CalendarDays /> Go to {search}
             </CommandItem>
+          </CommandGroup>
+        )}
+        {(showToday || matchingViews.length > 0) && (
+          <CommandGroup heading="Go to">
+            {showToday && (
+              <CommandItem onSelect={() => run(goToday)}>
+                <CalendarDays /> Today
+              </CommandItem>
+            )}
+            {matchingViews.map((v) => (
+              <CommandItem key={v.view} onSelect={() => run(() => useStore.setState({ view: v.view }))}>
+                <ArrowRight /> {v.label}
+                <kbd className="ml-auto text-xs text-muted-foreground">{v.key}</kbd>
+              </CommandItem>
+            ))}
           </CommandGroup>
         )}
         {showConfirm && (

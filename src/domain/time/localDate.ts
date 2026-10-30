@@ -103,6 +103,14 @@ export function isoWeek(day: LocalDate): { year: number; week: number } {
 }
 
 /**
+ * Week number for a week that starts on `weekStart`, whatever the start day: the ISO week of
+ * its middle day, so a Sunday- or Saturday-start week gets the number most of its days have.
+ */
+export function weekNumber(weekStart: LocalDate): number {
+  return isoWeek(addDays(weekStart, 3)).week;
+}
+
+/**
  * How far to move an existing week key when the start day changes, chosen in [-3, 3]
  * so each old week maps to the new week it overlaps most. Distinct keys stay distinct.
  */
@@ -224,4 +232,13 @@ export function formatDayLabel(day: LocalDate): string {
 export function formatDateLong(day: LocalDate): string {
   const { y, m, d } = parseLocalDate(day);
   return `${d} ${MONTH_SHORT[m - 1]} ${y}`;
+}
+
+/** "26 Oct – 1 Nov 2026", "5 – 11 Oct 2026", "29 Dec 2026 – 4 Jan 2027". */
+export function formatDateRange(from: LocalDate, to: LocalDate): string {
+  const a = parseLocalDate(from);
+  const b = parseLocalDate(to);
+  if (a.y !== b.y) return `${formatDateLong(from)} – ${formatDateLong(to)}`;
+  if (a.m === b.m) return `${a.d} – ${formatDateLong(to)}`;
+  return `${a.d} ${MONTH_SHORT[a.m - 1]} – ${formatDateLong(to)}`;
 }

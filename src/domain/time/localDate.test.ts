@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
+  formatDateRange,
+  weekNumber,
   addDays,
   addMonths,
   dayOfWeek,
@@ -201,5 +203,23 @@ describe("clock", () => {
     expect(parseNowOverride("?now=2026-02-30T14:00")).toBeNull();
     expect(parseNowOverride("?now=2026-10-21T24:00")).toBeNull();
     expect(parseNowOverride("")).toBeNull();
+  });
+});
+
+describe("weekNumber", () => {
+  it("matches the ISO week for Monday-start weeks", () => {
+    expect(weekNumber("2026-10-26")).toBe(44);
+  });
+  it("gives a Sunday- or Saturday-start week the number most of its days have", () => {
+    expect(weekNumber("2026-10-25")).toBe(44); // Sun 25 Oct – Sat 31 Oct
+    expect(weekNumber("2026-10-24")).toBe(44); // Sat 24 Oct – Fri 30 Oct
+  });
+});
+
+describe("formatDateRange", () => {
+  it("shortens shared month and year", () => {
+    expect(formatDateRange("2026-10-05", "2026-10-11")).toBe("5 – 11 Oct 2026");
+    expect(formatDateRange("2026-10-26", "2026-11-01")).toBe("26 Oct – 1 Nov 2026");
+    expect(formatDateRange("2026-12-28", "2027-01-03")).toBe("28 Dec 2026 – 3 Jan 2027");
   });
 });
