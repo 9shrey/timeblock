@@ -9,7 +9,7 @@ const goal = (id: string, extra: Partial<Goal> = {}): Goal => ({
   name: id,
   color: "#3b82f6",
   kind: "min",
-  trackBy: "time",
+  trackBy: "time", activeDays: 127,
   sortOrder: 0,
   archivedOn: null,
   createdAt: 1,
@@ -80,6 +80,33 @@ describe("computeTrends", () => {
     const targets = [target("2026-10-12", 60)];
     const trends = computeTrends({ weekStarts, blocks, goals: [goal("g1", { kind: "max" })], targets, now });
     expect(trends[0]!.weeks[0]!.met).toBe(true);
+  });
+
+  it("the unfinished current week doesn't break a streak", () => {
+    // now is Monday 2026-11-02: that week has 0 logged so far, the two before it met 60m.
+    const weekStarts = trendWeekStarts("2026-11-02", 3);
+    const blocks = [block("a1", "2026-10-19", { endMinute: 540 + 60 }), block("a2", "2026-10-26", { endMinute: 540 + 60 })];
+    const trends = computeTrends({ weekStarts, blocks, goals: [goal("g1")], targets: [target("2026-10-19", 60)], now });
+    expect(trends[0]!.weeks.map((w) => w.met)).toEqual([true, true, null]);
+    expect(trends[0]!.streak).toBe(2);
+  });
+
+  it("judges an outcome-only goal by its outcomes, not its minutes", () => {
+    const weekStarts = trendWeekStarts("2026-10-19", 2);
+    const item = (id: string, weekStart: string, done: boolean) => ({
+      id,
+      goalId: "g1",
+      weekStart,
+      text: id,
+      done,
+      sortOrder: 0,
+      carriedFromId: null,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    const checklist = [item("1", "2026-10-12", true), item("2", "2026-10-19", false)];
+    const trends = computeTrends({ weekStarts, blocks: [], goals: [goal("g1")], targets: [], checklist, now });
+    expect(trends[0]!.weeks.map((w) => w.met)).toEqual([true, false]);
   });
 
   it("a future week is never counted as met", () => {

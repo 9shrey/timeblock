@@ -35,9 +35,9 @@ describe("GoalTable", () => {
     expect(renderWeek("2026-10-12")).toMatchObject({ Thesis: "Met", Exercise: "Missed", Social: "Over", Errands: "Missed" });
   });
 
-  it("shows at risk for an over-planned max goal in the current week", () => {
+  it("warns about an over-planned max goal in the current week", () => {
     const statuses = renderWeek("2026-10-19");
-    expect(statuses.Social).toBe("At risk");
+    expect(statuses.Social).toBe("Watch");
     expect(statuses["No goal"]).toBeNull(); // unassigned bucket has no status
   });
 });

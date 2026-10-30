@@ -43,15 +43,16 @@ export const TABLE_SPECS: { [T in Table]: TableSpec<T> } = {
   },
   goals: {
     name: "goals",
-    columns: ["id", "name", "color", "kind", "track_by", "sort_order", "archived_on", "created_at", "updated_at"],
+    columns: ["id", "name", "color", "kind", "track_by", "active_days", "sort_order", "archived_on", "created_at", "updated_at"],
     pk: ["id"],
-    toRow: (e) => [e.id, e.name, e.color, e.kind, e.trackBy, e.sortOrder, e.archivedOn, e.createdAt, e.updatedAt],
+    toRow: (e) => [e.id, e.name, e.color, e.kind, e.trackBy, e.activeDays ?? 127, e.sortOrder, e.archivedOn, e.createdAt, e.updatedAt],
     fromRow: (r) => ({
       id: str(r.id),
       name: str(r.name),
       color: str(r.color),
       kind: r.kind === "max" ? "max" : "min",
       trackBy: r.track_by === "tasks" ? "tasks" : "time",
+      activeDays: r.active_days === undefined || r.active_days === null ? 127 : num(r.active_days),
       sortOrder: num(r.sort_order),
       archivedOn: strOrNull(r.archived_on),
       createdAt: num(r.created_at),

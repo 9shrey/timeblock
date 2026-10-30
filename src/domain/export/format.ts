@@ -45,6 +45,7 @@ const goalOut = (g: Goal): Goal => ({
   color: g.color,
   kind: g.kind,
   trackBy: g.trackBy,
+  activeDays: g.activeDays,
   sortOrder: g.sortOrder,
   archivedOn: g.archivedOn,
   createdAt: g.createdAt,

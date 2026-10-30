@@ -200,7 +200,7 @@ describe("copyWeekPlan", () => {
 
 describe("goal commands", () => {
   it("rejects empty names and out-of-range targets", () => {
-    expect(createGoal({ name: "  ", color: "#000000", kind: "min", trackBy: "time", targetMinutes: null, targetCount: null }, "2026-10-19")).toBeNull();
+    expect(createGoal({ name: "  ", color: "#000000", kind: "min", activeDays: 127, targetMinutes: null }, "2026-10-19")).toBeNull();
     const n = history().length;
     setTarget("seed-goal-thesis", "2026-10-19", 20_000);
     expect(history()).toHaveLength(n);
@@ -210,14 +210,14 @@ describe("goal commands", () => {
   it("deletes a goal only when nothing in any week uses it", async () => {
     const thesis = useStore.getState().data.goals["seed-goal-thesis"]!;
     expect(await deleteGoal(thesis)).toBe(false);
-    const g = createGoal({ name: "Unused", color: "#000000", kind: "min", trackBy: "time", targetMinutes: 60, targetCount: null }, "2026-10-19")!;
+    const g = createGoal({ name: "Unused", color: "#000000", kind: "min", activeDays: 127, targetMinutes: 60 }, "2026-10-19")!;
     expect(await deleteGoal(g)).toBe(true);
     expect(useStore.getState().data.goals[g.id]).toBeUndefined();
     expect(Object.keys(useStore.getState().data.weekTargets).some((k) => k.startsWith(g.id))).toBe(false);
   });
 
   it("knows about usage in weeks that aren't loaded", async () => {
-    const g = createGoal({ name: "Old", color: "#000000", kind: "min", trackBy: "time", targetMinutes: null, targetCount: null }, "2026-10-19")!;
+    const g = createGoal({ name: "Old", color: "#000000", kind: "min", activeDays: 127, targetMinutes: null }, "2026-10-19")!;
     await flushWrites();
     await repo.applyChanges([put("blocks", { ...find("2026-10-21", "plan", 540), id: "far", day: "2026-06-01", goalId: g.id })]);
     expect(await deleteGoal(g)).toBe(false);

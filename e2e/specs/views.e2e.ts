@@ -59,17 +59,17 @@ describe("Goals (native)", () => {
 
   it("lists goals with inherited targets and edits only the viewed week", async () => {
     let text = await mainText();
-    expect(text).toContain("inherited from W42");
+    expect(text).toContain("since W42");
     await key("]"); // next week (W44)
-    const thesisTarget = $('section[aria-label="Thesis"] input[aria-label="Target hours this week"]');
+    const thesisTarget = $('section[aria-label="Thesis"] input[aria-label="Target hours per week"]');
     await thesisTarget.setValue("16");
     await key("Enter");
     await browser.pause(200);
     expect(await thesisTarget.getValue()).toBe("16");
     await key("[");
-    await expect($('section[aria-label="Thesis"] input[aria-label="Target hours this week"]')).toHaveValue("15");
+    await expect($('section[aria-label="Thesis"] input[aria-label="Target hours per week"]')).toHaveValue("15");
     text = await mainText();
-    expect(text).toContain("inherited from W42");
+    expect(text).toContain("since W42");
   });
 
   it("creates a goal that shows up in the block editor's goal picker", async () => {
@@ -78,7 +78,7 @@ describe("Goals (native)", () => {
     await $("#goal-target").setValue("2.5");
     await $("button=Create goal").click();
     await expect($('section[aria-label="Reading"]')).toBeDisplayed();
-    await expect($('section[aria-label="Reading"] input[aria-label="Target hours this week"]')).toHaveValue("2.5");
+    await expect($('section[aria-label="Reading"] input[aria-label="Target hours per week"]')).toHaveValue("2.5");
     await gotoView("Day");
     await (await item("Plan, 14:00–16:00")).click();
     await key("5"); // fifth goal (after the seed's Thesis, Exercise, Social, Errands)
@@ -119,7 +119,7 @@ describe("Weekly review (native)", () => {
     let text = await mainText();
     expect(text).toContain("2 days have planned blocks that aren't confirmed yet");
     expect(text).toContain("Actual 8h 30m");
-    expect(await $$('[data-testid="status"]').map((s) => s.getText())).toEqual(["On track", "On track", "At risk", "Behind"]);
+    expect(await $$('[data-testid="status"]').map((s) => s.getText())).toEqual(["Behind", "On pace", "Watch", "In progress"]);
     await expect($('nav button[aria-label^="Review"]')).toHaveAttribute("aria-label", "Review (2 days to review)");
 
     await $$("button=Confirm as planned")[0]!.click();

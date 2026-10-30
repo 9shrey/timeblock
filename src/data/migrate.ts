@@ -4,10 +4,11 @@ import templates0003 from "./migrations/0003_templates_routines.sql?raw";
 import taskGoals0004 from "./migrations/0004_task_goals.sql?raw";
 import calendarSubs0005 from "./migrations/0005_calendar_subscriptions.sql?raw";
 import sync0006 from "./migrations/0006_sync.sql?raw";
+import activeDays0007 from "./migrations/0007_goal_active_days.sql?raw";
 import type { SqlDriver } from "./drivers/SqlDriver";
 
 /** Migration N (1-based) brings the DB from user_version N-1 to N. */
-export const MIGRATIONS: readonly string[] = [init0001, integrity0002, templates0003, taskGoals0004, calendarSubs0005, sync0006];
+export const MIGRATIONS: readonly string[] = [init0001, integrity0002, templates0003, taskGoals0004, calendarSubs0005, sync0006, activeDays0007];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
 export class NewerDatabaseError extends Error {
