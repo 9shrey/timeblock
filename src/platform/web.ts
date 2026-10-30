@@ -1,22 +1,13 @@
 /**
- * Browser platform (e.g. GitHub Pages): sql.js database persisted to localStorage,
+ * Browser platform (the website demo and dev mode): sql.js database persisted to localStorage,
  * file download/upload instead of native dialogs. Never used in the desktop build.
  */
 import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
 import { createSqlJsDriver } from "@/data/drivers/sqljsDriver";
 import { responseText, type Platform, type SystemTheme } from "./index";
 
-/** The web app (sync build) and the demo share an origin on GitHub Pages; keep them apart. */
-const STORAGE_KEY = import.meta.env.VITE_SYNC_URL && import.meta.env.VITE_DEMO !== "1" ? "timeblock.app.db" : "timeblock.db";
-
-/** Forgets this browser's copy of the data (web app sign-out). Reload afterwards. */
-export function clearStoredDb(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* storage unavailable */
-  }
-}
+/** Where the demo (and browser dev mode) keeps its database. */
+export const STORAGE_KEY = "timeblock.db";
 
 function load(): Uint8Array | null {
   try {

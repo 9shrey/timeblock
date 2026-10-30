@@ -9,7 +9,7 @@ Group=timeblock
 WorkingDirectory=/var/lib/timeblock-sync
 Environment=TIMEBLOCK_DB=/var/lib/timeblock-sync/timeblock-sync.db
 Environment=TIMEBLOCK_BIND=127.0.0.1:8787
-Environment=TIMEBLOCK_ORIGINS=https://9shrey.github.io,tauri://localhost,http://tauri.localhost
+Environment=TIMEBLOCK_ORIGINS=tauri://localhost,http://tauri.localhost
 ExecStart=/usr/local/bin/timeblock-sync
 Restart=on-failure
 # Hardening

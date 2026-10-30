@@ -73,7 +73,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Self {
         let origins = std::env::var("TIMEBLOCK_ORIGINS").unwrap_or_else(|_| {
-            "https://9shrey.github.io,http://localhost:1420,http://localhost:1430,tauri://localhost,http://tauri.localhost"
+            "http://localhost:1420,http://localhost:1430,tauri://localhost,http://tauri.localhost"
                 .into()
         });
         Config {

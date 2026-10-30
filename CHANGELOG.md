@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+- **The web app.** Timeblock is a desktop app; the website keeps a live demo with sample data
+  (now linked from the download page too). Sync stays, between your computers. The sync server
+  no longer allows the GitHub Pages origin by default.
+
+### Changed
+- The demo no longer shows the Sync & account section, desktop-only backup text or "browser dev
+  mode" wording. Settings → Sync & account moved below Notifications and Desktop.
+
 ## [0.3.0] - 2026-10-28
 
 ### Added

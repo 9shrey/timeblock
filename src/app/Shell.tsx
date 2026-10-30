@@ -15,6 +15,7 @@ import { materializeRoutines } from "@/state/routineCommands";
 import { ensureWeeksAround, useStore } from "@/state/store";
 import { closeEditor, useUi } from "@/state/ui";
 import { CommandPalette } from "./CommandPalette";
+import { IS_DEMO } from "./demo";
 import { DemoBanner } from "./DemoBanner";
 import { NavRail } from "./NavRail";
 import { SelectionBar } from "./SelectionBar";
@@ -68,7 +69,7 @@ export function Shell() {
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <NavRail />
       <div className="flex min-w-0 flex-1 flex-col">
-        {import.meta.env.VITE_DEMO === "1" && <DemoBanner />}
+        {IS_DEMO && <DemoBanner />}
         <TopBar />
         <main className="min-h-0 flex-1">
           {view === "day" && <DayView />}

@@ -21,7 +21,7 @@
   function detectOS() {
     var p = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "").toLowerCase();
     var ua = navigator.userAgent.toLowerCase();
-    if (/android|iphone|ipad/.test(ua)) return "web";
+    if (/android|iphone|ipad/.test(ua)) return null;
     if (p.indexOf("win") === 0 || ua.indexOf("windows") !== -1) return "windows";
     if (p.indexOf("mac") === 0 || ua.indexOf("mac os") !== -1) return "mac";
     if (p.indexOf("linux") !== -1 || ua.indexOf("linux") !== -1) return "linux";

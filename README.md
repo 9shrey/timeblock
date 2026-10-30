@@ -27,7 +27,7 @@
 <br>
 
 Timeblock is a **local-first desktop app**. Your data is a SQLite file on your machine:
-no account, no server, no telemetry.
+no account needed and no telemetry. Optional sync between your computers uses a server you host (`server/`).
 
 ## Features
 
