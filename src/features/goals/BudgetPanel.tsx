@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
+import { formatDuration, weekNumber, weekDays } from "@/domain/time/localDate";
 import { cn } from "@/lib/utils";
 import { checklistList, statsFor, weekOf } from "@/state/selectors";
 import { useStore } from "@/state/store";
@@ -25,7 +25,7 @@ export function BudgetPanel() {
   return (
     <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l bg-muted/20" aria-label="Week budget">
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Week budget · W{isoWeek(weekStart).week}</h2>
+        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Week budget · W{weekNumber(weekStart)}</h2>
         <Button variant="ghost" size="icon-xs" aria-label="Close week budget" onClick={() => useStore.setState({ budgetOpen: false })}>
           <X />
         </Button>

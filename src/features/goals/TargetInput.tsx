@@ -3,7 +3,7 @@ import { Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { activeDayCount } from "@/domain/goals/progress";
-import { formatDuration, formatHours, isoWeek } from "@/domain/time/localDate";
+import { formatDuration, formatHours, weekNumber } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
 import { clearTarget, MAX_TARGET_MINUTES, setTarget } from "@/state/goalCommands";
 
@@ -91,7 +91,7 @@ export function TargetInput({ goalId, weekStart, minutes, fromWeek, previous }: 
       />
       <span className="text-xs text-muted-foreground">h / week</span>
       {invalid && <span className="text-xs text-destructive">Try 15, 7.5, 1h30 or 90m</span>}
-      {!invalid && inherited && <span className="text-xs text-muted-foreground">since W{isoWeek(fromWeek).week}</span>}
+      {!invalid && inherited && <span className="text-xs text-muted-foreground">since W{weekNumber(fromWeek)}</span>}
       {!invalid && own && previous?.fromWeek && (
         <Button
           variant="ghost"

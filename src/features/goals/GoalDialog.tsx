@@ -19,7 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { nextColor, PALETTE } from "@/domain/goals/palette";
 import { ALL_DAYS } from "@/domain/goals/progress";
 import { effectiveTarget } from "@/domain/goals/targets";
-import { formatHours, isoWeek } from "@/domain/time/localDate";
+import { formatHours, weekNumber } from "@/domain/time/localDate";
 import type { Goal, GoalKind, LocalDate } from "@/domain/types";
 import { createGoal, deleteGoal, editGoal, setTarget } from "@/state/goalCommands";
 import { goalList, targetList, weekOf } from "@/state/selectors";
@@ -141,7 +141,7 @@ function Form({ goal, weekStart, onDone }: { goal: Goal | null; weekStart: Local
       )}
       <p className="text-xs text-muted-foreground">
         {goal
-          ? `Target changes apply from week ${isoWeek(targetWeek).week} on; earlier weeks keep theirs. Outcomes are added on the Goals page.`
+          ? `Target changes apply from week ${weekNumber(targetWeek)} on; earlier weeks keep theirs. Outcomes are added on the Goals page.`
           : "The target applies from this week on and carries forward until you change it. Add outcomes on the Goals page."}
       </p>
       <DialogFooter className="items-center sm:justify-between">

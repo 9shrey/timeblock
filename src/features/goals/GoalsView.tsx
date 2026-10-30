@@ -3,7 +3,7 @@ import { Archive, ArrowRightToLine, GripVertical, Pencil, Plus } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { carryableCount } from "@/domain/goals/checklist";
 import { effectiveTarget } from "@/domain/goals/targets";
-import { addDays, formatDateLong, isoWeek, weekDays } from "@/domain/time/localDate";
+import { addDays, formatDateLong, weekNumber, weekDays } from "@/domain/time/localDate";
 import type { GoalStats } from "@/domain/stats/stats";
 import type { Goal } from "@/domain/types";
 import { carryOverItems, reorderGoals } from "@/state/goalCommands";
@@ -105,7 +105,7 @@ export function GoalsView() {
           <div>
             <h2 className="text-lg font-semibold">Goals</h2>
             <p className="text-sm text-muted-foreground">
-              Week {isoWeek(weekStart).week} · from {formatDateLong(weekStart)}. A target you change here applies from this week on.
+              Week {weekNumber(weekStart)} · from {formatDateLong(weekStart)}. A target you change here applies from this week on.
             </p>
           </div>
           <div className="flex-1" />
