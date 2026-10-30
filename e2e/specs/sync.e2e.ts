@@ -36,7 +36,7 @@ const serverChanges = async () => (await api<{ changes: Change[] }>("/api/sync",
 const goal = (id: string, name: string) => ({
   table: "goals",
   key: id,
-  row: { id, name, color: "#0ea5e9", kind: "min", trackBy: "time", sortOrder: 99, archivedOn: null, createdAt: 1, updatedAt: 1 },
+  row: { id, name, color: "#0ea5e9", kind: "min", trackBy: "time", activeDays: 127, sortOrder: 99, archivedOn: null, createdAt: 1, updatedAt: 1 },
 });
 
 async function mainText(): Promise<string> {

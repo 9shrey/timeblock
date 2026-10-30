@@ -45,7 +45,7 @@ describe("activeGoals", () => {
       name: id,
       color: "#000000",
       kind: "min" as const,
-      trackBy: "time" as const,
+      trackBy: "time" as const, activeDays: 127,
       sortOrder: 0,
       archivedOn,
       createdAt: 1,

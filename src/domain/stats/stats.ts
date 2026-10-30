@@ -1,18 +1,20 @@
 /**
  * Weekly statistics per goal. Every amount is minutes of the per-day UNION of intervals,
  * so overlapping blocks never double count. Unconfirmed ghost time never counts as actual.
+ * How each goal is judged lives in `../goals/progress`.
  */
 import { clip, unionLength, type Interval } from "../blocks/intervals";
 import { ghostsOf, isPast } from "../blocks/reconcile";
 import { progress } from "../goals/checklist";
+import { goalProgress, paceOf, type GoalStatus, type WeekPhase } from "../goals/progress";
 import { effectiveTarget } from "../goals/targets";
-import type { Block, ChecklistItem, Goal, GoalKind, GoalTrackBy, LocalDate, Now, WeekTarget } from "../types";
+import { nowFrom } from "../time/clock";
+import type { Block, ChecklistItem, Goal, GoalKind, LocalDate, Now, WeekTarget } from "../types";
+
+export type { GoalStatus, WeekPhase } from "../goals/progress";
 
 /** Bucket id for blocks without a (known) goal. */
 export const UNASSIGNED = "__unassigned__";
-
-export type GoalStatus = "met" | "missed" | "on_track" | "behind" | "over" | "within" | "at_risk" | "no_target";
-export type WeekPhase = "past" | "current" | "future";
 
 export interface StatsInput {
   days: readonly LocalDate[];
@@ -28,6 +30,8 @@ export interface Amounts {
   /** Plan blocks, including skipped ones. */
   planned: number;
   actual: number;
+  /** Actual time up to now (later actual blocks, e.g. a running timer's end, don't count yet). */
+  actualSoFar: number;
   /** Ghost time before now. */
   unconfirmed: number;
   /** Ghost time from now on. */
@@ -45,10 +49,20 @@ export interface GoalStats extends Amounts {
   goalId: string;
   goal: Goal | null;
   kind: GoalKind;
-  trackBy: GoalTrackBy;
-  /** The configured target, in the goal's own unit: minutes if trackBy is "time", outcomes if "tasks". */
+  /** This week's time target in minutes (prorated if the goal started mid-week); null = none. */
   target: number | null;
+  /** The target as set, before proration. */
+  weeklyTarget: number | null;
   targetFromWeek: LocalDate | null;
+  /** True when the goal started this week, so `target` covers only its remaining active days. */
+  prorated: boolean;
+  /** Current week: where a steady pace would be by now. Null otherwise or without a target. */
+  expected: number | null;
+  /** Current week, "at least": actualSoFar − expected. Negative = behind pace. */
+  paceDelta: number | null;
+  /** See `Progress.planGap`. */
+  planGap: number | null;
+  /** This week's outcomes. */
   checklist: { done: number; total: number };
   byDay: Record<LocalDate, Amounts>;
   status: GoalStatus;
@@ -66,6 +80,7 @@ export interface WeekStats {
 interface Lists {
   planned: Interval[];
   actual: Interval[];
+  actualSoFar: Interval[];
   unconfirmed: Interval[];
   upcoming: Interval[];
   ghosts: Interval[];
@@ -76,6 +91,7 @@ interface Lists {
 const emptyLists = (): Lists => ({
   planned: [],
   actual: [],
+  actualSoFar: [],
   unconfirmed: [],
   upcoming: [],
   ghosts: [],
@@ -86,6 +102,7 @@ const emptyLists = (): Lists => ({
 export const zeroAmounts = (): Amounts => ({
   planned: 0,
   actual: 0,
+  actualSoFar: 0,
   unconfirmed: 0,
   upcoming: 0,
   projected: 0,
@@ -97,6 +114,7 @@ function amountsOf(l: Lists): Amounts {
   return {
     planned: unionLength(l.planned),
     actual: unionLength(l.actual),
+    actualSoFar: unionLength(l.actualSoFar),
     unconfirmed: unionLength(l.unconfirmed),
     upcoming: unionLength(l.upcoming),
     projected: unionLength([...l.actual, ...l.ghosts]),
@@ -108,38 +126,12 @@ function amountsOf(l: Lists): Amounts {
 function addInto(sum: Amounts, a: Amounts): void {
   sum.planned += a.planned;
   sum.actual += a.actual;
+  sum.actualSoFar += a.actualSoFar;
   sum.unconfirmed += a.unconfirmed;
   sum.upcoming += a.upcoming;
   sum.projected += a.projected;
   sum.unplanned += a.unplanned;
   sum.skipped += a.skipped;
-}
-
-/** Status of one goal for the week's phase (see the status table in the spec). */
-export function goalStatus(kind: GoalKind, phase: WeekPhase, target: number | null, a: Amounts): GoalStatus {
-  if (target === null) return "no_target";
-  if (kind === "min") {
-    if (phase === "past") return a.actual >= target ? "met" : "missed";
-    if (phase === "current" && a.actual >= target) return "met";
-    return a.projected >= target ? "on_track" : "behind";
-  }
-  if (phase === "past") return a.actual > target ? "over" : "within";
-  if (phase === "current" && a.actual > target) return "over";
-  return a.projected > target ? "at_risk" : "within";
-}
-
-/**
- * Status of one task-based goal: outcomes done vs. a weekly count target. There is no ghost
- * time to project from, so past and current/future phases both compare done against target.
- */
-export function taskGoalStatus(kind: GoalKind, phase: WeekPhase, target: number | null, done: number): GoalStatus {
-  if (target === null) return "no_target";
-  if (kind === "min") {
-    if (phase === "past") return done >= target ? "met" : "missed";
-    return done >= target ? "met" : "behind";
-  }
-  if (phase === "past") return done > target ? "over" : "within";
-  return done > target ? "over" : "within";
 }
 
 /** Phase of a week relative to now. */
@@ -180,6 +172,8 @@ export function computeStats(input: StatsInput): WeekStats {
       if (b.skipped) add(b.goalId, b.day, "skipped", i);
     } else {
       add(b.goalId, b.day, "actual", i);
+      const soFar = b.day < now.day ? i : b.day === now.day ? clip(i, { start: 0, end: now.minute }) : null;
+      if (soFar) add(b.goalId, b.day, "actualSoFar", soFar);
       if (b.planBlockId === null) add(b.goalId, b.day, "unplanned", i);
     }
   }
@@ -211,6 +205,7 @@ export function computeStats(input: StatsInput): WeekStats {
   };
 
   const phase = weekPhase(days, weekStart, now);
+  const lastDay = days[days.length - 1] ?? weekStart;
   const weekItems = input.checklist.filter((c) => c.weekStart === weekStart);
   const hasTime = (a: Amounts) => a.planned > 0 || a.actual > 0;
 
@@ -219,21 +214,41 @@ export function computeStats(input: StatsInput): WeekStats {
   for (const goal of sorted) {
     const { total, byDay } = summarize(goal.id);
     const checklist = progress(weekItems.filter((c) => c.goalId === goal.id));
-    const active = goal.archivedOn === null || goal.archivedOn > weekStart;
-    if (!active && !hasTime(total) && checklist.total === 0) continue;
+    const used = hasTime(total) || checklist.total > 0;
+    const archived = goal.archivedOn !== null && goal.archivedOn <= weekStart;
+    const createdOn = nowFrom(new Date(goal.createdAt)).day;
+    if (!used && (archived || createdOn > lastDay)) continue;
+
     const t = effectiveTarget(input.targets, goal.id, weekStart);
-    const isTasks = goal.trackBy === "tasks";
+    const weeklyTarget = t.minutes;
+    const startDay = createdOn > weekStart && createdOn <= lastDay ? createdOn : null;
+    const pace = weeklyTarget === null ? null : paceOf(weeklyTarget, days, goal.activeDays, now, startDay);
+    const target = pace ? pace.target : null;
+    const p = goalProgress({
+      kind: goal.kind,
+      phase,
+      target,
+      actual: phase === "current" ? total.actualSoFar : total.actual,
+      remainingPlan: total.upcoming,
+      expected: pace?.expected ?? 0,
+      dayShare: pace?.dayShare ?? 0,
+      outcomes: checklist,
+    });
     goals.push({
       ...total,
       goalId: goal.id,
       goal,
       kind: goal.kind,
-      trackBy: goal.trackBy,
-      target: isTasks ? t.count : t.minutes,
+      target,
+      weeklyTarget,
       targetFromWeek: t.fromWeek,
+      prorated: pace?.prorated ?? false,
+      expected: phase === "current" && pace ? pace.expected : null,
+      paceDelta: p.paceDelta,
+      planGap: p.planGap,
       checklist,
       byDay,
-      status: isTasks ? taskGoalStatus(goal.kind, phase, t.count, checklist.done) : goalStatus(goal.kind, phase, t.minutes, total),
+      status: p.status,
     });
   }
 
@@ -244,9 +259,13 @@ export function computeStats(input: StatsInput): WeekStats {
         goalId: UNASSIGNED,
         goal: null,
         kind: "min",
-        trackBy: "time",
         target: null,
+        weeklyTarget: null,
         targetFromWeek: null,
+        prorated: false,
+        expected: null,
+        paceDelta: null,
+        planGap: null,
         checklist: { done: 0, total: 0 },
         byDay: un.byDay,
         status: "no_target",

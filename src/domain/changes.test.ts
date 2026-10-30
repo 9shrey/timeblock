@@ -25,7 +25,7 @@ const goal = (id: string): Goal => ({
   name: id,
   color: "#000000",
   kind: "min",
-  trackBy: "time",
+  trackBy: "time", activeDays: 127,
   sortOrder: 0,
   archivedOn: null,
   createdAt: 0,

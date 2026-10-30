@@ -44,10 +44,15 @@ const goalFieldsLegacy = {
   updatedAt: timestamp,
 };
 
-/** v1/v2 shape (no `trackBy`): imported goals default to `trackBy: "time"`. */
+/** v1/v2 shape (no `trackBy`): imported goals default to `trackBy: "time", activeDays: 127`. */
 export const goalSchemaLegacy = z.object(goalFieldsLegacy);
 
-export const goalSchema = z.object({ ...goalFieldsLegacy, trackBy: z.enum(["time", "tasks"]) });
+/** `activeDays` arrived after v4 without a version bump: older files and apps simply lack it. */
+export const goalSchema = z.object({
+  ...goalFieldsLegacy,
+  trackBy: z.enum(["time", "tasks"]),
+  activeDays: z.number().int().min(1).max(127).default(127),
+});
 
 const weekTargetFieldsLegacy = {
   goalId: id,
@@ -436,7 +441,7 @@ export function parseImportFile(text: string): ImportResult {
     goals: readonly z.infer<typeof goalSchemaLegacy>[],
     weekTargets: readonly z.infer<typeof weekTargetSchemaLegacy>[],
   ): { goals: ExportData["goals"]; weekTargets: ExportData["weekTargets"] } => ({
-    goals: goals.map((g) => ({ ...g, trackBy: "time" as const })),
+    goals: goals.map((g) => ({ ...g, trackBy: "time" as const, activeDays: 127 })),
     weekTargets: weekTargets.map((t) => ({ ...t, targetCount: null })),
   });
 

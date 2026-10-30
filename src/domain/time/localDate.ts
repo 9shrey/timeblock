@@ -103,6 +103,14 @@ export function isoWeek(day: LocalDate): { year: number; week: number } {
 }
 
 /**
+ * Week number for a week that starts on `weekStart`, whatever the start day: the ISO week of
+ * its middle day, so a Sunday- or Saturday-start week gets the number most of its days have.
+ */
+export function weekNumber(weekStart: LocalDate): number {
+  return isoWeek(addDays(weekStart, 3)).week;
+}
+
+/**
  * How far to move an existing week key when the start day changes, chosen in [-3, 3]
  * so each old week maps to the new week it overlaps most. Distinct keys stay distinct.
  */
