@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { weekDays } from "../time/localDate";
 import type { Block, ChecklistItem, Goal, GoalKind, Now, WeekTarget } from "../types";
-import { computeStats, taskGoalStatus, UNASSIGNED, type GoalStatus, type StatsInput, type WeekPhase } from "./stats";
+import { computeStats, UNASSIGNED, type GoalStatus, type StatsInput, type WeekPhase } from "./stats";
 
 const WEEK = "2026-10-19";
 const DAYS = weekDays(WEEK);
@@ -33,7 +33,7 @@ const actual = (day: string, s: number, e: number, p: Partial<Block> = {}) =>
   block({ day, startMinute: s, endMinute: e, layer: "actual", ...p });
 
 function goal(id: string, p: Partial<Goal> = {}): Goal {
-  return { id, name: id, color: "#336699", kind: "min", trackBy: "time", sortOrder: 0, archivedOn: null, createdAt: 0, updatedAt: 0, ...p };
+  return { id, name: id, color: "#336699", kind: "min", trackBy: "time", activeDays: 127, sortOrder: 0, archivedOn: null, createdAt: 0, updatedAt: 0, ...p };
 }
 const target = (goalId: string, weekStart: string, targetMinutes: number | null): WeekTarget => ({
   goalId,
@@ -177,21 +177,24 @@ describe("computeStats phase and status", () => {
     current: NOW_CURRENT,
     future: { day: "2026-10-12", minute: 600 },
   };
-  // a = actual minutes on Monday, p = ghost (plan) minutes on Friday; T = 120.
+  // a = actual minutes on Monday, p = ghost (plan) minutes on Friday; T = 120 over 7 days.
+  // "Current" is Wednesday noon: a steady pace expects 2.5/7 × 120 ≈ 43 min, a day's share ≈ 17.
   const cases: [WeekPhase, GoalKind, GoalStatus, number, number][] = [
     ["past", "min", "met", 120, 0],
     ["past", "min", "missed", 60, 120],
     ["current", "min", "met", 120, 0],
-    ["current", "min", "on_track", 60, 60],
-    ["current", "min", "behind", 60, 0],
-    ["future", "min", "on_track", 0, 120],
-    ["future", "min", "behind", 0, 60],
+    ["current", "min", "on_pace", 60, 0],
+    ["current", "min", "on_pace", 30, 0], // behind the pace, but by less than a day's share
+    ["current", "min", "behind", 0, 120], // a plan alone doesn't keep you on pace
+    ["current", "min", "behind", 20, 0],
+    ["future", "min", "planned", 0, 120],
+    ["future", "min", "under_planned", 0, 60],
     ["past", "max", "over", 180, 0],
     ["past", "max", "within", 120, 120],
     ["current", "max", "over", 180, 0],
-    ["current", "max", "at_risk", 60, 120],
+    ["current", "max", "watch", 60, 120],
     ["current", "max", "within", 60, 60],
-    ["future", "max", "at_risk", 0, 180],
+    ["future", "max", "watch", 0, 180],
     ["future", "max", "within", 0, 120],
   ];
 
@@ -280,33 +283,11 @@ describe("computeStats goals list, checklist, uncorrected days", () => {
   });
 });
 
-describe("taskGoalStatus", () => {
-  const cases: [WeekPhase, GoalKind, GoalStatus, number, number][] = [
-    ["past", "min", "met", 3, 3],
-    ["past", "min", "missed", 2, 3],
-    ["current", "min", "met", 3, 3],
-    ["current", "min", "behind", 2, 3],
-    ["future", "min", "behind", 0, 3],
-    ["past", "max", "over", 4, 3],
-    ["past", "max", "within", 3, 3],
-    ["current", "max", "over", 4, 3],
-    ["current", "max", "within", 2, 3],
-  ];
-
-  it.each(cases)("%s %s → %s (done %i, target %i)", (phase, kind, status, done, target) => {
-    expect(taskGoalStatus(kind, phase, target, done)).toBe(status);
-  });
-
-  it("no target → no_target", () => {
-    expect(taskGoalStatus("min", "current", null, 5)).toBe("no_target");
-  });
-});
-
-describe("computeStats for a task-tracked goal", () => {
-  const item = (id: string, goalId: string, weekStart: string, done: boolean): ChecklistItem => ({
+describe("computeStats pacing details", () => {
+  const item = (id: string, done: boolean): ChecklistItem => ({
     id,
-    goalId,
-    weekStart,
+    goalId: "g",
+    weekStart: WEEK,
     text: id,
     done,
     sortOrder: 0,
@@ -314,30 +295,61 @@ describe("computeStats for a task-tracked goal", () => {
     createdAt: 0,
     updatedAt: 0,
   });
-  const taskTarget = (goalId: string, weekStart: string, targetCount: number | null): WeekTarget => ({
-    goalId,
-    weekStart,
-    targetMinutes: null,
-    targetCount,
-    updatedAt: 0,
+
+  it("past unconfirmed plan never counts as progress", () => {
+    const s = statsOf({ targets: [target("g", WEEK, 120)], blocks: [plan(MON, 0, 120)] });
+    expect(s).toMatchObject({ unconfirmed: 120, actual: 0, status: "behind" });
   });
 
-  it("status and target come from outcomes done, not minutes logged", () => {
-    const s = statsOf({
-      goals: [goal("g", { trackBy: "tasks" })],
-      targets: [taskTarget("g", "2026-10-05", 2)],
-      checklist: [item("1", "g", WEEK, true), item("2", "g", WEEK, true), item("3", "g", WEEK, false)],
-      // Minutes logged would say "missed" if read as a time target; outcomes done (2) meets it.
-      blocks: [actual(MON, 0, 30)],
-    });
-    expect(s).toMatchObject({ trackBy: "tasks", target: 2, checklist: { done: 2, total: 3 }, status: "met" });
+  it("Monday at midnight with nothing planned is on pace, not behind", () => {
+    const s = statsOf({ targets: [target("g", WEEK, 900)], now: { day: MON, minute: 0 } });
+    expect(s).toMatchObject({ status: "on_pace", expected: 0, paceDelta: 0, planGap: 900 });
   });
 
-  it("no task target → no_target even with outcomes done", () => {
+  it("a weekday goal isn't behind over the weekend", () => {
+    // 5 h over Mon–Fri, 1 h logged each weekday; Sunday 18:00.
+    const blocks = [MON, "2026-10-20", WED, "2026-10-22", FRI].map((d) => actual(d, 540, 600));
     const s = statsOf({
-      goals: [goal("g", { trackBy: "tasks" })],
-      checklist: [item("1", "g", WEEK, true)],
+      goals: [goal("g", { activeDays: 0b0111110 })],
+      targets: [target("g", WEEK, 300)],
+      blocks,
+      now: { day: SUN, minute: 1080 },
     });
-    expect(s).toMatchObject({ trackBy: "tasks", target: null, status: "no_target" });
+    expect(s).toMatchObject({ status: "met" });
+    const s2 = statsOf({
+      goals: [goal("g", { activeDays: 0b0111110 })],
+      targets: [target("g", WEEK, 600)],
+      blocks,
+      now: { day: SUN, minute: 1080 },
+    });
+    // Every weekday has passed, so the full 10 h is expected: 5 h behind.
+    expect(s2).toMatchObject({ status: "behind", expected: 600, paceDelta: -300 });
+  });
+
+  it("actual time later today doesn't count toward pace yet", () => {
+    const s = statsOf({ targets: [target("g", WEEK, 120)], blocks: [actual(WED, 700, 800)] });
+    expect(s).toMatchObject({ actual: 100, actualSoFar: 20 });
+  });
+
+  it("a goal created mid-week gets a prorated target", () => {
+    const createdAt = new Date(2026, 9, 22, 9, 0).getTime(); // Thursday
+    const s = statsOf({ goals: [goal("g", { createdAt })], targets: [target("g", WEEK, 700)], now: { day: "2026-10-22", minute: 720 } });
+    expect(s).toMatchObject({ prorated: true, weeklyTarget: 700, target: 400 });
+  });
+
+  it("a goal doesn't appear in weeks before it existed", () => {
+    const createdAt = new Date(2026, 10, 3, 9, 0).getTime();
+    expect(computeStats(input({ goals: [goal("g", { createdAt })] })).goals).toEqual([]);
+  });
+
+  it("a goal without a time target is judged by its outcomes once the week ends", () => {
+    const checklist = [item("1", true), item("2", false)];
+    expect(statsOf({ checklist }).status).toBe("open");
+    expect(statsOf({ checklist, now: { day: "2026-11-02", minute: 0 } }).status).toBe("missed");
+    expect(statsOf({ checklist: [item("1", true)] }).status).toBe("met");
+  });
+
+  it("an at-least target of 0 means no target", () => {
+    expect(statsOf({ targets: [target("g", WEEK, 0)] }).status).toBe("no_target");
   });
 });

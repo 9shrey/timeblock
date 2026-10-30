@@ -8,6 +8,8 @@ interface Props {
   actual: number;
   unconfirmed: number;
   kind: GoalKind;
+  /** Where a steady pace would be by now (current week only). */
+  expected?: number | null;
   color?: string;
   /** Shared scale so rows are comparable (minutes at the right edge). */
   scaleMax: number;
@@ -16,9 +18,10 @@ interface Props {
 
 /**
  * Bullet bar: a track up to the target with a tick, the plan as an outline, confirmed
- * actual time solid, and unconfirmed (past, planned) time hatched after it.
+ * actual time solid, unconfirmed (past, planned) time hatched after it, and a small
+ * notch where a steady pace would be by now.
  */
-export function BulletBar({ target, planned, actual, unconfirmed, kind, color = NO_GOAL_COLOR, scaleMax, className }: Props) {
+export function BulletBar({ target, planned, actual, unconfirmed, kind, expected = null, color = NO_GOAL_COLOR, scaleMax, className }: Props) {
   const id = useId();
   const max = Math.max(scaleMax, 1);
   const pct = (m: number) => Math.min(100, (Math.max(0, m) / max) * 100);
@@ -45,6 +48,18 @@ export function BulletBar({ target, planned, actual, unconfirmed, kind, color = 
           strokeWidth="1.25"
           vectorEffect="non-scaling-stroke"
           opacity="0.7"
+        />
+      )}
+      {expected !== null && kind === "min" && target !== null && expected < target && (
+        <line
+          x1={pct(expected)}
+          x2={pct(expected)}
+          y1="1"
+          y2="13"
+          className="stroke-muted-foreground"
+          strokeWidth="1.5"
+          strokeDasharray="2 1.5"
+          vectorEffect="non-scaling-stroke"
         />
       )}
       {target !== null && (

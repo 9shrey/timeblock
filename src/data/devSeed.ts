@@ -19,22 +19,25 @@ export function demoSeed(now: Now): ExportData {
     color: string,
     kind: Goal["kind"],
     sortOrder: number,
-    trackBy: Goal["trackBy"] = "time",
+    activeDays = 127,
   ): Goal => ({
     id: `seed-goal-${key}`,
     name,
     color,
     kind,
-    trackBy,
+    trackBy: "time",
+    activeDays,
     sortOrder,
     archivedOn: null,
     createdAt: T0,
     updatedAt: T0,
   });
-  const thesis = goal("thesis", "Thesis", "#2563eb", "min", 0);
+  // Thesis is a weekday goal: 15 h over Mon–Fri is a 3 h/day pace.
+  const thesis = goal("thesis", "Thesis", "#2563eb", "min", 0, 0b0111110);
   const exercise = goal("exercise", "Exercise", "#059669", "min", 1);
   const social = goal("social", "Social", "#e11d48", "max", 2);
-  const errands = goal("errands", "Errands", "#7c3aed", "min", 3, "tasks");
+  // Errands has no time target: it's judged by its outcomes.
+  const errands = goal("errands", "Errands", "#7c3aed", "min", 3);
 
   const thisWeek = weekStartOf(now.day, 1);
   const lastWeek = addDays(thisWeek, -7);
@@ -43,7 +46,6 @@ export function demoSeed(now: Now): ExportData {
     { goalId: thesis.id, weekStart: lastWeek, targetMinutes: h(15), targetCount: null, updatedAt: T0 },
     { goalId: exercise.id, weekStart: lastWeek, targetMinutes: h(5), targetCount: null, updatedAt: T0 },
     { goalId: social.id, weekStart: lastWeek, targetMinutes: h(3), targetCount: null, updatedAt: T0 },
-    { goalId: errands.id, weekStart: lastWeek, targetMinutes: null, targetCount: 3, updatedAt: T0 },
   ];
 
   const blocks: Block[] = [];

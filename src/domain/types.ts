@@ -43,6 +43,8 @@ export interface Goal {
   kind: GoalKind; // min = "at least T", max = "at most T"
   /** "time" measures target/status in minutes logged; "tasks" measures them in outcomes done. */
   trackBy: GoalTrackBy;
+  /** Weekdays the target is spread over for pacing. Bit d = weekday d (0 = Sunday). 1..127. */
+  activeDays: number;
   sortOrder: number;
   archivedOn: LocalDate | null;
   createdAt: number;
@@ -285,6 +287,8 @@ export interface Repository {
   loadWeek(weekStart: LocalDate): Promise<WeekData>;
   /** Every block with `day` in `[fromDay, toExclusive)` (half-open), across any number of weeks. One indexed query. */
   loadBlocksRange(fromDay: LocalDate, toExclusive: LocalDate): Promise<Block[]>;
+  /** Outcomes of every week starting in `[fromWeek, toExclusive)`, for Trends/CSV export. */
+  loadChecklistRange(fromWeek: LocalDate, toExclusive: LocalDate): Promise<ChecklistItem[]>;
   applyChanges(changes: ChangeSet): Promise<void>;
   /** Shifts every stored week key by `shiftDays` (in [-3, 3]) and saves the new start day. */
   changeWeekStart(shiftDays: number, weekStartDay: WeekStartDay): Promise<void>;

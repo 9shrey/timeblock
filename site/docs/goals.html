@@ -58,8 +58,8 @@
 <p>Open the Goals view (<kbd>g</kbd>) and click <strong>New goal</strong>. A goal has:</p>
 <ul>
 <li><strong>Name</strong> and <strong>color</strong>. The color is used for its blocks everywhere in the app.</li>
-<li><strong>Kind</strong>: <em>at least</em> or <em>at most</em>.</li>
-<li><strong>Target</strong>: hours per week. Leave it empty to only track time.</li>
+<li><strong>Weekly target</strong>: <em>at least</em> or <em>at most</em> a number of hours per week. Type it as <code>15</code>, <code>7.5</code>, <code>1h30</code> or <code>90m</code>. Leave it empty for a goal judged by its outcomes alone.</li>
+<li><strong>Spread over</strong> (at-least goals): the days you work on it, for example Monday–Friday. The target is paced over these days, so a 15&nbsp;h weekday goal expects about 3&nbsp;h a day and isn't behind on Saturday.</li>
 </ul>
 <p>Assign a goal to a block in the block editor, from the <strong>Set goal</strong> context menu, or by pressing <kbd>1</kbd>–<kbd>9</kbd> with the block selected. Blocks without a goal are counted as <em>No goal</em>.</p>
 <figure><div class="shot">
@@ -73,24 +73,37 @@
 <li><strong>At least</strong> (≥): time you want to reach, for example <em>Thesis ≥ 15 h</em>.</li>
 <li><strong>At most</strong> (≤): time you want to stay under, for example <em>Social ≤ 3 h</em>.</li>
 </ul>
-<p>A target applies from the week you set it and carries forward to later weeks until you change it. Past weeks always keep the target they had, so changing a goal never rewrites your history.</p>
+<p>A target applies from the week you set it and carries forward to later weeks until you change it. Earlier weeks keep the target they had. If you change this week's target by mistake, <strong>Use previous</strong> next to it goes back to the earlier one. Switching a goal between <em>at least</em> and <em>at most</em> applies to all its weeks, so it's in the goal's edit dialog rather than one click away.</p>
+<p>A goal created in the middle of a week gets a prorated target for that first week: only the days left count.</p>
+
+<h2 id="status">How a goal is judged</h2>
+<p>Only <strong>confirmed</strong> time counts. Plan blocks you haven't confirmed are shown as <em>unconfirmed</em> and don't count until you confirm them, and the plan itself is a forecast shown next to the status, never the status.</p>
+<p>During the week, an <em>at least</em> goal is compared with a steady pace over its days. The dashed notch on its progress bar is where that pace would be by now.</p>
+<ul>
+<li><strong>On pace</strong>: logged time is at most a day's share behind the steady pace. Monday morning is always on pace.</li>
+<li><strong>Behind</strong>: more than a day's share behind. The line under it says by how much, and whether the rest of your plan covers the gap.</li>
+<li><strong>Met</strong>: the target is reached. Once the week is over, a goal is <strong>Met</strong> or <strong>Missed</strong>.</li>
+<li><strong>Within limit</strong>, <strong>Watch</strong>, <strong>Over</strong> (at most): under the limit; under it now, but what's still planned would go over; over it.</li>
+<li><strong>Planned</strong> / <strong>Under-planned</strong>: for a week that hasn't started, whether its plan covers the target.</li>
+<li><strong>In progress</strong>: a goal with outcomes and no time target. When the week ends it's <strong>Met</strong> if every outcome is done.</li>
+</ul>
 
 <h2 id="outcomes">Outcomes</h2>
 <p>Each goal has a checklist of outcomes for the week: concrete results such as <em>Send draft to advisor</em>. Hours tell you how much time you spent; outcomes tell you whether it produced anything.</p>
 <p>Unfinished outcomes can be carried into the next week with <strong>Carry over</strong> on the Goals page or in the review.</p>
 
 <h2 id="archiving">Archiving</h2>
-<p>Archiving a goal hides it from goal pickers from the current week on. Past weeks keep it. A goal can only be deleted if no block or outcome uses it.</p>
+<p>Archiving a goal hides it from goal pickers from the current week on, whichever week you're viewing. Past weeks keep it. A goal can only be deleted if no block or outcome uses it.</p>
 
 <h2 id="budget">Week budget</h2>
-<p>Press <kbd>Ctrl</kbd>+<kbd>B</kbd> in the Day or Week view to open the week budget panel. It shows each goal's progress against its target and this week's outcomes, which you can tick off directly.</p>
+<p>Press <kbd>Ctrl</kbd>+<kbd>B</kbd> to open the week budget panel. It shows each goal's status and progress against its target, and this week's outcomes, which you can tick off directly. The Goals page shows the same status for each goal.</p>
 
 <h2 id="review">Weekly review</h2>
 <p>The Review view (<kbd>r</kbd>) summarizes a week:</p>
 <ul>
 <li>A warning for days that still have unconfirmed blocks, with a one-click <strong>Confirm as planned</strong>.</li>
 <li>Totals for planned, actual, unplanned, skipped and unconfirmed time, and outcomes completed.</li>
-<li>For every goal: target, plan, actual, the difference, a progress bar, outcomes and a status such as <em>On track</em> or <em>At risk</em>.</li>
+<li>For every goal: target, plan, actual, the difference, a progress bar, outcomes and a status (see <a href="#status">How a goal is judged</a>).</li>
 <li>The outcome checklist and a <strong>reflection</strong> note: what worked, and what to change next week.</li>
 </ul>
 <p>From the review you can carry unfinished outcomes forward and go straight to setting next week's targets.</p>
@@ -109,6 +122,7 @@
       <ul>
           <li><a href="#goals">Creating goals</a></li>
           <li><a href="#targets">Weekly targets</a></li>
+          <li><a href="#status">How a goal is judged</a></li>
           <li><a href="#outcomes">Outcomes</a></li>
           <li><a href="#archiving">Archiving</a></li>
           <li><a href="#budget">Week budget</a></li>

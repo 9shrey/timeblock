@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Archive, ArrowRightToLine, GripVertical, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { carryableCount } from "@/domain/goals/checklist";
 import { effectiveTarget } from "@/domain/goals/targets";
-import { addDays, formatDateLong, formatDuration, isoWeek, weekDays } from "@/domain/time/localDate";
-import type { Goal, GoalKind } from "@/domain/types";
-import { carryOverItems, editGoal, reorderGoals } from "@/state/goalCommands";
+import { addDays, formatDateLong, isoWeek, weekDays } from "@/domain/time/localDate";
+import type { GoalStats } from "@/domain/stats/stats";
+import type { Goal } from "@/domain/types";
+import { carryOverItems, reorderGoals } from "@/state/goalCommands";
 import { checklistList, goalList, statsFor, targetList, weekOf } from "@/state/selectors";
 import { useStore } from "@/state/store";
 import { toast } from "sonner";
@@ -14,10 +14,12 @@ import { cn } from "@/lib/utils";
 import { useDragReorder } from "./useDragReorder";
 import { Checklist } from "./Checklist";
 import { GoalDialog } from "./GoalDialog";
-import { TargetInput, TaskTargetInput } from "./TargetInput";
+import { progressText, StatusChip, unconfirmedText } from "./GoalProgress";
+import { dailyPaceHint, TargetInput } from "./TargetInput";
 
 function GoalRow({
   goal,
+  stats,
   weekStart,
   onEdit,
   dragHandleProps,
@@ -25,6 +27,7 @@ function GoalRow({
   dragOver,
 }: {
   goal: Goal;
+  stats: GoalStats | undefined;
   weekStart: string;
   onEdit: () => void;
   dragHandleProps: React.HTMLAttributes<HTMLButtonElement>;
@@ -32,8 +35,11 @@ function GoalRow({
   dragOver: boolean;
 }) {
   const data = useStore((s) => s.data);
-  const target = effectiveTarget(targetList(data.weekTargets), goal.id, weekStart);
+  const rows = targetList(data.weekTargets);
+  const target = effectiveTarget(rows, goal.id, weekStart);
+  const previous = effectiveTarget(rows, goal.id, addDays(weekStart, -7));
   const items = checklistList(data.checklistItems).filter((c) => c.goalId === goal.id && c.weekStart === weekStart);
+  const hint = goal.kind === "min" ? dailyPaceHint(target.minutes, goal.activeDays) : null;
   return (
     <section className={cn("rounded-lg border p-3", dragOver && "border-primary")} aria-label={goal.name} {...dropZoneProps}>
       <div className="flex flex-wrap items-center gap-3">
@@ -45,40 +51,27 @@ function GoalRow({
           {goal.name}
           <Pencil className="size-3 text-muted-foreground" />
         </button>
+        {stats && stats.status !== "no_target" && <StatusChip status={stats.status} />}
         <div className="flex-1" />
-        <ToggleGroup
-          type="single"
-          size="sm"
-          variant="outline"
-          value={goal.kind}
-          onValueChange={(v) => v && v !== goal.kind && editGoal(goal, { kind: v as GoalKind })}
-          aria-label="Target kind"
-        >
-          <ToggleGroupItem value="min" aria-label="At least" title="At least">
-            ≥
-          </ToggleGroupItem>
-          <ToggleGroupItem value="max" aria-label="At most" title="At most">
-            ≤
-          </ToggleGroupItem>
-        </ToggleGroup>
-        {goal.trackBy === "time" ? (
-          <TargetInput
-            key={`${weekStart}:${target.minutes}:${target.fromWeek}`}
-            goalId={goal.id}
-            weekStart={weekStart}
-            minutes={target.minutes}
-            fromWeek={target.fromWeek}
-          />
-        ) : (
-          <TaskTargetInput
-            key={`${weekStart}:${target.count}:${target.fromWeek}`}
-            goalId={goal.id}
-            weekStart={weekStart}
-            count={target.count}
-            fromWeek={target.fromWeek}
-          />
-        )}
+        <span className="text-sm text-muted-foreground" title={goal.kind === "min" ? "At least" : "At most"}>
+          {goal.kind === "min" ? "at least" : "at most"}
+        </span>
+        <TargetInput
+          key={`${weekStart}:${target.minutes}:${target.fromWeek}`}
+          goalId={goal.id}
+          weekStart={weekStart}
+          minutes={target.minutes}
+          fromWeek={target.fromWeek}
+          previous={previous}
+        />
       </div>
+      {stats && (
+        <p className="mt-1.5 pl-6 text-xs text-muted-foreground">
+          {progressText(stats)}
+          {unconfirmedText(stats) && ` · ${unconfirmedText(stats)}`}
+          {hint && ` · ${hint}`}
+        </p>
+      )}
       <div className="mt-2 pl-5">
         <Checklist goalId={goal.id} weekStart={weekStart} items={items} />
       </div>
@@ -112,7 +105,7 @@ export function GoalsView() {
           <div>
             <h2 className="text-lg font-semibold">Goals</h2>
             <p className="text-sm text-muted-foreground">
-              Week {isoWeek(weekStart).week} · from {formatDateLong(weekStart)}. Targets apply from this week on.
+              Week {isoWeek(weekStart).week} · from {formatDateLong(weekStart)}. A target you change here applies from this week on.
             </p>
           </div>
           <div className="flex-1" />
@@ -135,29 +128,20 @@ export function GoalsView() {
 
         {active.length === 0 && (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            No goals yet. Create one, set a weekly target, then tag blocks with it (keys 1–9 on a selected block).
+            No goals yet. Create one with a weekly target, outcomes, or both, then tag blocks with it (keys 1–9 on a selected block).
           </div>
         )}
         {active.map((g) => (
           <div key={g.id}>
             <GoalRow
               goal={g}
+              stats={byGoal.get(g.id)}
               weekStart={weekStart}
               onEdit={() => setDialog({ goal: g })}
               dragHandleProps={dragHandleProps(g.id)}
               dropZoneProps={dropZoneProps(g.id)}
               dragOver={isDragOver(g.id)}
             />
-            {byGoal.get(g.id) &&
-              (g.trackBy === "time" ? (
-                <p className="mt-1 pl-1 text-xs text-muted-foreground">
-                  This week: planned {formatDuration(byGoal.get(g.id)!.planned)} · actual {formatDuration(byGoal.get(g.id)!.actual)}
-                </p>
-              ) : (
-                <p className="mt-1 pl-1 text-xs text-muted-foreground">
-                  This week: {byGoal.get(g.id)!.checklist.done}/{byGoal.get(g.id)!.checklist.total} outcomes done
-                </p>
-              ))}
           </div>
         ))}
 

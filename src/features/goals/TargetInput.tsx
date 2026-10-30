@@ -1,44 +1,67 @@
 import { useState } from "react";
+import { Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatHours, isoWeek } from "@/domain/time/localDate";
+import { activeDayCount } from "@/domain/goals/progress";
+import { formatDuration, formatHours, isoWeek } from "@/domain/time/localDate";
 import type { LocalDate } from "@/domain/types";
-import { setTarget, setTaskTarget } from "@/state/goalCommands";
+import { clearTarget, MAX_TARGET_MINUTES, setTarget } from "@/state/goalCommands";
 
-/** "7.5" / "7,5" / "7h" → minutes rounded to a quarter hour; undefined if invalid. */
-export function hoursToMinutes(text: string): number | undefined {
-  const n = Number(text.trim().replace(",", ".").replace(/h$/i, ""));
-  if (!Number.isFinite(n) || n < 0 || n > 168) return undefined;
-  return Math.round(n * 4) * 15;
+/**
+ * A weekly time target typed as "15", "7.5", "7,5", "15h", "1h30", "1h 30m", "90m" or "1:30"
+ * → minutes, rounded to 5 (a non-zero amount never rounds down to 0). Undefined if invalid.
+ */
+export function parseTargetInput(text: string): number | undefined {
+  const t = text.trim().toLowerCase().replace(/\s+/g, "").replace(",", ".");
+  let m: RegExpExecArray | null;
+  let minutes: number;
+  if ((m = /^(\d+(?:\.\d+)?)(?:h|hrs?|hours?)?$/.exec(t))) minutes = Number(m[1]) * 60;
+  else if ((m = /^(\d+)h([0-5]?\d)(?:m|min)?$/.exec(t))) minutes = Number(m[1]) * 60 + Number(m[2]);
+  else if ((m = /^(\d+):([0-5]\d)$/.exec(t))) minutes = Number(m[1]) * 60 + Number(m[2]);
+  else if ((m = /^(\d+)(?:m|mins?|minutes?)$/.exec(t))) minutes = Number(m[1]);
+  else return undefined;
+  if (!Number.isFinite(minutes) || minutes > MAX_TARGET_MINUTES) return undefined;
+  const rounded = Math.round(minutes / 5) * 5;
+  return minutes > 0 && rounded === 0 ? 5 : rounded;
 }
 
-/** "5" → 5; undefined if not a non-negative integer (up to 10000). */
-export function parseCount(text: string): number | undefined {
-  const n = Number(text.trim());
-  if (!Number.isInteger(n) || n < 0 || n > 10000) return undefined;
-  return n;
+/** "≈ 3h a day over 5 days", or null when there's nothing useful to say. */
+export function dailyPaceHint(minutes: number | null, activeDays: number): string | null {
+  if (minutes === null || minutes <= 0) return null;
+  const n = activeDayCount(activeDays) || 7;
+  const perDay = Math.round(minutes / n / 5) * 5;
+  return `≈ ${formatDuration(Math.max(5, perDay))} a day over ${n} day${n === 1 ? "" : "s"}`;
 }
 
 interface Props {
   goalId: string;
   weekStart: LocalDate;
   minutes: number | null;
+  /** Week the effective target was set in; null = never set. */
   fromWeek: LocalDate | null;
+  /** What this week would inherit without its own row (shown on the "use previous" button). */
+  previous: { minutes: number | null; fromWeek: LocalDate | null } | null;
 }
 
-/** Target hours for one week (0.25 h steps). Empty = tracked only. Shows where an inherited value comes from. */
-export function TargetInput({ goalId, weekStart, minutes, fromWeek }: Props) {
+/** Target hours for one week, carried forward to later weeks. Empty = no target. */
+export function TargetInput({ goalId, weekStart, minutes, fromWeek, previous }: Props) {
   const initial = minutes === null ? "" : formatHours(minutes);
   const [text, setText] = useState(initial);
   const [invalid, setInvalid] = useState(false);
-  const inherited = fromWeek !== null && fromWeek !== weekStart;
+  const own = fromWeek === weekStart;
+  const inherited = fromWeek !== null && !own;
 
   const commit = () => {
-    if (text.trim() === initial) return;
+    if (text.trim() === initial) {
+      setInvalid(false);
+      return;
+    }
     if (text.trim() === "") {
+      setInvalid(false);
       setTarget(goalId, weekStart, null);
       return;
     }
-    const m = hoursToMinutes(text);
+    const m = parseTargetInput(text);
     if (m === undefined) {
       setInvalid(true);
       return;
@@ -48,76 +71,38 @@ export function TargetInput({ goalId, weekStart, minutes, fromWeek }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       <Input
-        aria-label="Target hours this week"
+        aria-label="Target hours per week"
         aria-invalid={invalid}
-        inputMode="decimal"
-        className="h-8 w-16 text-right tabular-nums"
-        placeholder="–"
+        title="Hours per week, e.g. 15, 7.5, 1h30 or 90m"
+        className="h-8 w-20 text-right tabular-nums"
+        placeholder="none"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          if (e.key === "Escape") setText(initial);
+          if (e.key === "Escape") {
+            setText(initial);
+            setInvalid(false);
+          }
         }}
       />
-      <span className="text-xs text-muted-foreground">h</span>
-      {inherited && minutes !== null && <span className="text-xs text-muted-foreground">inherited from W{isoWeek(fromWeek).week}</span>}
-      {minutes === null && <span className="text-xs text-muted-foreground">tracked only</span>}
-    </div>
-  );
-}
-
-interface TaskTargetProps {
-  goalId: string;
-  weekStart: LocalDate;
-  count: number | null;
-  fromWeek: LocalDate | null;
-}
-
-/** Target outcome count for one week. Empty = tracked only. Shows where an inherited value comes from. */
-export function TaskTargetInput({ goalId, weekStart, count, fromWeek }: TaskTargetProps) {
-  const initial = count === null ? "" : String(count);
-  const [text, setText] = useState(initial);
-  const [invalid, setInvalid] = useState(false);
-  const inherited = fromWeek !== null && fromWeek !== weekStart;
-
-  const commit = () => {
-    if (text.trim() === initial) return;
-    if (text.trim() === "") {
-      setTaskTarget(goalId, weekStart, null);
-      return;
-    }
-    const n = parseCount(text);
-    if (n === undefined) {
-      setInvalid(true);
-      return;
-    }
-    setInvalid(false);
-    setTaskTarget(goalId, weekStart, n);
-  };
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <Input
-        aria-label="Target outcomes this week"
-        aria-invalid={invalid}
-        inputMode="numeric"
-        className="h-8 w-16 text-right tabular-nums"
-        placeholder="–"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          if (e.key === "Escape") setText(initial);
-        }}
-      />
-      <span className="text-xs text-muted-foreground">outcomes</span>
-      {inherited && count !== null && <span className="text-xs text-muted-foreground">inherited from W{isoWeek(fromWeek).week}</span>}
-      {count === null && <span className="text-xs text-muted-foreground">tracked only</span>}
+      <span className="text-xs text-muted-foreground">h / week</span>
+      {invalid && <span className="text-xs text-destructive">Try 15, 7.5, 1h30 or 90m</span>}
+      {!invalid && inherited && <span className="text-xs text-muted-foreground">since W{isoWeek(fromWeek).week}</span>}
+      {!invalid && own && previous?.fromWeek && (
+        <Button
+          variant="ghost"
+          size="xs"
+          className="text-muted-foreground"
+          title={`Drop this week's change and use the earlier target (${previous.minutes === null ? "none" : formatDuration(previous.minutes)})`}
+          onClick={() => clearTarget(goalId, weekStart)}
+        >
+          <Undo2 /> Use previous
+        </Button>
+      )}
     </div>
   );
 }

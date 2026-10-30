@@ -2,6 +2,7 @@ import { TABLES } from "@/domain/changes";
 import { settingRow } from "@/domain/settings";
 import { weekDays } from "@/domain/time/localDate";
 import type {
+  ChecklistItem,
   BaseData,
   Block,
   ChangeSet,
@@ -76,6 +77,14 @@ export class SqliteRepository implements Repository {
       toExclusive,
     ]);
     return fromRows("blocks", rows);
+  }
+
+  async loadChecklistRange(fromWeek: LocalDate, toExclusive: LocalDate): Promise<ChecklistItem[]> {
+    const rows = await this.driver.select(
+      "SELECT * FROM checklist_items WHERE week_start >= ? AND week_start < ? ORDER BY week_start, goal_id, sort_order",
+      [fromWeek, toExclusive],
+    );
+    return fromRows("checklistItems", rows);
   }
 
   async applyChanges(changes: ChangeSet): Promise<void> {

@@ -1,10 +1,11 @@
 /**
  * Multi-week per-goal trend data for the Trends view: planned/actual/target per week, and a
- * streak of consecutive met weeks. Reuses `computeStats` week by week (checklist is not
- * needed here, so it's passed empty); keep this loop pure so the view can memoize it.
+ * streak of consecutive met weeks. Reuses `computeStats` week by week, so a week is judged
+ * exactly as Review judges it; keep this loop pure so the view can memoize it.
  */
 import { addDays, weekDays } from "../time/localDate";
-import type { Block, Goal, LocalDate, Now, WeekTarget } from "../types";
+import { weekMet } from "../goals/progress";
+import type { Block, ChecklistItem, Goal, LocalDate, Now, WeekTarget } from "../types";
 import { computeStats } from "./stats";
 
 export interface TrendWeek {
@@ -12,7 +13,10 @@ export interface TrendWeek {
   planned: number;
   actual: number;
   target: number | null;
-  /** Whether the goal's target was met that week; null when there's no target, or the week hasn't happened yet. */
+  /**
+   * Whether the goal was met that week; null when there's nothing to judge, or the week is
+   * still open (an unfinished week never breaks a streak).
+   */
   met: boolean | null;
 }
 
@@ -30,6 +34,8 @@ export interface TrendsInput {
   blocks: readonly Block[];
   goals: readonly Goal[];
   targets: readonly WeekTarget[];
+  /** Outcomes for the window's weeks (outcome-only goals are judged by them). */
+  checklist?: readonly ChecklistItem[];
   now: Now;
 }
 
@@ -48,7 +54,7 @@ export function computeTrends(input: TrendsInput): GoalTrend[] {
       blocks: weekBlocks,
       goals: input.goals,
       targets: input.targets,
-      checklist: [],
+      checklist: (input.checklist ?? []).filter((c) => c.weekStart === weekStart),
       now: input.now,
     });
     const statsByGoal = new Map(stats.goals.map((g) => [g.goalId, g]));
@@ -59,16 +65,18 @@ export function computeTrends(input: TrendsInput): GoalTrend[] {
         list.push({ weekStart, planned: 0, actual: 0, target: null, met: null });
         continue;
       }
-      const met =
-        g.target === null || stats.phase === "future" ? null : g.kind === "min" ? g.actual >= g.target : g.actual <= g.target;
+      const met = weekMet(g.status, stats.phase);
       list.push({ weekStart, planned: g.planned, actual: g.actual, target: g.target, met });
     }
   }
 
   return input.goals.map((goal) => {
     const weeks = byGoal.get(goal.id) ?? [];
+    // Counts back from the most recent week; a still-open latest week is skipped, not a break.
     let streak = 0;
-    for (let i = weeks.length - 1; i >= 0; i--) {
+    let i = weeks.length - 1;
+    if (i >= 0 && weeks[i]!.met === null) i--;
+    for (; i >= 0; i--) {
       if (weeks[i]!.met === true) streak++;
       else break;
     }
