@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Data and backups · Timeblock documentation</title>
-  <meta name="description" content="Timeblock keeps all of your data in a single SQLite file on your computer. An optional sync account keeps it in step with the web app and your phone.">
+  <meta name="description" content="Timeblock keeps all of your data in a single SQLite file on your computer. Optional sync keeps it in step between your computers.">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
   <link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="../assets/icon-256.png">
@@ -21,7 +21,6 @@
       <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="26" height="26">Timeblock</a>
       <nav class="nav" aria-label="Main">
         <a href="./" aria-current="page">Documentation</a>
-        <a href="../app/">Web app</a>
         <a class="gh" href="https://github.com/9shrey/timeblock">GitHub</a>
         <a class="btn btn-primary btn-sm" href="../download.html">Download</a>
       </nav>
@@ -53,7 +52,7 @@
     <main id="main" class="prose">
       <p class="crumb">Documentation / Reference</p>
       <h1>Data and backups</h1>
-      <p class="lead">Timeblock keeps all of your data in a single SQLite file on your computer. No account is needed. If you sign in to an optional sync account, your plan is also kept in step with the web app and your phone.</p>
+      <p class="lead">Timeblock keeps all of your data in a single SQLite file on your computer. No account is needed. If you sign in to an optional sync account, your plan is also kept in step between your computers.</p>
 <h2 id="location">Where your data is stored</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>System</th><th>Folder</th></tr></thead>
@@ -90,8 +89,8 @@
 <p>Every change is saved as you make it. If a save fails, Timeblock reloads your data from disk, discards changes that were waiting behind the failed save, and tells you. Undo history is cleared in that case. When you close the window, the app waits up to three seconds for pending saves to finish.</p>
 
 <h2 id="sync">Sync (optional)</h2>
-<p>In <strong>Settings → Sync &amp; account</strong>, sign in or create an account to sync your plan between the desktop app, the <a href="../app/">web app</a> and your phone (open the web app and use <em>Add to Home Screen</em>). Changes sync within a few seconds; the cloud icon in the top bar shows the status, and clicking it syncs right away. Everything keeps working offline and catches up when you're back online.</p>
-<p>The first time you sign in on a device that already has data, you choose whether to merge it with the account, use the account's data, or upload this device's data. The desktop app makes a backup first. Signing out of the desktop app keeps your data on the computer; signing out of the web app removes it from that browser.</p>
+<p>In <strong>Settings → Sync &amp; account</strong>, sign in or create an account to sync your plan between your computers. Changes sync within a few seconds; the cloud icon in the top bar shows the status, and clicking it syncs right away. Everything keeps working offline and catches up when you're back online.</p>
+<p>The first time you sign in on a device that already has data, you choose whether to merge it with the account, use the account's data, or upload this device's data. The desktop app makes a backup first. Signing out keeps your data on the computer.</p>
 <p>Device settings such as the theme and notifications are not synced. The sync server is self-hosted; its source is in <code>server/</code> in the repository.</p>
 
 <h2 id="privacy">Privacy</h2>
@@ -121,7 +120,6 @@
       <span>© 2026 Shrey Singh · MIT License</span>
       <nav aria-label="Footer">
         <a href="./">Documentation</a>
-        <a href="../app/">Web app</a>
         <a href="../download.html">Download</a>
         <a href="https://github.com/9shrey/timeblock/blob/main/CHANGELOG.md">Changelog</a>
         <a href="https://github.com/9shrey/timeblock">Source code</a>

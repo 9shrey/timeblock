@@ -2,8 +2,7 @@ name: Deploy static site
 
 # Owns the automatic deploy to the repo's GitHub Pages slot (9shrey.github.io/timeblock):
 # the plain HTML/CSS site in site/ served as-is, plus the in-browser app demo built into
-# /demo/ (VITE_DEMO=1: sql.js in localStorage, auto-seeded sample data). site.yml (the
-# old Astro site) is manual-dispatch only.
+# /demo/ (VITE_DEMO=1: sql.js in localStorage, auto-seeded sample data).
 on:
   push:
     branches: [main]
@@ -42,22 +41,11 @@ jobs:
       - run: npm run build
         env:
           VITE_DEMO: "1"
-      - name: Move demo build aside
-        run: mv dist dist-demo
-      # The web app (sign in + sync). Built only once the server address is set as the
-      # repository variable SYNC_URL (Settings → Secrets and variables → Actions → Variables).
-      - name: Build web app
-        if: vars.SYNC_URL != ''
-        run: npm run build
-        env:
-          VITE_SYNC_URL: ${{ vars.SYNC_URL }}
-          VITE_BASE: /timeblock/app/
-      - name: Assemble site with demo and app
+      - name: Assemble site with demo
         run: |
           mkdir -p _site
           cp -r site/. _site/
-          cp -r dist-demo _site/demo
-          if [ -d dist ]; then cp -r dist _site/app; fi
+          cp -r dist _site/demo
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

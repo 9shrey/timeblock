@@ -9,7 +9,7 @@ use tower::ServiceExt;
 fn test_app() -> Router {
     let config = Config {
         db_path: ":memory:".into(),
-        origins: vec!["https://9shrey.github.io".into()],
+        origins: vec!["http://localhost:1420".into()],
     };
     app(AppState::in_memory(), &config)
 }
@@ -361,7 +361,7 @@ async fn signups_are_rate_limited_per_ip() {
 }
 
 #[tokio::test]
-async fn cors_preflight_allows_the_web_app_only() {
+async fn cors_preflight_allows_known_origins_only() {
     let app = test_app();
     let preflight = |origin: &str| {
         Request::builder()
@@ -378,17 +378,23 @@ async fn cors_preflight_allows_the_web_app_only() {
     };
     let res = app
         .clone()
-        .oneshot(preflight("https://9shrey.github.io"))
+        .oneshot(preflight("http://localhost:1420"))
         .await
         .unwrap();
     assert_eq!(
         res.headers()["access-control-allow-origin"],
-        "https://9shrey.github.io"
+        "http://localhost:1420"
     );
     assert!(res.headers()["access-control-allow-headers"]
         .to_str()
         .unwrap()
         .contains("authorization"));
+    let res = app
+        .clone()
+        .oneshot(preflight("https://9shrey.github.io"))
+        .await
+        .unwrap();
+    assert!(res.headers().get("access-control-allow-origin").is_none());
     let res = app
         .clone()
         .oneshot(preflight("https://evil.example"))

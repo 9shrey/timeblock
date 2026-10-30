@@ -30,7 +30,7 @@ import type { ImportResult } from "@/domain/export/schema";
 import { formatMinute, formatMinuteRange, weekDays, weekStartOf } from "@/domain/time/localDate";
 import type { Routine, SnapMinutes, Template, ThemePref, TimeFormat, WeekStartDay } from "@/domain/types";
 import { cn } from "@/lib/utils";
-import { getPlatform, RELEASES_URL } from "@/platform";
+import { getPlatform, RELEASES_URL, type Platform } from "@/platform";
 import { applyImport, backupNow, clearAllData, exportCsv, exportJson, pickImportFile, setSetting } from "@/state/dataCommands";
 import { exportIcs, importIcsFile } from "@/state/ics";
 import { useGoalMap, useRoutines, useTemplates, useTimeFormat } from "@/state/selectors";
@@ -39,7 +39,6 @@ import { deleteTemplate, renameTemplate } from "@/state/templateCommands";
 import { checkForUpdate, installUpdate, plainReleaseNotes, useUpdates, type UpdateState } from "@/state/updates";
 import { AccountSection } from "@/features/account/AccountSection";
 import { useSync } from "@/sync/engine";
-import { ACCOUNT_REQUIRED } from "@/sync/mode";
 import { BackupList } from "./BackupList";
 import { CalendarSubscriptions } from "./CalendarSubscriptions";
 import { RoutineDialog } from "./RoutineDialog";
@@ -504,7 +503,7 @@ export function SettingsView() {
   const settings = useStore((s) => s.settings);
   const [clearOpen, setClearOpen] = useState(false);
   const [pending, setPending] = useState<{ name: string; result: ImportResult } | null>(null);
-  const [info, setInfo] = useState<{ kind: string; version: string; dir: string | null; lastBackup: number | null } | null>(null);
+  const [info, setInfo] = useState<{ kind: Platform["kind"]; version: string; dir: string | null; lastBackup: number | null } | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [icsExportOpen, setIcsExportOpen] = useState(false);
   const syncedAs = useSync((s) => s.username);
@@ -557,9 +556,9 @@ export function SettingsView() {
           </div>
         </section>
 
-        {info && <AccountSection desktop={info.kind === "tauri"} />}
         <NotificationsSection />
         {info?.kind === "tauri" && <DesktopSection />}
+        {info?.kind === "tauri" && <AccountSection desktop />}
         {info?.kind === "tauri" && <UpdatesSection version={info.version} />}
         <TemplatesSection />
         <RoutinesSection />
@@ -569,8 +568,11 @@ export function SettingsView() {
           <p className="mb-3 text-sm text-muted-foreground">
             {syncedAs
               ? `Your data is saved on this device${info?.dir ? ` in ${info.dir}` : ""} and synced to your account (${syncedAs}).`
-              : `Your data stays on this computer${info?.dir ? ` in ${info.dir}` : ""}.`} A backup is made automatically once a day; the newest 14 are kept.
-            {info?.kind === "tauri" && (info.lastBackup ? ` Last backup: ${new Date(info.lastBackup * 1000).toLocaleString()}.` : " No backup yet.")}
+              : info?.kind === "web"
+                ? "This is the demo: your data stays in this browser."
+                : `Your data stays on this computer${info?.dir ? ` in ${info.dir}` : ""}.`}
+            {info?.kind === "tauri" &&
+              ` A backup is made automatically once a day; the newest 14 are kept.${info.lastBackup ? ` Last backup: ${new Date(info.lastBackup * 1000).toLocaleString()}.` : " No backup yet."}`}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void exportJson()}>
@@ -626,7 +628,7 @@ export function SettingsView() {
         </section>
 
         <p className="text-xs text-muted-foreground">
-          Timeblock {info?.version ?? ""} · MIT licensed{info?.kind === "web" && !ACCOUNT_REQUIRED ? " · browser dev mode (data in localStorage)" : ""}
+          Timeblock {info?.version ?? ""} · MIT licensed{info?.kind === "web" ? " · demo, data stays in this browser" : ""}
         </p>
       </div>
       <ClearDataDialog open={clearOpen} onClose={() => setClearOpen(false)} />
