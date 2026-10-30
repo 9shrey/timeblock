@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-30
+
 ### Removed
 - **The web app.** Timeblock is a desktop app; the website keeps a live demo with sample data
   (now linked from the download page too). Sync stays, between your computers. The sync server
